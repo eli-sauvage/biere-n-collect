@@ -13,25 +13,23 @@ services:
       retries: 10
       interval: 5s
     networks:
-      - helibot
-  # app:
-  #   build:
-  #     context: .
-  #     dockerfile: ./Dockerfile
-  #   volumes:
-  #     - .env:/.env
-  #     - ./helibot.toml:/helibot.toml
-  #   image: ${DOCKER_IMAGE_URL_BASE}helibot:latest
-  #   environment:
-  #     - MARIADB_HOST=db
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #   networks:
-  #     - helibot
+      - lhavrais-pay
+  server:
+    build:
+      context: back
+    volumes:
+      - ${PWD}/back/.env:/.env
+    image: ${DOCKER_IMAGE_URL_BASE}lhavrais-pay:latest
+    environment:
+      - MARIADB_HOST=db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - lhavrais-pay
 
 volumes:
   sql-data:
 
 networks:
-  helibot:
+  lhavrais-pay:

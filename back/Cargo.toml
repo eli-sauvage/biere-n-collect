@@ -1,0 +1,15 @@
+[package]
+name = "lhavrais-pay"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+sqlx = { version = "0.8.0", features = ["runtime-tokio", "mysql", "time"] }
+tokio = { version = "1.39", features = ["rt", "time"] }
+dotenvy = "0.15.7"
+serde = { version = "1.0.207", features = ["derive"] }
+thiserror = "1.0.63"
+rocket = { version = "0.5.1", features = ["json"] }
+rocket_cors = "0.6.0"
+async-stripe = { version = "0.38", features = ["runtime-tokio-hyper"] }

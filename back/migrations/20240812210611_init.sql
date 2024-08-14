@@ -1,0 +1,43 @@
+CREATE TABLE IF NOT EXISTS ProductTypes
+(
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    price INT NOT NULL,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS Orders
+(
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    validated BOOLEAN NOT NULL,
+    user_email VARCHAR(255) NOT NULL,
+    RECEIPT VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS OrderDetails
+(
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    order_id INT UNSIGNED NOT NULL,
+    product_id INT UNSIGNED NOT NULL,
+    quantity FLOAT UNSIGNED NOT NULL,
+    CONSTRAINT `fk_product_id`
+        FOREIGN KEY (product_id) REFERENCES ProductTypes (id)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
+    CONSTRAINT `fk_order_id`
+        FOREIGN KEY (order_id) REFERENCES Orders (id)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT,
+    CONSTRAINT `uq_order_id_product_id` UNIQUE (order_id, product_id)
+);
+
+
+CREATE TABLE IF NOT EXISTS Stocks
+(
+    product_id INT UNSIGNED NOT NULL UNIQUE,
+    stock FLOAT UNSIGNED NOT NULL,
+    CONSTRAINT `fk_product_id_1`
+        FOREIGN KEY (product_id) REFERENCES ProductTypes (id)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT
+);

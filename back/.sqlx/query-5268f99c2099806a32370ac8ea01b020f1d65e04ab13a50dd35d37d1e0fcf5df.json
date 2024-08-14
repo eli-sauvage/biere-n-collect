@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT cast(SUM(price * quantity) as int) as result from OrderDetails INNER JOIN ProductTypes ON OrderDetails.product_id = ProductTypes.id WHERE order_id = ? ;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "result",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "BINARY",
+          "max_size": 20
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "5268f99c2099806a32370ac8ea01b020f1d65e04ab13a50dd35d37d1e0fcf5df"
+}
