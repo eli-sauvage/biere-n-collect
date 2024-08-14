@@ -17,6 +17,6 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 
 FROM debian:bookworm-slim
 
-COPY --from=builder /usr/local/cargo/bin/helibot /usr/local/bin/lhavrais-pay
+COPY --from=builder /usr/local/cargo/bin/lhavrais-pay /usr/local/bin/lhavrais-pay
 
 CMD ["lhavrais-pay"]
