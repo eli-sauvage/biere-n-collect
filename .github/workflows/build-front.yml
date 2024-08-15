@@ -32,6 +32,11 @@ jobs:
 
       - name: load dotenv file
         uses: xom9ikk/dotenv@v2.3.0
+      
+      - name: verif env
+        run: |
+          echo ${{ env.VITE_API_URL }}
+          cat .env
 
       - name: Build and push
         uses: docker/build-push-action@v5
