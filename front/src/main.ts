@@ -5,10 +5,10 @@ import App from './App.vue'
 
 import { createRouter, createWebHistory } from 'vue-router'
 
-import Admin from './Admin.vue'
-import Buy from './Buy.vue'
-import SrCheckoutForm from './components/pay/SrCheckoutForm.vue'
-import SrReturn from './components/pay/SrReturn.vue'
+import PrimeVue from "primevue/config";
+import Aura from "@primevue/themes/aura";
+import ToastService from "primevue/toastservice"
+import { definePreset } from '@primevue/themes';
 
 if (import.meta.env.VITE_SITE_URL == undefined) {
     throw Error(`no SITE URL specified in env`)
@@ -38,4 +38,33 @@ const router = createRouter({
     routes,
 })
 
-createApp(App).use(router).mount('#app')
+const MyPreset = definePreset(Aura, {
+    semantic: {
+        primary: {
+            50: '#e2b42c',
+            100: '#e2b42c',
+            200: '#e2b42c',
+            300: '#e2b42c',
+            400: '#e2b42c',
+            500: '#e2b42c',
+            600: '#e2b42c',
+            700: '#e2b42c',
+            800: '#e2b42c',
+            900: '#e2b42c',
+            950: '#e2b42c'
+        }
+    }
+});
+
+
+createApp(App)
+    .use(router)
+    .use(
+        PrimeVue, {
+            theme: {
+                preset: MyPreset
+            }
+        }
+    )
+    .use(ToastService)
+    .mount('#app')

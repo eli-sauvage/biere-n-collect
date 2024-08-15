@@ -1,0 +1,10 @@
+#app{
+    min-width: 100vw;
+    min-height: 100vh;
+    background-color: #57b5b3;
+    padding-top: 1px;
+    overflow: scroll;
+}
+body{
+    margin:0;
+}

@@ -19,10 +19,11 @@ export class Cart {
     elems_with_subtotal(): (CartElement & { subtotal: number })[] {
         return this.elements.map((e) => { return { ...e, subtotal: e.product.price * e.quantity } })
     }
-    get_total(): number {
-        return this.elements.reduce((acc, e) => acc + e.product.price * e.quantity, 0);
+    get_total(): string {
+        return (this.elements.reduce((acc, e) => acc + e.product.price * e.quantity, 0)/100).toFixed(2) + " €";
     }
     addOneElem(item: Product) {
+        console.log(this)
         let index = this.elements.findIndex((e) => e.product.product_id == item.product_id);
         if (index == -1) {
             this.elements.push({ product: item, quantity: 1 });
@@ -30,17 +31,17 @@ export class Cart {
             this.elements[index].quantity += 1;
         }
     }
-    removeOneElem(product_id: ProductId) {
+    updateElemCount(product_id: ProductId, new_quantity: number) {
         let index = this.elements.findIndex((e) => e.product.product_id == product_id);
         if (index != -1) {
-            if (this.elements[index].quantity <= 1) {
+            if(new_quantity <=0){
                 this.elements.splice(index, 1)
-            } else {
-                this.elements[index].quantity -= 1
+            }else{
+                this.elements[index].quantity = new_quantity
             }
         }
     }
-    async validate(router: Router) {
+    async validate(router: Router, showErrorToast: (msg: string) => void) {
         if (this.elements.length == 0) return
         try {
             let res = await fetch(`${import.meta.env.VITE_API_URL}/validate_cart`,
@@ -58,10 +59,11 @@ export class Cart {
             if (res.ok) {
                 let json = await res.json();
                 console.log(json.order_id)
-                router.push({path:"/checkout", query: {order_id: json.order_id}})
-            } else { console.log("not ok") }
-        } catch (e) {
+                router.push({ path: "/checkout", query: { order_id: json.order_id } })
+            } else { console.log("not ok"); showErrorToast(await res.text()) }
+        } catch (e: any) {
             console.error(e)
+            showErrorToast(e.toString())
         }
     }
 }

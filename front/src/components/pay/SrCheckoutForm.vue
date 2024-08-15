@@ -27,9 +27,9 @@ onMounted(async () => {
 
         const intent_res = await fetch(`${import.meta.env.VITE_API_URL}/create-payment-intent?order_id=${order_id}`).then((res) => res.json());
         let clientSecret = intent_res.clientSecret as string;
-        total_price.value = (intent_res.total_price as number/100).toFixed(2) + "€";
+        total_price.value = (intent_res.total_price as number / 100).toFixed(2) + "€";
 
-        messages.value.push(`Client secret returned.`);
+        // messages.value.push(`Client secret returned.`);
 
         elements = stripe.elements({ clientSecret });
         const paymentElement = elements.create('payment');
@@ -38,7 +38,7 @@ onMounted(async () => {
         linkAuthenticationElement.mount("#link-authentication-element");
         isLoading.value = false;
     } catch (e) {
-        if (e){
+        if (e) {
             messages.value.push(e.toString())
         }
         console.error(e)
@@ -70,17 +70,40 @@ const handleSubmit = async () => {
 }
 </script>
 <template>
-    <main>
-        <h1>Payment</h1>
+    <h1>Paiement</h1>
+    <div class="container">
         <h2>Total à payer : {{ total_price }}</h2>
 
         <form id="payment-form" @submit.prevent="handleSubmit">
             <div id="link-authentication-element" />
             <div id="payment-element" />
             <button id="submit" :disabled="isLoading">
-                Pay now
+                Payer {{ total_price }}
             </button>
             <sr-messages :messages="messages" />
         </form>
-    </main>
+    </div>
 </template>
+
+<style scoped>
+h1{
+    text-align: center;
+}
+.container {
+    background-color: #1b6589;
+    margin: 3%;
+    padding: 3%;
+    border-radius: 10px;
+}
+#submit{
+    margin-top: 40px;
+    width: 100%;
+    padding: 10px;
+    font-size: larger;
+    background-color: #e2b42c;
+    color: black;
+    box-shadow: none;
+    border: none;
+    border-radius: 5px;
+}
+</style>

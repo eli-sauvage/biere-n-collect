@@ -1,19 +1,30 @@
 <script setup lang="ts">
 import type { Cart, Product, ProductId } from '@/types';
+import Button from "primevue/button"
+import InputNumber from 'primevue/inputnumber';
 let props = defineProps<{ cart: Cart }>();
-defineEmits<{ removeFromCart: [ProductId], validate: [] }>()
+defineEmits<{ updateCart: [ProductId, number], validate: [] }>()
 </script>
 <template>
     <div class="cart">
-        <div v-for="elem in cart.elems_with_subtotal()" class="item">
-            <p class="item-content">{{ elem.product.name + " x " + elem.quantity + " => " +
-                (elem.subtotal / 100).toFixed(2)}}</p>
-            <button class="remove" @click="$emit('removeFromCart', elem.product.product_id)">-</button>
+        <div v-for="(elem, index) in cart.elems_with_subtotal()" class="item">
+            <InputNumber :model-value="cart.elements[index].quantity"
+                @update:modelValue="(newcount: number) => $emit('updateCart', elem.product.product_id, newcount)"
+                inputId="horizontal-buttons" showButtons buttonLayout="horizontal" :step="1" fluid class="input-buttons">
+                <template #incrementbuttonicon>
+                    <span class="pi pi-plus"></span>
+                </template>
+                <template #decrementbuttonicon>
+                    <span v-if="elem.quantity > 1" class="pi pi-minus"></span>
+                    <span v-else class="pi pi-trash"></span>
+                </template>
+            </InputNumber>
+            <p class="subtotal">{{ (cart.elems_with_subtotal()[index].subtotal / 100).toFixed(2) + " €"}}</p>
+            <!-- <Button class="remove" @click="$emit('removeFromCart', elem.product.product_id)">-</Button> -->
         </div>
         <div class="button">
             <p></p>
-            <button class="valider" @click="$emit('validate')">{{ "VALIDER (Total = " +
-                (cart.get_total() / 100).toFixed(2) + ")"}}</button>
+            <Button class="valider" @click="$emit('validate')" :badge="'Total: ' + cart.get_total()" badge-severity="contrast" label="Valider"></Button>
         </div>
     </div>
 </template>
@@ -27,6 +38,16 @@ defineEmits<{ removeFromCart: [ProductId], validate: [] }>()
 .item {
     display: flex;
     margin: 10px 0;
+    justify-content: space-evenly;
+}
+
+.subtotal {
+    margin: auto 10px;
+    text-align: center;
+}
+
+.input-buttons{
+    width: 50%;
 }
 
 .item-content {
@@ -46,8 +67,10 @@ defineEmits<{ removeFromCart: [ProductId], validate: [] }>()
 }
 
 .valider {
-    height: 50px;
     min-width: 100px;
-    background-color: lightgreen;
+    position: relative;
+    bottom: 25%;
+    margin-top: 20px;
+    font-size: larger;
 }
 </style>
