@@ -43,7 +43,7 @@ export class Cart {
     async validate(router: Router) {
         if (this.elements.length == 0) return
         try {
-            let res = await fetch("http://127.0.0.1:8000/api/validate_cart",
+            let res = await fetch(`${import.meta.env.VITE_API_URL}/validate_cart`,
                 {
                     method: "POST",
                     body: JSON.stringify(

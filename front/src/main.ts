@@ -1,14 +1,30 @@
 import './assets/main.css'
 
-import { compile, createApp } from 'vue'
+import { createApp } from 'vue'
 import App from './App.vue'
 
-import { createMemoryHistory, createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 import Admin from './Admin.vue'
 import Buy from './Buy.vue'
 import SrCheckoutForm from './components/pay/SrCheckoutForm.vue'
 import SrReturn from './components/pay/SrReturn.vue'
+
+if(import.meta.env.VITE_SITE_URL == undefined){
+     throw Error("no SITE URL specified in env")
+}
+if(import.meta.env.VITE_API_URL == undefined){
+     throw Error("no API URL specified in env")
+}else{
+    let api_url = import.meta.env.VITE_API_URL as string;
+    if(!api_url.endsWith("/")){
+        throw Error("API URL must end with '/'")
+    }
+    if(!api_url.match(/^https?\/\//)){
+        throw Error("API URL must start with http:// or https://")
+    }
+}
+
 
 const routes = [
     { path: '/', component: Buy },

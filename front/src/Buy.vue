@@ -6,7 +6,7 @@ import CartVue from './components/CartView.vue';
 let prods: Ref<Product[]> = ref([]);
 let cart: Ref<Cart> = ref(new Cart());
 (async () => {
-    prods.value = await (await fetch("http://127.0.0.1:8000/api/stocks")).json();
+    prods.value = await (await fetch(`${import.meta.env.VITE_API_URL}/stocks`)).json();
 })();
 
 </script>

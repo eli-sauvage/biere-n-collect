@@ -18,14 +18,14 @@ let elements: StripeElements;
 
 onMounted(async () => {
     try {
-        const { publishableKey } = await fetch("http://127.0.0.1:8000/api/config").then((res) => res.json()) as { publishableKey: string };
+        const { publishableKey } = await fetch(`${import.meta.env.VITE_API_URL}/config`).then((res) => res.json()) as { publishableKey: string };
         let config_res = await loadStripe(publishableKey);
         if (!config_res) {
             return
         }
         stripe = config_res;
 
-        const intent_res = await fetch(`http://127.0.0.1:8000/api/create-payment-intent?order_id=${order_id}`).then((res) => res.json());
+        const intent_res = await fetch(`${import.meta.env.VITE_API_URL}/create-payment-intent?order_id=${order_id}`).then((res) => res.json());
         let clientSecret = intent_res.clientSecret as string;
         total_price.value = (intent_res.total_price as number/100).toFixed(2) + "€";
 

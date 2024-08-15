@@ -5,7 +5,7 @@ use std::env;
 pub async fn setup_db_and_migrate() -> Pool<MySql> {
     dotenvy::dotenv().expect("could not load env from .env file");
     let db_password = env::var("MARIADB_PASSWORD").expect("db password is not set in environment");
-    let db_host = env::var("MARIADB_HOST").unwrap_or("db".into());
+    let db_host = env::var("MARIADB_HOST").expect("mariadb host is not set in environment");
     
     let pool = match MySqlPoolOptions::new()
         .max_connections(20)

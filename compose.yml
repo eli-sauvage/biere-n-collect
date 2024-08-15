@@ -29,6 +29,9 @@ services:
       - lhavrais-pay
   front:
     build:
+      args:
+        - VITE_SITE_URL=${VITE_SITE_URL}
+        - VITE_API_URL=${VITE_API_URL}
       context: .
       dockerfile: front/Dockerfile
     image: ${DOCKER_IMAGE_URL_BASE}lhavrais-pay-front:latest
