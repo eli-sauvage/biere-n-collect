@@ -12,3 +12,5 @@
 - user accounts
 - add product types
 - mark product type as old -> won't show to client
+- max order amount
+- mobile -> prevent zoom on double click
