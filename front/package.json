@@ -13,12 +13,11 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "@stripe/stripe-js": "^4.2.0",
-    "@types/stripe": "^8.0.417",
     "vue": "^3.4.29",
     "vue-router": "^4.4.3"
   },
   "devDependencies": {
+    "@stripe/stripe-js": "^4.2.0",
     "@rushstack/eslint-patch": "^1.8.0",
     "@tsconfig/node20": "^20.1.4",
     "@types/node": "^20.14.5",

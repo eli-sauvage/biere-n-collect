@@ -2,15 +2,16 @@ FROM node:20-bookworm as builder
 
 WORKDIR /app
 
-COPY package*.json .
+COPY front/package*.json .
 
-RUN npm i
+RUN npm i 
 
-COPY . .
+RUN ls node_modules/.bin
+RUN echo $PATH
 
-RUN --mount=type=cache,target=/app/lhavrais-pay/target \
-    npm run build
+COPY front/ .
 
+RUN npm run build
 
 FROM nginx:1-alpine
 

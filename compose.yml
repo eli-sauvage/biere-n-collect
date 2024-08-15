@@ -29,7 +29,8 @@ services:
       - lhavrais-pay
   front:
     build:
-      context: front
+      context: .
+      dockerfile: front/Dockerfile
     image: ${DOCKER_IMAGE_URL_BASE}lhavrais-pay-front:latest
     ports:
       - 8080:8080
