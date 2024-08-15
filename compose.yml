@@ -32,8 +32,10 @@ services:
       context: front
     image: ${DOCKER_IMAGE_URL_BASE}lhavrais-pay-front:latest
     ports:
-      - 80:80
-      - 443:443
+      - 8080:8080
+      - 4433:4433
+    volumes:
+      - ${PWD}/certs/certs:/etc/letsencrypt/live/lhavrais-pay.eli-sauvage.eu
     networks:
       - lhavrais-pay
 

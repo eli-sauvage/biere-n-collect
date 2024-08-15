@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json .
 
-RUN npm i --omit=dev 
+RUN npm i
 
 COPY . .
 
@@ -18,4 +18,4 @@ COPY --from=builder /app/dist /usr/share/nginx/html;
 
 COPY nginx.conf /etc/nginx/nginx.conf
 
-COPY certs /etc/letsencrypt
+COPY certs/dummy-certs /etc/letsencrypt/dummy-certs
