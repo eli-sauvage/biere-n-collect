@@ -17,6 +17,13 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 
 FROM debian:bookworm-slim
 
+RUN apt-get -y update &&  \ 
+    apt-get install --no-install-recommends  \
+    -y openssl && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /usr/local/cargo/bin/lhavrais-pay /usr/local/bin/lhavrais-pay
+
+COPY Rocket.toml Rocket.toml
 
 CMD ["lhavrais-pay"]

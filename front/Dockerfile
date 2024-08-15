@@ -2,18 +2,15 @@ FROM node:20-bookworm as builder
 
 WORKDIR /app
 
+COPY front/package*.json .
+
+RUN npm i 
+
 ARG VITE_SITE_URL
 ENV VITE_SITE_URL ${VITE_SITE_URL}
 
 ARG VITE_API_URL
 ENV VITE_API_URL ${VITE_API_URL}
-
-COPY front/package*.json .
-
-RUN npm i 
-
-RUN ls node_modules/.bin
-RUN echo $PATH
 
 COPY front/ .
 

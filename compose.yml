@@ -18,7 +18,7 @@ services:
     build:
       context: back
     volumes:
-      - ${PWD}/back/.env:/.env
+      - ${PWD}/.env:/.env
     image: ${DOCKER_IMAGE_URL_BASE}lhavrais-pay:latest
     environment:
       - MARIADB_HOST=db
