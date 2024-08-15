@@ -10,27 +10,27 @@ import Buy from './Buy.vue'
 import SrCheckoutForm from './components/pay/SrCheckoutForm.vue'
 import SrReturn from './components/pay/SrReturn.vue'
 
-if(import.meta.env.VITE_SITE_URL == undefined){
-     throw Error(`no SITE URL specified in env`)
+if (import.meta.env.VITE_SITE_URL == undefined) {
+    throw Error(`no SITE URL specified in env`)
 }
-if(import.meta.env.VITE_API_URL == undefined){
-     throw Error(`no API URL specified in env`)
-}else{
+if (import.meta.env.VITE_API_URL == undefined) {
+    throw Error(`no API URL specified in env`)
+} else {
     let api_url = import.meta.env.VITE_API_URL as string;
-    if(api_url.endsWith("/")){
+    if (api_url.endsWith("/")) {
         throw Error(`API URL must not end with '/' : ${api_url}`)
     }
-    if(!api_url.match(/^https?:\/\//)){
+    if (!api_url.match(/^https?:\/\//)) {
         throw Error(`API URL must start with http:// or https:// : ${api_url}`)
     }
 }
 
 
 const routes = [
-    { path: '/', component: Buy },
-    { path: '/admin', component: Admin },
-    { path: '/checkout', component: SrCheckoutForm },
-    { path: '/return', component: SrReturn }
+    { path: '/', component: () => import('./Buy.vue') },
+    { path: '/admin', component: () => import("./Admin.vue") },
+    { path: '/checkout', component: () => import("./components/pay/SrCheckoutForm.vue") },
+    { path: '/return', component: () => import("./components/pay/SrReturn.vue") }
 ]
 
 const router = createRouter({
