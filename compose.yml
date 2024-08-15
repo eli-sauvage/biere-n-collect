@@ -33,9 +33,6 @@ services:
     image: ${DOCKER_IMAGE_URL_BASE}lhavrais-pay-front:latest
     ports:
       - 8080:8080
-      - 4433:4433
-    volumes:
-      - ${PWD}/front/certs/letsencrypt:/etc/letsencrypt/
     networks:
       - lhavrais-pay
 
