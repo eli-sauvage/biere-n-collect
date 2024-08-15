@@ -19,7 +19,7 @@ FROM debian:bookworm-slim
 
 RUN apt-get -y update &&  \ 
     apt-get install --no-install-recommends  \
-    -y openssl && \
+    -y ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/local/cargo/bin/lhavrais-pay /usr/local/bin/lhavrais-pay
