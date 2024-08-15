@@ -27,11 +27,17 @@ jobs:
           username: eli-sauvage
           password: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: load dotenv file
+        uses: xom9ikk/dotenv@v2.3.0
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: front
+          file: front/Dockerfile
           push: true
+          build-args: |
+            VITE_SITE_URL=${{ env.VITE_SITE_URL }}
+            VITE_API_URL=${{ env.VITE_API_URL }}
           tags: ghcr.io/eli-sauvage/lhavrais-pay-front:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
