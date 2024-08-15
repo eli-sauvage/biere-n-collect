@@ -17,5 +17,3 @@ FROM nginx:1-alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 COPY nginx.conf /etc/nginx/nginx.conf
-
-COPY certs/dummy-certs /etc/letsencrypt/dummy-certs
