@@ -9,10 +9,21 @@ use rocket::{
     Data, Request, State,
 };
 use sqlx::{MySql, Pool};
-use stripe::{
-    CheckoutSession, Client, CreatePaymentIntent, CreatePaymentIntentAutomaticPaymentMethods,
-    Currency, EventObject, EventType, PaymentIntent, Webhook,
+// use stripe::{
+//     CheckoutSession, Client, CreatePaymentIntent, CreatePaymentIntentAutomaticPaymentMethods,
+//     Currency, EventObject, EventType, PaymentIntent, Webhook,
+// };
+use stripe::Client;
+use stripe_checkout::CheckoutSession;
+use stripe_core::{
+    payment_intent::{
+        CreatePaymentIntent, CreatePaymentIntentAutomaticPaymentMethods,
+        CreatePaymentIntentAutomaticPaymentMethodsAllowRedirects,
+    },
+    PaymentIntent,
 };
+use stripe_types::Currency;
+use stripe_webhook::{Webhook, EventType, EventObject};
 
 use super::orders::Order;
 
@@ -60,25 +71,14 @@ pub async fn create_payment_intent(
         }
     };
     let intent = {
-        let mut create_intent = CreatePaymentIntent::new(price, Currency::EUR);
         let automatic_payment_method = CreatePaymentIntentAutomaticPaymentMethods {
             enabled: true,
-            allow_redirects: Some(
-                stripe::CreatePaymentIntentAutomaticPaymentMethodsAllowRedirects::Always,
-            ),
+            allow_redirects: Some(CreatePaymentIntentAutomaticPaymentMethodsAllowRedirects::Always),
         };
-        create_intent.automatic_payment_methods = Some(automatic_payment_method);
-        // create_intent.return_url = Some("http://localhost:5173/return");
-        // create_intent.confirm = Some(true);
-        // create_intent.payment_method_types = Some(vec!["".to_string()]);
-        // create_intent.statement_descriptor = Some("test descriptor");
-        create_intent.metadata = Some(
-            [("color".to_string(), "red".to_string())]
-                .iter()
-                .cloned()
-                .collect(),
-        );
-        PaymentIntent::create(&payment_manager.stripe_client, create_intent)
+        let create_intent = CreatePaymentIntent::new(price, Currency::EUR)
+            .automatic_payment_methods(automatic_payment_method);
+        create_intent
+            .send(&payment_manager.stripe_client)
             .await
             .map_err(|e| {
                 eprintln!("error generating payment intent : {e:?}");
@@ -103,11 +103,8 @@ pub async fn stripe_webhooks(stripe_signature: StripeSignature<'_>, payload: Pay
     ) {
         match event.type_ {
             EventType::CheckoutSessionCompleted => {
-                if let EventObject::CheckoutSession(session) = event.data.object {
-                    match checkout_session_completed(session) {
-                        Ok(_) => Status::Accepted,
-                        Err(_) => Status::BadRequest,
-                    }
+                if let EventObject::CheckoutSessionCompleted(_) = event.data.object {
+                        Status::Accepted
                 } else {
                     Status::BadRequest
                 }

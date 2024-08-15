@@ -12,4 +12,11 @@ serde = { version = "1.0.207", features = ["derive"] }
 thiserror = "1.0.63"
 rocket = { version = "0.5.1", features = ["json"] }
 rocket_cors = "0.6.0"
-async-stripe = { version = "0.38", features = ["runtime-tokio-hyper"] }
+# async-stripe = { version = "0.37.1", features = ["runtime-tokio-hyper"] }
+async-stripe = { git = "https://github.com/arlyon/async-stripe", branch = "next" }
+async-stripe-checkout = { git = "https://github.com/arlyon/async-stripe", branch = "next" }
+async-stripe-core = { git = "https://github.com/arlyon/async-stripe", branch = "next", features = [
+    "payment_intent",
+] }
+async-stripe-types = { git = "https://github.com/arlyon/async-stripe", branch = "next" }
+async-stripe-webhook = { git = "https://github.com/arlyon/async-stripe", branch = "next", features = ["async-stripe-checkout"]}
