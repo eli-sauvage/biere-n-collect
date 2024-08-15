@@ -3,7 +3,6 @@ import { reactive, ref, type Ref } from 'vue';
 import ProductVue from './components/ProductView.vue';
 import { Cart, type Product, type ProductId } from './types';
 import CartVue from './components/CartView.vue';
-import { isExternalModuleNameRelative } from 'typescript';
 let prods: Ref<Product[]> = ref([]);
 let cart: Ref<Cart> = ref(new Cart());
 (async () => {
