@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/app/lhavrais-pay/target \
 
 FROM nginx:1-alpine
 
-COPY --from=builder /app/dist /usr/share/nginx/html;
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 COPY nginx.conf /etc/nginx/nginx.conf
 
