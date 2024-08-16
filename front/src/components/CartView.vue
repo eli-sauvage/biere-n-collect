@@ -1,28 +1,18 @@
 <script setup lang="ts">
-import type { Cart, Product, ProductId } from '@/types';
+import { f_price, type Cart, type Product, type ProductId } from '@/types';
 import Button from "primevue/button"
-import InputNumber from 'primevue/inputnumber';
+import Tag from 'primevue/tag';
 let props = defineProps<{ cart: Cart }>();
-defineEmits<{ updateCart: [ProductId, number], validate: [] }>()
+defineEmits<{ validate: [] }>()
 </script>
 <template>
     <div class="cart">
         <div v-for="(elem, index) in cart.elems_with_subtotal()" class="item">
-            <p class="product-name">{{ elem.product.name }}</p>
-            <InputNumber :model-value="cart.elements[index].quantity" inputId="horizontal-buttons" showButtons
-                buttonLayout="horizontal" :step="1" fluid class="input-buttons" focused="false">
-                <template #incrementbutton>
-                    <Button icon="pi pi-plus" severity="secondary" class="increment"
-                        @click="(e) => { $emit('updateCart', elem.product.product_id, cart.elements[index].quantity + 1); e.preventDefault() }"></Button>
-                </template>
-                <template #decrementbutton="test">
-                    <Button :icon="elem.quantity > 1 ? 'pi pi-minus' : 'pi pi-trash'" severity="secondary"
-                        class="decrement"
-                        @click="(e) => { $emit('updateCart', elem.product.product_id, cart.elements[index].quantity - 1); e.preventDefault() }"></Button>
-                </template>
-            </InputNumber>
-            <p class="subtotal">{{ (cart.elems_with_subtotal()[index].subtotal / 100).toFixed(2) + " €" }}</p>
-            <!-- <Button class="remove" @click="$emit('removeFromCart', elem.product.product_id)">-</Button> -->
+                <p class="product-name">{{ elem.cart_element.product.name }}</p>
+            <div class="name-quantity">
+                <Tag :value="'x' + elem.cart_element.quantity"></Tag>
+            <p class="subtotal">{{ f_price(cart.elems_with_subtotal()[index].subtotal) }}</p>
+            </div>
         </div>
         <div class="button">
             <Button class="valider" @click="$emit('validate')" :badge="'Total: ' + cart.get_total()"
@@ -39,12 +29,18 @@ defineEmits<{ updateCart: [ProductId, number], validate: [] }>()
 
 .item {
     display: flex;
-    margin: 10px 0;
-    justify-content: space-evenly;
+    width: 50vw;
+    margin: 10px auto;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .product-name {
     text-transform: capitalize;
+}
+
+.name-quantity{
+    display: flex;
 }
 
 .subtotal {
@@ -56,17 +52,7 @@ defineEmits<{ updateCart: [ProductId, number], validate: [] }>()
     width: 50%;
 }
 
-.increment {
-    order: 3;
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-}
 
-.decrement {
-    order: 1;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-}
 
 .item-content {
     margin: 0;

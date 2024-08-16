@@ -9,6 +9,7 @@ import PrimeVue from "primevue/config";
 import Aura from "@primevue/themes/aura";
 import ToastService from "primevue/toastservice"
 import { definePreset } from '@primevue/themes';
+import Buy from './Buy.vue';
 
 if (import.meta.env.VITE_SITE_URL == undefined) {
     throw Error(`no SITE URL specified in env`)
@@ -28,6 +29,7 @@ if (import.meta.env.VITE_API_URL == undefined) {
 
 const routes = [
     { path: '/', component: () => import('./Buy.vue') },
+    { path: '/', component: Buy},
     { path: '/admin', component: () => import("./Admin.vue") },
     { path: '/checkout', component: () => import("./components/pay/SrCheckoutForm.vue") },
     { path: '/return', component: () => import("./components/pay/SrReturn.vue") }

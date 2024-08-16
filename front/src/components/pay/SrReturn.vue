@@ -30,7 +30,7 @@ onMounted(async () => {
         messages.value.push(error.message || "undef error");
     }
 
-    if (!paymentIntent){
+    if (!paymentIntent) {
         messages.value.push("payment intent in undef")
         return
     }
@@ -40,12 +40,7 @@ onMounted(async () => {
 </script>
 
 <template>
-
-    <body>
-        <main>
-            <a href="/">home</a>
-            <h1>Thank you!</h1>
-            <sr-messages v-if="clientSecret" :messages="messages" />
-        </main>
-    </body>
+    <a href="/">home</a>
+    <h1>Thank you!</h1>
+    <sr-messages v-if="clientSecret" :messages="messages" />
 </template>

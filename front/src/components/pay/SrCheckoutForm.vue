@@ -3,7 +3,9 @@ import { ref, onMounted, type Ref } from "vue";
 import { loadStripe } from "@stripe/stripe-js";
 import type { Stripe, StripeElement, StripeElements } from "@stripe/stripe-js";
 import SrMessages from "./SrMessages.vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+import { f_price } from "@/types";
+import Button from "primevue/button";
 // let props = defineProps<{ order_id: number }>();
 let order_id = useRoute().query.order_id
 console.log("-----")
@@ -27,7 +29,7 @@ onMounted(async () => {
 
         const intent_res = await fetch(`${import.meta.env.VITE_API_URL}/create-payment-intent?order_id=${order_id}`).then((res) => res.json());
         let clientSecret = intent_res.clientSecret as string;
-        total_price.value = (intent_res.total_price as number / 100).toFixed(2) + "€";
+        total_price.value = f_price(intent_res.total_price as number);
 
         // messages.value.push(`Client secret returned.`);
 
@@ -68,10 +70,17 @@ const handleSubmit = async () => {
 
     isLoading.value = false;
 }
+
+let router = useRouter();
+function return_home() {
+    router.push({ path: "/" })
+    // router.push({ path: "/", query: { continue_order: order_id } })
+}
 </script>
 <template>
+    <Button icon="pi pi-home" severity="secondary" class="return" @click="return_home"></Button>
     <h1>Paiement</h1>
-    <div class="container">
+    <div class="form-container">
         <h2>Total à payer : {{ total_price }}</h2>
 
         <form id="payment-form" @submit.prevent="handleSubmit">
@@ -86,16 +95,26 @@ const handleSubmit = async () => {
 </template>
 
 <style scoped>
-h1{
+h1 {
     text-align: center;
+    flex-grow: 1;
 }
-.container {
+
+.return {
+    position: fixed;
+    top: 30px;
+    left: 30px;
+}
+
+.form-container {
     background-color: #1b6589;
     margin: 3%;
     padding: 3%;
     border-radius: 10px;
 }
-#submit{
+
+
+#submit {
     margin-top: 40px;
     width: 100%;
     padding: 10px;
