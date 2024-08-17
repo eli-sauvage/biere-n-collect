@@ -1,23 +1,14 @@
-use crate::errors::{Error, OrderError};
-use rocket::serde::{Deserialize, Serialize};
+use crate::{
+    errors::{ServerError, UpdateStockError},
+    users::user::{Role, User},
+};
+use rocket::{
+    serde::json::{json, Json, Value},
+    State,
+};
+use serde::{Deserialize, Serialize};
 use sqlx::{MySql, Pool};
 use tokio::sync::Semaphore;
-
-//TODO: dynamique, pour l'instant => que des pintes
-const VOLUME_PER_ITEM: f32 = 0.5;
-
-#[derive(Deserialize, Clone, Debug)]
-#[serde(crate = "rocket::serde")]
-struct CartElement {
-    product_id: u32,
-    quantity: u8,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-#[serde(crate = "rocket::serde")]
-pub struct IncomingOrder {
-    cart: Vec<CartElement>,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Stock {
@@ -27,25 +18,12 @@ pub struct Stock {
     pub price: i32,
 }
 
-pub async fn get_all_stocks(pool: &Pool<MySql>) -> Result<Vec<Stock>, Error> {
-    let products = sqlx::query_as!(
-        Stock,
-        "SELECT name, stock, product_id, price FROM Stocks
-                INNER JOIN ProductTypes ON Stocks.product_id = ProductTypes.id"
-    )
-    .fetch_all(pool)
-    .await
-    .map_err(Error::Sqlx)?;
-
-    Ok(products)
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct CartValidationResponse {
-    pub order_id: u64,
-}
+// #[derive(Serialize, Deserialize)]
+// pub struct CartValidationResponse {
+//     pub order_id: OrderId,
+// }
 pub struct StockManager {
-    updating_stock: Semaphore,
+    pub updating_stock: Semaphore,
 }
 impl StockManager {
     pub fn new() -> StockManager {
@@ -53,73 +31,58 @@ impl StockManager {
             updating_stock: Semaphore::new(1),
         }
     }
+    pub async fn get_all_stocks(pool: &Pool<MySql>) -> Result<Vec<Stock>, ServerError> {
+        let products = sqlx::query_as!(
+            Stock,
+            "SELECT name, stock, product_id, price FROM Stocks
+                INNER JOIN ProductTypes ON Stocks.product_id = ProductTypes.id"
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(ServerError::Sqlx)?;
 
-    pub async fn process_order(
+        Ok(products)
+    }
+
+    pub async fn update_stock(
         &self,
         pool: &Pool<MySql>,
-        order: IncomingOrder,
-    ) -> Result<u64, Error> {
+        product_id: u32,
+        new_quantity: u32,
+    ) -> Result<(), ServerError> {
         let permit = self.updating_stock.acquire().await;
-        let stock = get_all_stocks(pool).await?;
-        for cart_element in &order.cart {
-            if let Some(stock_for_item) = stock
-                .iter()
-                .find(|stock_item| stock_item.product_id == cart_element.product_id)
-            {
-                if stock_for_item.stock < cart_element.quantity as f32 * VOLUME_PER_ITEM {
-                    return Err(Error::Order(OrderError::NotEnoughStock(
-                        stock_for_item.name.clone(),
-                        stock_for_item.product_id,
-                    )));
-                }
-            } else {
-                return Err(Error::Order(OrderError::ProductNotFound(
-                    cart_element.product_id,
-                )));
-            }
-        }
-
-        // let total_price = order.cart.iter().fold(0.0, |acc, cart_elem| {
-        //     if let Some(stock_for_item) = stock
-        //         .iter()
-        //         .find(|stock_item| stock_item.product_id == cart_elem.product_id)
-        //     {
-        //         acc + stock_for_item.price * cart_elem.quantity as f32
-        //     } else {
-        //         acc
-        //     }
-        // });
-
-        //the cart is now validated (correct id and quantities)
-        let mut pool_transaction = pool.begin().await?;
-        let order_id = sqlx::query!(
-            "INSERT INTO Orders (validated, user_email) VALUES(false, ?)",
-            "test@example.com"
+        sqlx::query!(
+            "UPDATE Stocks SET stock = ? WHERE product_id = ?",
+            new_quantity,
+            product_id
         )
-        .execute(&mut *pool_transaction)
-        .await?
-        .last_insert_id();
-        for cart_element in &order.cart {
-            sqlx::query!(
-                "INSERT INTO OrderDetails (order_id, product_id, quantity) VALUES (?, ?, ?)",
-                order_id,
-                cart_element.product_id,
-                cart_element.quantity
-            )
-            .execute(&mut *pool_transaction)
-            .await?;
-
-            sqlx::query!(
-                "UPDATE Stocks SET stock = stock - ? WHERE product_id = ?",
-                cart_element.quantity,
-                cart_element.product_id
-            )
-            .execute(&mut *pool_transaction)
-            .await?;
-        }
-        pool_transaction.commit().await?;
-
+        .execute(pool)
+        .await?;
         drop(permit);
-        Ok(order_id)
+        Ok(())
     }
+}
+
+#[post("/update?<product_id>&<new_quantity>")]
+pub async fn update_stock(
+    user: User,
+    pool: &State<Pool<MySql>>,
+    stock_manager: &State<StockManager>,
+    product_id: u32,
+    new_quantity: u32,
+) -> Result<Json<Value>, UpdateStockError> {
+    if user.role != Role::Admin {
+        return Err(UpdateStockError::NotAdmin(user.email.clone()));
+    }
+
+    stock_manager
+        .update_stock(pool, product_id, new_quantity)
+        .await?;
+    Ok(Json(json!({"success": true})))
+}
+
+#[get("/get")]
+pub async fn get_stocks(pool: &State<Pool<MySql>>) -> Result<Json<Vec<Stock>>, ServerError> {
+    let p = StockManager::get_all_stocks(pool).await?;
+    Ok(Json(p))
 }

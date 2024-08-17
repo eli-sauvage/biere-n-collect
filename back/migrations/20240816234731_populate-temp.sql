@@ -16,7 +16,7 @@ INSERT INTO Stocks (product_id, stock) VALUES(
 
 INSERT INTO Stocks (product_id, stock) VALUES(
     (SELECT id from ProductTypes WHERE name = "blonde"),
-    500
+    11
 );
 
 
@@ -24,3 +24,7 @@ INSERT INTO Stocks (product_id, stock) VALUES(
     (SELECT id from ProductTypes WHERE name = "noël"),
     0
 );
+
+
+INSERT INTO Users (email, role) VALUES ("elicolh@gmail.com", "admin");
+INSERT INTO Users (email, role) VALUES ("eli-sauvage@utt.fr", "waiter");

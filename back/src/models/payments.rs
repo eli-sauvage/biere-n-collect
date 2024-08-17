@@ -20,10 +20,9 @@ use stripe_core::{
         CreatePaymentIntent, CreatePaymentIntentAutomaticPaymentMethods,
         CreatePaymentIntentAutomaticPaymentMethodsAllowRedirects,
     },
-    PaymentIntent,
 };
 use stripe_types::Currency;
-use stripe_webhook::{Webhook, EventType, EventObject};
+use stripe_webhook::{EventObject, EventType, Webhook};
 
 use super::orders::Order;
 
@@ -104,7 +103,7 @@ pub async fn stripe_webhooks(stripe_signature: StripeSignature<'_>, payload: Pay
         match event.type_ {
             EventType::CheckoutSessionCompleted => {
                 if let EventObject::CheckoutSessionCompleted(_) = event.data.object {
-                        Status::Accepted
+                    Status::Accepted
                 } else {
                     Status::BadRequest
                 }
