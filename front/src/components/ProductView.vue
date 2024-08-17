@@ -83,8 +83,6 @@ function allow_add_product(quantity: number):boolean{
     border-bottom-right-radius: 0;
 }
 
-.add-to-cart {}
-
 .stock {
     text-align: center;
     margin: 0;

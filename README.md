@@ -10,6 +10,8 @@
 - gestion stock -> commande annulée ou confirmée
 - user accounts
 - add product types
+    - gestion des pintes/demies
+    - gestion images de produits
 - mark product type as old -> won't show to client
 - max order amount
 - mobile -> prevent zoom on double click

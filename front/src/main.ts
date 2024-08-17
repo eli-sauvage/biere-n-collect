@@ -29,8 +29,8 @@ if (import.meta.env.VITE_API_URL == undefined) {
 
 const routes = [
     { path: '/', component: () => import('./Buy.vue') },
-    { path: '/', component: Buy},
     { path: '/admin', component: () => import("./Admin.vue") },
+    { path: '/login', component: () => import("./components/Login.vue") },
     { path: '/checkout', component: () => import("./components/pay/SrCheckoutForm.vue") },
     { path: '/return', component: () => import("./components/pay/SrReturn.vue") }
 ]
