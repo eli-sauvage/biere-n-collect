@@ -6,7 +6,7 @@ import ConfirmPopup from 'primevue/confirmpopup';
 import ToggleSwitch from 'primevue/toggleswitch';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
-let props = defineProps<{ product: Product }>();
+let props = defineProps<{ product: Product, first?: boolean, last?:boolean }>();
 let emit = defineEmits<{
     requestEdit: [product: Product],
     requestDelete: [product_id: number],
@@ -40,28 +40,26 @@ const confirm_delete = (event: Event) => {
 <template>
 
     <div class="prod">
-        <div class="btns-move">
-            <Button icon="pi pi-arrow-up" severity="secondary"
-                @click="$emit('requestMove', product.product_id, 'up')"></Button>
-            <Button icon="pi pi-arrow-down" severity="secondary"
+        <div class="left">
+            <Button icon="pi pi-arrow-up" severity="secondary" v-if="!first"
+                @click="$emit('requestMove', product.product_id, 'up')" size="small"></Button>
+            <img src="https://placehold.co/100/png" />
+            <Button icon="pi pi-arrow-down" severity="secondary" size="small" v-if="!last"
                 @click="$emit('requestMove', product.product_id, 'down')"></Button>
         </div>
-        <div class="img">
-            <img src="https://placehold.co/100/png" />
-        </div>
-        <div class="infos">
+        <div class="right">
             <div class="titre-price">
                 <p class="titre">{{ product.name }}</p>
                 <Tag :value="f_price(product.price)"></Tag>
             </div>
             <p class="stock">stock: {{ product.quantity }}</p>
             <div class="footer">
-                <div>
+                <div class="available">
                     <label for="available">Dispo</label>
                     <ToggleSwitch id="available" :modelValue="product.available"
                         @click="$emit('directEdit', { ...product, available: !product.available })" />
                 </div>
-                <div>
+                <div class="btns">
                     <ConfirmPopup></ConfirmPopup>
                     <Button icon="pi pi-trash" severity="danger" @click="confirm_delete"></Button>
                     <Button icon="pi pi-pencil" severity="primary" @click="$emit('requestEdit', product)"></Button>
@@ -72,19 +70,33 @@ const confirm_delete = (event: Event) => {
 </template>
 
 <style scoped>
-.infos {
+
+.prod {
+    /* margin: 20px auto; */
+    display: flex;
+    /* align-items: center; */
+    padding: 10px 20px;
+    border-radius: 10px;
+    background-color: #1b6589;
+    width: 80vw;
+    min-width: 30vw;
+    justify-content: center;
+}
+
+.left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    margin-right: 10px;
+}
+.right {
     margin-left: 20px;
     display: flex;
     flex-direction: column;
     justify-content: end;
     flex-grow: 1;
-}
-
-.btns-move {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    margin-right: 10px;
 }
 
 .stock {
@@ -100,11 +112,9 @@ const confirm_delete = (event: Event) => {
 
 .footer {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 10px;
-    margin-top: 10px;
+    margin: 10px 0;
 }
 .footer > div {
     display: flex;
@@ -112,6 +122,13 @@ const confirm_delete = (event: Event) => {
     align-items: center;
     justify-content: end;
     gap: 10px;
+}
+
+.footer > .available{
+    justify-content: start;
+}
+.footer > .btns {
+    justify-content: end;
 }
 
 .titre-price {
@@ -124,15 +141,4 @@ const confirm_delete = (event: Event) => {
     margin-top: 10px;
 }
 
-.prod {
-    /* margin: 20px auto; */
-    display: flex;
-    /* align-items: center; */
-    padding: 20px;
-    border-radius: 10px;
-    background-color: #1b6589;
-    width: 80vw;
-    min-width: 30vw;
-    justify-content: center;
-}
 </style>

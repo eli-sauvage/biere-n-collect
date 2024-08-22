@@ -29,7 +29,7 @@ function allow_add_product(quantity: number):boolean{
         <div class="img">
             <img src="https://placehold.co/100/png" />
         </div>
-        <div class="infos">
+        <div class="right">
             <div class="titre-price">
                 <p class="titre">{{ cardElement.product.name }}</p>
                 <Tag v-if="cardElement.quantity > 0" :value="f_price(cardElement.product.price)"></Tag>
@@ -62,7 +62,7 @@ function allow_add_product(quantity: number):boolean{
     margin: 0 10px 0 0;
 } */
 
-.infos {
+.right {
     margin-left: 20px;
     display: flex;
     flex-direction: column;

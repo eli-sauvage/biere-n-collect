@@ -62,9 +62,9 @@ async function moveProduct(product_id: number, direction: "up" | "down") {
         <Button label="Ajouter un produit" icon="pi pi-plus" class="btn-add-product"
             @click="requestCreateProduct"></Button>
     </div>
-    <ProductViewAdmin v-for="product in stock" :product="product" class="product"
-        @request-edit="(prod) => editing_product = prod" @request-delete="delete_product" @request-move="moveProduct"
-        @direct-edit="saveEdit" />
+    <ProductViewAdmin v-for="(product, index) in stock" :product="product" class="product" :first="index == 0"
+        :last="index == stock.length - 1" @request-edit="(prod) => editing_product = prod"
+        @request-delete="delete_product" @request-move="moveProduct" @direct-edit="saveEdit" />
 </template>
 
 
