@@ -6,7 +6,7 @@ import Tag from 'primevue/tag';
 let props = defineProps<{ cardElement: CartElement }>();
 
 function display_stock():string{
-    let stock = props.cardElement.product.stock;
+    let stock = props.cardElement.product.quantity;
     if(stock == 0){
         return "plus de stock !"
     }else if(stock < 10){
@@ -18,7 +18,7 @@ function display_stock():string{
 
 function allow_add_product(quantity: number):boolean{
     let new_quantity = props.cardElement.quantity + quantity;
-    let stock = props.cardElement.product.stock;
+    let stock = props.cardElement.product.quantity;
     return stock-new_quantity >= 0;
 }
 
@@ -50,7 +50,7 @@ function allow_add_product(quantity: number):boolean{
                 </InputNumber>
                 <Tag v-if="cardElement.quantity == 0" :value="f_price(cardElement.product.price)"></Tag>
                 <Button v-if="cardElement.quantity == 0" icon="pi pi-plus" severity="primary" class="add-to-cart"
-                    @click="(e) => { cardElement.add(1); e.preventDefault() }" :disabled="cardElement.product.stock == 0"></Button>
+                    @click="(e) => { cardElement.add(1); e.preventDefault() }" :disabled="cardElement.product.quantity == 0"></Button>
             </div>
         </div>
     </div>

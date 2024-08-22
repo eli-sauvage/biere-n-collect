@@ -5,8 +5,9 @@ export type ProductId = number;
 export type Product = {
     product_id: ProductId,
     name: string,
-    stock: number,
-    price: number
+    quantity: number,
+    price: number,
+    available: boolean
 };
 
 export class CartElement {

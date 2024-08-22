@@ -7,7 +7,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use rocket::{
     http::{Cookie, CookieJar},
     serde::json::{json, Json, Value},
-    State
+    State,
 };
 use sqlx::{types::time::OffsetDateTime, MySql, Pool};
 use std::{collections::HashMap, time::Duration};
@@ -139,10 +139,17 @@ pub async fn verify_challenge(
         .verify_challenge(pool, &email, &code)
         .await?;
 
-    let cookie = Cookie::build(("session", session.uuid.to_string()))
-        .expires(session.expires)
-        .secure(true);
+    let cookie = Cookie::build(("session", session.uuid.to_string())).expires(session.expires).secure(true);
 
     cookies.add(cookie);
     Ok(Json(json!({"success": true})))
+}
+
+#[get("/get_auth")]
+pub async fn get_auth(user: Option<User>) -> Json<Value> {
+    if let Some(user) = user {
+        Json(json!({"authenticated": true, "role": user.role.to_string()}))
+    } else {
+        Json(json!({"authenticated": false}))
+    }
 }

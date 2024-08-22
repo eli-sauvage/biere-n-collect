@@ -7,9 +7,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import PrimeVue from "primevue/config";
 import Aura from "@primevue/themes/aura";
-import ToastService from "primevue/toastservice"
+import ToastService from "primevue/toastservice";
+import ConfirmationService from 'primevue/confirmationservice';
 import { definePreset } from '@primevue/themes';
-import Buy from './Buy.vue';
+import Buy from './Home.vue';
 
 if (import.meta.env.VITE_SITE_URL == undefined) {
     throw Error(`no SITE URL specified in env`)
@@ -28,7 +29,8 @@ if (import.meta.env.VITE_API_URL == undefined) {
 
 
 const routes = [
-    { path: '/', component: () => import('./Buy.vue') },
+    { path: '/', component: () => import('./Home.vue') },
+    { path: '/serveur', component: () => import("./Serveur.vue") },
     { path: '/admin', component: () => import("./Admin.vue") },
     { path: '/login', component: () => import("./components/Login.vue") },
     { path: '/checkout', component: () => import("./components/pay/SrCheckoutForm.vue") },
@@ -68,5 +70,6 @@ createApp(App)
             }
         }
     )
+    .use(ConfirmationService)
     .use(ToastService)
     .mount('#app')

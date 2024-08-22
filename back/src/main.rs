@@ -6,12 +6,17 @@ mod users;
 extern crate rocket;
 
 use errors::ServerError;
-use models::stock_manager::{get_stocks, update_stock, StockManager};
+use models::stock_manager::{
+    move_stock, delete_stock, get_all_stocks, get_stocks, insert_stock, update_stock,
+    StockManager,
+};
 use models::{
     orders::validate_cart,
     payments::{create_payment_intent, get_config, stripe_webhooks, PaymentManager},
 };
 use rocket_cors::{AllowedOrigins, CorsOptions};
+use users::challenge::get_auth;
+use users::session::end_session;
 use users::{
     challenge::{create_challenge, verify_challenge, ChallengeManager},
     mail::MailManager,
@@ -27,7 +32,7 @@ async fn main() -> Result<(), ServerError> {
     let challenge_manager = ChallengeManager::new();
 
     let cors = CorsOptions::default()
-        .allowed_origins(AllowedOrigins::all())
+        .allowed_origins(AllowedOrigins::All)
         .allow_credentials(true);
 
     let _rocket = rocket::build()
@@ -39,19 +44,25 @@ async fn main() -> Result<(), ServerError> {
         .attach(cors.to_cors().unwrap())
         .mount(
             "/api",
-            routes![
-                validate_cart,
-                get_config,
-                create_payment_intent,
-                stripe_webhooks
-            ],
+            routes![get_config, create_payment_intent, stripe_webhooks],
         )
         .mount("/api/order", routes![validate_cart])
-        .mount("/api/stock", routes![get_stocks, update_stock])
+        .mount(
+            "/api/stock",
+            routes![
+                get_stocks,
+                get_all_stocks,
+                update_stock,
+                insert_stock,
+                delete_stock,
+                move_stock
+            ],
+        )
         .mount(
             "/api/challenge",
-            routes![create_challenge, verify_challenge],
+            routes![create_challenge, verify_challenge, get_auth],
         )
+        .mount("/api/session", routes![end_session])
         .launch()
         .await
         .map_err(ServerError::Rocket)?;

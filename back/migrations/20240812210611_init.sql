@@ -1,8 +1,11 @@
-CREATE TABLE IF NOT EXISTS ProductTypes
+CREATE TABLE IF NOT EXISTS Stock
 (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    product_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    position INT UNSIGNED NOT NULL,
     price INT NOT NULL,
-    name VARCHAR(255) NOT NULL
+    name VARCHAR(255) NOT NULL,
+    quantity INT UNSIGNED NOT NULL,
+    available BOOLEAN NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS Orders
@@ -21,7 +24,7 @@ CREATE TABLE IF NOT EXISTS OrderDetails
     product_id INT UNSIGNED NOT NULL,
     quantity FLOAT UNSIGNED NOT NULL,
     CONSTRAINT `fk_product_id`
-        FOREIGN KEY (product_id) REFERENCES ProductTypes (id)
+        FOREIGN KEY (product_id) REFERENCES Stock (product_id)
         ON DELETE RESTRICT
         ON UPDATE RESTRICT,
     CONSTRAINT `fk_order_id`
@@ -29,17 +32,6 @@ CREATE TABLE IF NOT EXISTS OrderDetails
         ON DELETE CASCADE
         ON UPDATE RESTRICT,
     CONSTRAINT `uq_order_id_product_id` UNIQUE (order_id, product_id)
-);
-
-
-CREATE TABLE IF NOT EXISTS Stocks
-(
-    product_id INT UNSIGNED NOT NULL UNIQUE,
-    stock FLOAT UNSIGNED NOT NULL,
-    CONSTRAINT `fk_product_id_1`
-        FOREIGN KEY (product_id) REFERENCES ProductTypes (id)
-        ON DELETE RESTRICT
-        ON UPDATE RESTRICT
 );
 
 
@@ -52,7 +44,8 @@ CREATE TABLE IF NOT EXISTS Users
 
 CREATE TABLE IF NOT EXISTS Sessions
 (
-    user_id INT UNSIGNED PRIMARY KEY NOT NULL,
+    id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
     expires TIMESTAMP NOT NULL,
     uuid VARCHAR(36) NOT NULL,
     CONSTRAINT `fk_user_id_session`

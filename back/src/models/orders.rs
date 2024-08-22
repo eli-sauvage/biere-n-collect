@@ -8,9 +8,6 @@ use sqlx::{types::time::OffsetDateTime, MySql, Pool, Transaction};
 
 use super::stock_manager::StockManager;
 
-//TODO: dynamique, pour l'instant => que des pintes
-const VOLUME_PER_ITEM: f32 = 0.5;
-
 #[derive(Deserialize, Clone, Debug)]
 #[serde(crate = "rocket::serde")]
 struct CartElement {
@@ -55,7 +52,7 @@ impl Order {
                 .iter()
                 .find(|stock_item| stock_item.product_id == cart_element.product_id)
             {
-                if stock_for_item.stock < cart_element.quantity as f32 * VOLUME_PER_ITEM {
+                if stock_for_item.quantity < cart_element.quantity as u32 {
                     return Err(OrderProcessError::NotEnoughStock(
                         stock_for_item.name.clone(),
                         stock_for_item.product_id,
@@ -88,7 +85,7 @@ impl Order {
             .map_err(ServerError::Sqlx)?;
 
             sqlx::query!(
-                "UPDATE Stocks SET stock = stock - ? WHERE product_id = ?",
+                "UPDATE Stock SET quantity = quantity - ? WHERE product_id = ?",
                 cart_element.quantity,
                 cart_element.product_id
             )
@@ -113,7 +110,7 @@ impl Order {
 impl Order {
     pub async fn get_full_price(&self, pool: &Pool<MySql>) -> Result<i64, ServerError> {
         let total = sqlx::query!(
-            "SELECT cast(SUM(price * quantity) as int) as result from OrderDetails INNER JOIN ProductTypes ON OrderDetails.product_id = ProductTypes.id WHERE order_id = ? ;",
+            "SELECT cast(SUM(price * OrderDetails.quantity) as int) as result from OrderDetails INNER JOIN Stock ON OrderDetails.product_id = Stock.product_id WHERE order_id = ? ;",
             self.id
         ).fetch_one(pool).await.map_err(ServerError::Sqlx)?;
 

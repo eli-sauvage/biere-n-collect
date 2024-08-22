@@ -32,6 +32,8 @@ impl<'r> Responder<'r, 'static> for ServerError {
 pub enum UpdateStockError {
     #[error("l'utilisateur {0} n'a pas le role admin")]
     NotAdmin(String),
+    #[error("le stock avec l'id {0} n'existe pas")]
+    StockNotFound(u32),
     #[error("server error")]
     ServerError(#[from] ServerError),
 }
@@ -40,6 +42,63 @@ impl<'r> Responder<'r, 'static> for UpdateStockError {
     fn respond_to(self, request: &'r rocket::Request<'_>) -> response::Result<'static> {
         let status = match &self {
             Self::NotAdmin(_) => Status::Unauthorized,
+            Self::StockNotFound(_) => Status::NotFound,
+            Self::ServerError(e) => {
+                eprintln!("{e:?}");
+                Status::InternalServerError
+            }
+        };
+        let json = Json(json! ({"error": self.to_string()})).respond_to(request)?;
+        Response::build_from(json).status(status).ok()
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum GetAllStockError {
+    #[error("l'utilisateur {0} n'a pas le role admin")]
+    NotAdmin(String),
+    #[error("server error")]
+    ServerError(#[from] ServerError),
+}
+
+impl<'r> Responder<'r, 'static> for GetAllStockError {
+    fn respond_to(self, request: &'r rocket::Request<'_>) -> response::Result<'static> {
+        let status = match &self {
+            Self::NotAdmin(_) => Status::Unauthorized,
+            Self::ServerError(e) => {
+                eprintln!("{e:?}");
+                Status::InternalServerError
+            }
+        };
+        let json = Json(json! ({"error": self.to_string()})).respond_to(request)?;
+        Response::build_from(json).status(status).ok()
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum ChangeStockPositionError {
+    #[error("l'utilisateur {0} n'a pas le role admin")]
+    NotAdmin(String),
+    #[error("le stock avec l'id {0} n'existe pas")]
+    StockNotFound(u32),
+    #[error("la direction {0} n'existe pas (\"up\" ou \"down\" uniquement)")]
+    DirectionDoesNotExist(String),
+    #[error("stock with id {0} cannot move up")]
+    CannotMoveUp(u32),
+    #[error("stock with id {0} cannot move down")]
+    CannotMoveDown(u32),
+    #[error("server error")]
+    ServerError(#[from] ServerError),
+}
+
+impl<'r> Responder<'r, 'static> for ChangeStockPositionError {
+    fn respond_to(self, request: &'r rocket::Request<'_>) -> response::Result<'static> {
+        let status = match &self {
+            Self::NotAdmin(_) => Status::Unauthorized,
+            Self::StockNotFound(_) => Status::NotFound,
+            Self::DirectionDoesNotExist(_) | Self::CannotMoveUp(_) | Self::CannotMoveDown(_) => {
+                Status::BadRequest
+            }
             Self::ServerError(e) => {
                 eprintln!("{e:?}");
                 Status::InternalServerError
@@ -127,7 +186,22 @@ impl<'r> Responder<'r, 'static> for CreateChallengeError {
 }
 
 #[derive(Error, Debug)]
-pub enum GetSessionError {
+pub enum EndSessionError {
     #[error("no existing session for user {0}")]
     NoSession(String),
+    #[error("server error")]
+    ServerError(#[from] ServerError),
+}
+impl<'r> Responder<'r, 'static> for EndSessionError {
+    fn respond_to(self, request: &'r rocket::Request<'_>) -> response::Result<'static> {
+        let status = match &self {
+            Self::NoSession(_) => Status::BadRequest,
+            Self::ServerError(e) => {
+                eprintln!("{e:?}");
+                Status::InternalServerError
+            }
+        };
+        let json = Json(json! ({"error": self.to_string()})).respond_to(request)?;
+        Response::build_from(json).status(status).ok()
+    }
 }

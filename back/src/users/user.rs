@@ -48,7 +48,7 @@ impl User {
             .await
             .map_err(ServerError::Sqlx)?;
         let session = if user_opt.is_some() {
-            Session::get_from_email(pool, &email).await?.ok()
+            Session::get_from_email(pool, &email).await?
         } else {
             None
         };

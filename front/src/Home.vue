@@ -5,11 +5,10 @@ import { Cart, type Product, type ProductId } from './types';
 import CartVue from './components/CartView.vue';
 import Button from "primevue/button"
 import Drawer from 'primevue/drawer';
-let props = defineProps<{ cart: Cart | undefined }>()
-let cart: Ref<Cart> = props.cart ? ref(props.cart) : ref(new Cart([]));
+let cart: Ref<Cart> = ref(new Cart([]));
 let visible = ref(false);
 (async () => {
-    cart.value = new Cart(await (await fetch(`${import.meta.env.VITE_API_URL}/stocks`)).json());
+    cart.value = new Cart(await (await fetch(`${import.meta.env.VITE_API_URL}/stock/get`)).json());
 })();
 
 </script>
