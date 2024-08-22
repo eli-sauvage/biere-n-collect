@@ -7,8 +7,7 @@ extern crate rocket;
 
 use errors::ServerError;
 use models::stock_manager::{
-    move_stock, delete_stock, get_all_stocks, get_stocks, insert_stock, update_stock,
-    StockManager,
+    delete_stock, get_all_stocks, get_stocks, insert_stock, move_stock, update_stock, StockManager,
 };
 use models::{
     orders::validate_cart,

@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "INSERT INTO Stock (name, price, quantity, available, position) VALUES (?, ?, ?, ?, 0)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "8c6d1e0daabd4143696608af495fc1d1351e4aefa12d5238bdd536090e77a177"
+}

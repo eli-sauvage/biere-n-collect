@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT cast(SUM(price * quantity) as int) as result from OrderDetails INNER JOIN ProductTypes ON OrderDetails.product_id = ProductTypes.id WHERE order_id = ? ;",
+  "query": "SELECT cast(SUM(price * OrderDetails.quantity) as int) as result from OrderDetails INNER JOIN Stock ON OrderDetails.product_id = Stock.product_id WHERE order_id = ? ;",
   "describe": {
     "columns": [
       {
@@ -20,5 +20,5 @@
       true
     ]
   },
-  "hash": "5268f99c2099806a32370ac8ea01b020f1d65e04ab13a50dd35d37d1e0fcf5df"
+  "hash": "f84caa9276d8547a2d3c908b42f3171e8af15df51b7fc2f6bc3085ca582a25fc"
 }

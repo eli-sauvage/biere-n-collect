@@ -94,11 +94,7 @@ impl StockManager {
         Ok(())
     }
 
-    async fn delete_stock(
-        &self,
-        pool: &Pool<MySql>,
-        product_id: u32,
-    ) -> Result<(), ServerError> {
+    async fn delete_stock(&self, pool: &Pool<MySql>, product_id: u32) -> Result<(), ServerError> {
         let permit = self.updating_stock.acquire().await;
         let old_position = sqlx::query!(
             "SELECT position from Stock WHERE product_id = ?",

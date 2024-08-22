@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT name, stock, product_id, price FROM Stocks\n                INNER JOIN ProductTypes ON Stocks.product_id = ProductTypes.id",
+  "query": "SELECT name, quantity, product_id, price, available as \"available!: bool\" FROM Stock ORDER BY position",
   "describe": {
     "columns": [
       {
@@ -14,11 +14,11 @@
       },
       {
         "ordinal": 1,
-        "name": "stock",
+        "name": "quantity",
         "type_info": {
-          "type": "Float",
+          "type": "Long",
           "flags": "NOT_NULL | UNSIGNED | NO_DEFAULT_VALUE",
-          "max_size": 12
+          "max_size": 10
         }
       },
       {
@@ -26,7 +26,7 @@
         "name": "product_id",
         "type_info": {
           "type": "Long",
-          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
           "max_size": 10
         }
       },
@@ -38,6 +38,15 @@
           "flags": "NOT_NULL | NO_DEFAULT_VALUE",
           "max_size": 11
         }
+      },
+      {
+        "ordinal": 4,
+        "name": "available!: bool",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1
+        }
       }
     ],
     "parameters": {
@@ -47,8 +56,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "129f71a10b183d57f48b181cf32b515b3b70ed5c713c1a7e9ca010d1075de579"
+  "hash": "eb065edc9d090694767547410cd8d71b6014c2077c8a113636a32d005b08f201"
 }

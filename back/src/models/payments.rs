@@ -15,11 +15,9 @@ use sqlx::{MySql, Pool};
 // };
 use stripe::Client;
 use stripe_checkout::CheckoutSession;
-use stripe_core::{
-    payment_intent::{
-        CreatePaymentIntent, CreatePaymentIntentAutomaticPaymentMethods,
-        CreatePaymentIntentAutomaticPaymentMethodsAllowRedirects,
-    },
+use stripe_core::payment_intent::{
+    CreatePaymentIntent, CreatePaymentIntentAutomaticPaymentMethods,
+    CreatePaymentIntentAutomaticPaymentMethodsAllowRedirects,
 };
 use stripe_types::Currency;
 use stripe_webhook::{EventObject, EventType, Webhook};

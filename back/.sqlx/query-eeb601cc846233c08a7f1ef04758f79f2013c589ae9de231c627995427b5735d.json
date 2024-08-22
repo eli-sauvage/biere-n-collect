@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT Max(position) as max_pos from Stock",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "max_pos",
+        "type_info": {
+          "type": "Long",
+          "flags": "UNSIGNED | BINARY",
+          "max_size": 10
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "eeb601cc846233c08a7f1ef04758f79f2013c589ae9de231c627995427b5735d"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE Stock SET position = position + 1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "31ccb4fdc90353eb885ee2e6fe86b5f1503f3db5b4be5000cfe415f0a04c5495"
+}

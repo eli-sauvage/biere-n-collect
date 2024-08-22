@@ -139,7 +139,9 @@ pub async fn verify_challenge(
         .verify_challenge(pool, &email, &code)
         .await?;
 
-    let cookie = Cookie::build(("session", session.uuid.to_string())).expires(session.expires).secure(true);
+    let cookie = Cookie::build(("session", session.uuid.to_string()))
+        .expires(session.expires)
+        .secure(true);
 
     cookies.add(cookie);
     Ok(Json(json!({"success": true})))
