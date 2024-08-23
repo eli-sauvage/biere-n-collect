@@ -146,5 +146,3 @@ pub async fn verify_challenge(
     cookies.add(cookie);
     Ok(Json(json!({"success": true})))
 }
-
-

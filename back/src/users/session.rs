@@ -31,12 +31,9 @@ impl Session {
     }
 
     pub async fn delete_if_exists(pool: &Pool<MySql>, uuid: &str) -> Result<(), ServerError> {
-        sqlx::query!(
-            "DELETE FROM Sessions WHERE uuid = ?",
-            uuid
-        )
-        .execute(pool)
-        .await?;
+        sqlx::query!("DELETE FROM Sessions WHERE uuid = ?", uuid)
+            .execute(pool)
+            .await?;
         Ok(())
     }
 

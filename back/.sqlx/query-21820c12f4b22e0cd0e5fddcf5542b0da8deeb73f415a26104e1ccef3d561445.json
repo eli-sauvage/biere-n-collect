@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT uuid, expires FROM Sessions WHERE user_id = (SELECT id FROM Users WHERE email = ?)",
+  "query": "SELECT uuid, expires, email FROM Sessions INNER JOIN Users ON Sessions.user_id = Users.id WHERE Users.email = ?",
   "describe": {
     "columns": [
       {
@@ -20,6 +20,15 @@
           "flags": "NOT_NULL | UNSIGNED | BINARY | TIMESTAMP | ON_UPDATE_NOW",
           "max_size": 19
         }
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | UNIQUE_KEY | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
       }
     ],
     "parameters": {
@@ -27,8 +36,9 @@
     },
     "nullable": [
       false,
+      false,
       false
     ]
   },
-  "hash": "e52b06027caaf706a96939128725d796936905f3a7dd79e86264441c8c1fbedf"
+  "hash": "21820c12f4b22e0cd0e5fddcf5542b0da8deeb73f415a26104e1ccef3d561445"
 }

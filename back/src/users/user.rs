@@ -221,11 +221,11 @@ pub async fn delete_user(
     pool: &State<Pool<MySql>>,
     email: String,
 ) -> Result<Json<Value>, UserManagementError> {
-    let user = match user{
+    let user = match user {
         Ok(u) => u,
-        Err(e) => return Err(UserManagementError::NotAdmin(e))
+        Err(e) => return Err(UserManagementError::NotAdmin(e)),
     };
-    if user.0.email == email{
+    if user.0.email == email {
         return Err(UserManagementError::UserCannotUpdateItSelf);
     }
 
@@ -233,7 +233,7 @@ pub async fn delete_user(
         .await?
         .ok_or_else(|| UserManagementError::UserDoesNotExist(email))?;
 
-    for session in &user_to_delete.active_sessions{
+    for session in &user_to_delete.active_sessions {
         Session::delete_if_exists(pool, &session.uuid).await?;
     }
 
@@ -249,11 +249,11 @@ pub async fn update_role(
     email: String,
     new_role: String,
 ) -> Result<Json<Value>, UserManagementError> {
-    let user = match user{
+    let user = match user {
         Ok(u) => u,
-        Err(e) => return Err(UserManagementError::NotAdmin(e))
+        Err(e) => return Err(UserManagementError::NotAdmin(e)),
     };
-    if user.0.email == email{
+    if user.0.email == email {
         return Err(UserManagementError::UserCannotUpdateItSelf);
     }
 
@@ -300,11 +300,11 @@ pub async fn disconnect_user(
     pool: &State<Pool<MySql>>,
     email: String,
 ) -> Result<Json<Value>, UserManagementError> {
-    let user = match user{
+    let user = match user {
         Ok(u) => u,
-        Err(e) => return Err(UserManagementError::NotAdmin(e))
+        Err(e) => return Err(UserManagementError::NotAdmin(e)),
     };
-    if user.0.email == email{
+    if user.0.email == email {
         return Err(UserManagementError::UserCannotUpdateItSelf);
     }
 
@@ -312,7 +312,7 @@ pub async fn disconnect_user(
         .await?
         .ok_or_else(|| UserManagementError::UserDoesNotExist(email))?;
 
-    for session in &user_to_disconnect.active_sessions{
+    for session in &user_to_disconnect.active_sessions {
         Session::delete_if_exists(pool, &session.uuid).await?;
     }
 
