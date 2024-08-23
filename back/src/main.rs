@@ -14,8 +14,8 @@ use models::{
     payments::{create_payment_intent, get_config, stripe_webhooks, PaymentManager},
 };
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use users::challenge::get_auth;
-use users::session::end_session;
+use users::session::{end_sessions, get_auth};
+use users::user::{add_user, delete_user, disconnect_user, get_all_users, update_role};
 use users::{
     challenge::{create_challenge, verify_challenge, ChallengeManager},
     mail::MailManager,
@@ -61,7 +61,17 @@ async fn main() -> Result<(), ServerError> {
             "/api/challenge",
             routes![create_challenge, verify_challenge, get_auth],
         )
-        .mount("/api/session", routes![end_session])
+        .mount("/api/session", routes![end_sessions])
+        .mount(
+            "/api/users",
+            routes![
+                get_all_users,
+                delete_user,
+                update_role,
+                add_user,
+                disconnect_user
+            ],
+        )
         .launch()
         .await
         .map_err(ServerError::Rocket)?;

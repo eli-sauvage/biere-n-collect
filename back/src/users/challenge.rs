@@ -30,7 +30,7 @@ impl ChallengeManager {
         mail_manager: &State<MailManager>,
     ) -> Result<(), CreateChallengeError> {
         let mut challenges = self.challenges.write().await;
-        User::get_from_email(pool, email.to_owned())
+        User::get_from_email(pool, email)
             .await?
             .ok_or_else(|| CreateChallengeError::UserNotFound(email.to_owned()))?;
         let challenge = Challenge::new();
@@ -139,7 +139,7 @@ pub async fn verify_challenge(
         .verify_challenge(pool, &email, &code)
         .await?;
 
-    let cookie = Cookie::build(("session", session.uuid.to_string()))
+    let cookie = Cookie::build(("session", session.uuid))
         .expires(session.expires)
         .secure(true);
 
@@ -147,11 +147,4 @@ pub async fn verify_challenge(
     Ok(Json(json!({"success": true})))
 }
 
-#[get("/get_auth")]
-pub async fn get_auth(user: Option<User>) -> Json<Value> {
-    if let Some(user) = user {
-        Json(json!({"authenticated": true, "role": user.role.to_string()}))
-    } else {
-        Json(json!({"authenticated": false}))
-    }
-}
+

@@ -13,6 +13,7 @@ import Users from './components/admin/Users.vue';
 let router = useRouter();
 
 let stock: Ref<Product[]> = ref([]);
+let currentUserEmail: Ref<string> = ref("");
 
 (async () => {
     let auth_res = await fetch(`${import.meta.env.VITE_API_URL}/challenge/get_auth`, { credentials: "include" }).then((r) => r.json())
@@ -22,6 +23,7 @@ let stock: Ref<Product[]> = ref([]);
         if (auth_res.role != "admin") {
             router.push('/login')
         }
+        currentUserEmail.value = auth_res.email
     }
 })();
 
@@ -45,7 +47,7 @@ let stock: Ref<Product[]> = ref([]);
                 <Stock />
             </TabPanel>
             <TabPanel value="1">
-                <Users />
+                <Users :current-user-email="currentUserEmail" />
             </TabPanel>
         </TabPanels>
     </Tabs>

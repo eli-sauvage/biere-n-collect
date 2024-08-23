@@ -29,55 +29,8 @@ impl<'r> Responder<'r, 'static> for ServerError {
 }
 
 #[derive(Error, Debug)]
-pub enum UpdateStockError {
-    #[error("l'utilisateur {0} n'a pas le role admin")]
-    NotAdmin(String),
-    #[error("le stock avec l'id {0} n'existe pas")]
-    StockNotFound(u32),
-    #[error("server error")]
-    ServerError(#[from] ServerError),
-}
-
-impl<'r> Responder<'r, 'static> for UpdateStockError {
-    fn respond_to(self, request: &'r rocket::Request<'_>) -> response::Result<'static> {
-        let status = match &self {
-            Self::NotAdmin(_) => Status::Unauthorized,
-            Self::StockNotFound(_) => Status::NotFound,
-            Self::ServerError(e) => {
-                eprintln!("{e:?}");
-                Status::InternalServerError
-            }
-        };
-        let json = Json(json! ({"error": self.to_string()})).respond_to(request)?;
-        Response::build_from(json).status(status).ok()
-    }
-}
-
-#[derive(Error, Debug)]
-pub enum GetAllStockError {
-    #[error("l'utilisateur {0} n'a pas le role admin")]
-    NotAdmin(String),
-    #[error("server error")]
-    ServerError(#[from] ServerError),
-}
-
-impl<'r> Responder<'r, 'static> for GetAllStockError {
-    fn respond_to(self, request: &'r rocket::Request<'_>) -> response::Result<'static> {
-        let status = match &self {
-            Self::NotAdmin(_) => Status::Unauthorized,
-            Self::ServerError(e) => {
-                eprintln!("{e:?}");
-                Status::InternalServerError
-            }
-        };
-        let json = Json(json! ({"error": self.to_string()})).respond_to(request)?;
-        Response::build_from(json).status(status).ok()
-    }
-}
-
-#[derive(Error, Debug)]
-pub enum ChangeStockPositionError {
-    #[error("l'utilisateur {0} n'a pas le role admin")]
+pub enum ManageStockError {
+    #[error("user could not be verified as admin: {0}")]
     NotAdmin(String),
     #[error("le stock avec l'id {0} n'existe pas")]
     StockNotFound(u32),
@@ -91,7 +44,7 @@ pub enum ChangeStockPositionError {
     ServerError(#[from] ServerError),
 }
 
-impl<'r> Responder<'r, 'static> for ChangeStockPositionError {
+impl<'r> Responder<'r, 'static> for ManageStockError {
     fn respond_to(self, request: &'r rocket::Request<'_>) -> response::Result<'static> {
         let status = match &self {
             Self::NotAdmin(_) => Status::Unauthorized,
@@ -187,15 +140,43 @@ impl<'r> Responder<'r, 'static> for CreateChallengeError {
 
 #[derive(Error, Debug)]
 pub enum EndSessionError {
-    #[error("no existing session for user {0}")]
-    NoSession(String),
+    #[error("current user could not be identified")]
+    UserNotFound,
     #[error("server error")]
     ServerError(#[from] ServerError),
 }
 impl<'r> Responder<'r, 'static> for EndSessionError {
     fn respond_to(self, request: &'r rocket::Request<'_>) -> response::Result<'static> {
         let status = match &self {
-            Self::NoSession(_) => Status::BadRequest,
+            Self::UserNotFound => Status::BadRequest,
+            Self::ServerError(e) => {
+                eprintln!("{e:?}");
+                Status::InternalServerError
+            }
+        };
+        let json = Json(json! ({"error": self.to_string()})).respond_to(request)?;
+        Response::build_from(json).status(status).ok()
+    }
+}
+#[derive(Error, Debug)]
+pub enum UserManagementError {
+    #[error("user could not be identified as admin : {0}")]
+    NotAdmin(String),
+    #[error("No user found with email {0}")]
+    UserDoesNotExist(String),
+    #[error("Role {0} does not exist (either \"admin\" or\"waiter\")")]
+    RoleDoesNotExist(String),
+    #[error("A user cannot modify its role or delete itself")]
+    UserCannotUpdateItSelf,
+    #[error("server error")]
+    ServerError(#[from] ServerError),
+}
+impl<'r> Responder<'r, 'static> for UserManagementError {
+    fn respond_to(self, request: &'r rocket::Request<'_>) -> response::Result<'static> {
+        let status = match &self {
+            Self::NotAdmin(_) => Status::Unauthorized,
+            Self::UserDoesNotExist(_) | Self::RoleDoesNotExist(_) => Status::NotFound,
+            UserManagementError::UserCannotUpdateItSelf => Status::BadRequest,
             Self::ServerError(e) => {
                 eprintln!("{e:?}");
                 Status::InternalServerError

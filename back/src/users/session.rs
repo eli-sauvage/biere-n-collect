@@ -1,6 +1,6 @@
 use crate::{
     errors::{EndSessionError, ServerError},
-    users::user::User,
+    users::user::{ErrorMsg, User},
 };
 
 use rocket::{
@@ -9,8 +9,8 @@ use rocket::{
     time::Duration,
     State,
 };
+use serde::{ser::SerializeStruct, Serialize};
 use sqlx::{types::time::OffsetDateTime, MySql, Pool};
-use std::str::FromStr;
 use uuid::Uuid;
 
 const SESSION_DURATION: Duration = Duration::hours(12);
@@ -19,7 +19,7 @@ const SESSION_DURATION: Duration = Duration::hours(12);
 pub struct Session {
     pub email: String,
     pub expires: OffsetDateTime,
-    pub uuid: Uuid,
+    pub uuid: String,
 }
 impl Session {
     async fn delete_old_sessions(pool: &Pool<MySql>) -> Result<(), ServerError> {
@@ -30,10 +30,10 @@ impl Session {
         Ok(())
     }
 
-    pub async fn delete_if_exists(pool: &Pool<MySql>, email: &str) -> Result<(), ServerError> {
+    pub async fn delete_if_exists(pool: &Pool<MySql>, uuid: &str) -> Result<(), ServerError> {
         sqlx::query!(
-            "DELETE FROM Sessions WHERE user_id = (SELECT id FROM Users WHERE email = ?)",
-            email
+            "DELETE FROM Sessions WHERE uuid = ?",
+            uuid
         )
         .execute(pool)
         .await?;
@@ -44,7 +44,7 @@ impl Session {
         Session::delete_old_sessions(pool).await?;
         // Session::delete_if_exists(pool, &email).await?;
         let session = Session {
-            uuid: Uuid::new_v4(),
+            uuid: Uuid::new_v4().to_string(),
             expires: OffsetDateTime::now_utc() + SESSION_DURATION,
             email,
         };
@@ -53,7 +53,7 @@ impl Session {
             "INSERT INTO Sessions (user_id, expires, uuid) VALUES ((SELECT id FROM Users WHERE email = ?), ?, ?)",
             session.email,
             session.expires,
-            session.uuid.to_string()
+            session.uuid
         ).execute(pool)
         .await
         .map_err(ServerError::Sqlx)?;
@@ -61,44 +61,70 @@ impl Session {
         Ok(session)
     }
 
-    pub async fn get_from_email(
+    pub async fn get_all(pool: &Pool<MySql>) -> Result<Vec<Session>, ServerError> {
+        let sessions = sqlx::query_as!(Session, "SELECT email, expires, uuid FROM Sessions INNER JOIN Users ON Users.id = Sessions.user_id")
+            .fetch_all(pool)
+            .await?;
+
+        Ok(sessions)
+    }
+
+    pub async fn get_all_sessions_for_email(
         pool: &Pool<MySql>,
         email: &str,
-    ) -> Result<Option<Session>, ServerError> {
+    ) -> Result<Vec<Session>, ServerError> {
         Session::delete_old_sessions(pool).await?;
-        let result = match sqlx::query!(
-                    "SELECT uuid, expires FROM Sessions WHERE user_id = (SELECT id FROM Users WHERE email = ?)",
-                    email
-                )
-                .fetch_optional(pool)
-                .await
-                .map_err(ServerError::Sqlx)? {
-            Some(res) => {res},
-            None => {return Ok(None)}};
-        let uuid = Uuid::from_str(&result.uuid)?;
-        let expires = result.expires;
+        let sessions = sqlx::query_as!(
+            Session,
+                "SELECT uuid, expires, email FROM Sessions INNER JOIN Users ON Sessions.user_id = Users.id WHERE Users.email = ?",
+                email
+            )
+            .fetch_all(pool)
+            .await
+            .map_err(ServerError::Sqlx)?;
+        Ok(sessions)
+    }
+}
 
-        Ok(Some(Session {
-            email: email.to_owned(),
-            expires,
-            uuid,
-        }))
+impl Serialize for Session {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("Session", 3)?;
+        state.serialize_field("email", &self.email)?;
+        state.serialize_field("expires", &self.expires.to_string())?;
+        state.serialize_field("uuid", &self.uuid)?;
+        state.end()
+    }
+}
+
+#[get("/get_auth")]
+pub async fn get_auth(user: Option<User>) -> Json<Value> {
+    if let Some(user) = user {
+        Json(json!({"authenticated": true, "role": user.role.to_string(), "email": user.email}))
+    } else {
+        Json(json!({"authenticated": false}))
     }
 }
 
 #[post("/end")]
-pub async fn end_session(
+pub async fn end_sessions(
     pool: &State<Pool<MySql>>,
     cookie: &CookieJar<'_>,
-    user: User,
+    user: Result<User, ErrorMsg>,
 ) -> Result<Json<Value>, EndSessionError> {
-    let session = user
-        .session
-        .ok_or_else(|| EndSessionError::NoSession(user.email))?;
+    if let Err(_) = user {
+        return Err(EndSessionError::UserNotFound);
+    }
+    let session = cookie
+        .get("session")
+        .ok_or_else(|| EndSessionError::UserNotFound)?
+        .to_string();
 
     cookie.remove("session");
 
-    Session::delete_if_exists(pool, &session.email).await?;
+    Session::delete_if_exists(pool, &session).await?;
 
     Ok(Json(json!({"success": true})))
 }

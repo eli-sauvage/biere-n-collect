@@ -1,9 +1,10 @@
 # lhavrais-pay
 
-## todos
+## RoadMap
+- gestion stock -> commande annulée ou confirmée
+- restucture rust codebase
 - serveur panel
     - qr code generation/validation
-- gestion stock -> commande annulée ou confirmée
 - add product types
     - gestion des pintes/demies
     - gestion images de produits

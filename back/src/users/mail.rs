@@ -22,7 +22,7 @@ impl MailManager {
         let email = Message::builder()
             .from(self.smtp_username.parse().unwrap())
             .to(to.parse().unwrap())
-            .subject("connextion à lhavrais-pay")
+            .subject("connexion à lhavrais-pay")
             .header(ContentType::TEXT_PLAIN)
             .body(format!("Une tentative de connexion pour le compte \n{to}\n a été détéctée.\n\n\nAfin de vous connecter, veuillez saisir le code    \n\n{code}\n\n dans l'invite.\n\n\n--------\n\nIgnorez ce message si vous n'êtes pas à l'origine de la connexion."))
             .unwrap();

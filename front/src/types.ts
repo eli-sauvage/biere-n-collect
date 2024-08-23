@@ -10,6 +10,12 @@ export type Product = {
     available: boolean
 };
 
+export type User = {
+    email: string,
+    role: "admin" | "waiter",
+    sessions: number
+}
+
 export class CartElement {
     product: Product
     quantity: number
