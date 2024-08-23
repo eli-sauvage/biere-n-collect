@@ -26,6 +26,7 @@ pub type OrderId = u64;
 #[derive(Clone, Debug, sqlx::FromRow)]
 pub struct Order {
     id: u32,
+    payment_intent_id: Option<String>,
     timestamp: OffsetDateTime,
     validated: bool,
     user_email: String,
@@ -33,13 +34,40 @@ pub struct Order {
 }
 impl Order {
     pub async fn from_id(pool: &Pool<MySql>, id: u32) -> Result<Option<Order>, ServerError> {
-        sqlx::query_as!(
+        let order_opt = sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, validated as \"validated!: bool\", user_email, receipt from Orders WHERE id = ?",
+            "SELECT id, timestamp, validated as \"validated!: bool\", user_email, receipt, payment_intent_id from Orders WHERE id = ?",
             id
         )
-        .fetch_optional(pool).await.map_err(ServerError::Sqlx)
+        .fetch_optional(pool).await?;
+        Ok(order_opt)
     }
+
+    pub async fn set_payment_intent_id(
+        &mut self,
+        pool: &Pool<MySql>,
+        payment_intent_id: String,
+    ) -> Result<(), ServerError> {
+        let payment_intent_id = payment_intent_id;
+        sqlx::query!(
+            "UPDATE Orders SET payment_intent_id = ? WHERE id = ?",
+            payment_intent_id,
+            self.id
+        )
+        .execute(pool)
+        .await?;
+
+        self.payment_intent_id = Some(payment_intent_id);
+        Ok(())
+    }
+
+    // pub async fn update_status(&mut self, pool: &Pool<MySql>){
+    //     let payment_intent_id: PaymentIntentId = match &self.payment_intent_id{
+    //         Some(id) => id.parse().unwrap(),
+    //         None => return
+    //     };
+    // }
+
     pub async fn process_cart_to_order(
         pool: &Pool<MySql>,
         stock_manager: &StockManager,

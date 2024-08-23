@@ -16,6 +16,8 @@ pub enum ServerError {
     Rocket(#[from] rocket::Error),
     #[error("uuid error")]
     Uuid(#[from] uuid::Error),
+    #[error("reqwest error")]
+    Reqwest(#[from] reqwest::Error),
 }
 
 impl<'r> Responder<'r, 'static> for ServerError {
@@ -177,6 +179,60 @@ impl<'r> Responder<'r, 'static> for UserManagementError {
             Self::NotAdmin(_) => Status::Unauthorized,
             Self::UserDoesNotExist(_) | Self::RoleDoesNotExist(_) => Status::NotFound,
             UserManagementError::UserCannotUpdateItSelf => Status::BadRequest,
+            Self::ServerError(e) => {
+                eprintln!("{e:?}");
+                Status::InternalServerError
+            }
+        };
+        let json = Json(json! ({"error": self.to_string()})).respond_to(request)?;
+        Response::build_from(json).status(status).ok()
+    }
+}
+
+// #[derive(Error, Debug)]
+// pub enum PaymentIntentError {
+//     #[error("order with id {0} not found")]
+//     OrderNotFound(u32),
+//     #[error("error generating stripe payment intent")]
+//     CouldNotGeneratePaymentIntent(#[from] stripe::StripeError),
+//     #[error("could not retreive client secret in the created intent")]
+//     NoClientSecretInIntent,
+//     #[error("server error")]
+//     ServerError(#[from] ServerError),
+// }
+// impl<'r> Responder<'r, 'static> for PaymentIntentError {
+//     fn respond_to(self, request: &'r rocket::Request<'_>) -> response::Result<'static> {
+//         let status = match &self {
+//             Self::OrderNotFound(_) => Status::NotFound,
+//             Self::NoClientSecretInIntent => Status::InternalServerError,
+//             Self::ServerError(e) => {
+//                 eprintln!("{e:?}");
+//                 Status::InternalServerError
+//             }
+//             Self::CouldNotGeneratePaymentIntent(e) => {
+//                 eprintln!("{e:?}");
+//                 Status::InternalServerError
+//             }
+//         };
+//         let json = Json(json! ({"error": self.to_string()})).respond_to(request)?;
+//         Response::build_from(json).status(status).ok()
+//     }
+// }
+
+#[derive(Error, Debug)]
+pub enum PaymentIntentError {
+    #[error("order with id {0} not found")]
+    OrderNotFound(u32),
+    #[error("could not create intent")]
+    CouldNotCreateIntent,
+    #[error("server error")]
+    ServerError(#[from] ServerError),
+}
+impl<'r> Responder<'r, 'static> for PaymentIntentError {
+    fn respond_to(self, request: &'r rocket::Request<'_>) -> response::Result<'static> {
+        let status = match &self {
+            Self::OrderNotFound(_) => Status::NotFound,
+            Self::CouldNotCreateIntent => Status::InternalServerError,
             Self::ServerError(e) => {
                 eprintln!("{e:?}");
                 Status::InternalServerError

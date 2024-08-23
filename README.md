@@ -3,7 +3,8 @@
 ## RoadMap
 - gestion stock -> commande annulée ou confirmée
 - restucture rust codebase
-- serveur panel
+    - host static frontend on rocket ?
+- waiter panel
     - qr code generation/validation
 - add product types
     - gestion des pintes/demies

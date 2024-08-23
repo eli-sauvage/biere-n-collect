@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT id, timestamp, validated as \"validated!: bool\", user_email, receipt from Orders WHERE id = ?",
+  "query": "SELECT id, timestamp, validated as \"validated!: bool\", user_email, receipt, payment_intent_id from Orders WHERE id = ?",
   "describe": {
     "columns": [
       {
@@ -47,6 +47,15 @@
           "flags": "",
           "max_size": 1020
         }
+      },
+      {
+        "ordinal": 5,
+        "name": "payment_intent_id",
+        "type_info": {
+          "type": "VarString",
+          "flags": "",
+          "max_size": 1020
+        }
       }
     ],
     "parameters": {
@@ -57,8 +66,9 @@
       false,
       false,
       false,
+      true,
       true
     ]
   },
-  "hash": "2a51aea6a249fe37354d72d886aadbcd83abb7f5e47583ab33b0588649e4b0e6"
+  "hash": "9865f65b805318fc95dc5716a769808f452095ef7435a002a611c420f8b9835d"
 }

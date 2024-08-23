@@ -5,21 +5,22 @@ edition = "2021"
 
 
 [dependencies]
-sqlx = { version = "0.8.0", features = ["runtime-tokio", "mysql", "time"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "mysql", "time"] }
 tokio = { version = "1.39", features = ["rt", "time"] }
 dotenvy = "0.15.7"
-serde = { version = "1.0.207", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0.63"
 rocket = { version = "0.5.1", features = ["json"] }
 rocket_cors = "0.6.0"
 # async-stripe = { version = "0.37.1", features = ["runtime-tokio-hyper"] }
-async-stripe = { git = "https://github.com/arlyon/async-stripe", branch = "next" }
-async-stripe-checkout = { git = "https://github.com/arlyon/async-stripe", branch = "next" }
-async-stripe-core = { git = "https://github.com/arlyon/async-stripe", branch = "next", features = [
-    "payment_intent",
-] }
-async-stripe-types = { git = "https://github.com/arlyon/async-stripe", branch = "next" }
-async-stripe-webhook = { git = "https://github.com/arlyon/async-stripe", branch = "next", features = ["async-stripe-checkout"]}
+# async-stripe = { git = "https://github.com/arlyon/async-stripe", branch = "next" }
+# async-stripe-checkout = { git = "https://github.com/arlyon/async-stripe", branch = "next" }
+# async-stripe-core = { git = "https://github.com/arlyon/async-stripe", branch = "next", features = [
+#     "payment_intent",
+# ] }
+# async-stripe-types = { git = "https://github.com/arlyon/async-stripe", branch = "next" }
+# async-stripe-webhook = { git = "https://github.com/arlyon/async-stripe", branch = "next", features = ["async-stripe-checkout"]}
 lettre = { version = "0.11.7", features = ["tokio1-rustls-tls", "builder", "smtp-transport"], default-features = false}
 rand = "0.8.5"
 uuid = { version = "1.10.0", features = ["v4"] }
+reqwest = { version = "0.12", features = ["json"] }

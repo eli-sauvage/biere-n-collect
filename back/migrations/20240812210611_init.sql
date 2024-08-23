@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS Orders
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     validated BOOLEAN NOT NULL,
     user_email VARCHAR(255) NOT NULL,
+    payment_intent_id VARCHAR(255),
     RECEIPT VARCHAR(255)
 );
 

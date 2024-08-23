@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE Orders SET payment_intent_id = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "c5f2f0e6cfda419e206ea020a63c9fb7d7db9ec01ad8c908d173679fbbe18cad"
+}
