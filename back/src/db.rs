@@ -1,7 +1,14 @@
 use sqlx::{mysql::MySqlPoolOptions, MySql, Pool};
 use std::env;
+use tokio::sync::OnceCell;
 
-pub async fn setup_db_and_migrate() -> Pool<MySql> {
+static DB: OnceCell<Pool<MySql>> = OnceCell::const_new();
+
+pub fn db() -> &'static Pool<MySql> {
+    DB.get().expect("db oncecell is not initialized")
+}
+
+pub async fn setup_db_and_migrate() {
     let db_password = env::var("MARIADB_PASSWORD").expect("db password is not set in environment");
     let db_host = env::var("MARIADB_HOST").expect("mariadb host is not set in environment");
 
@@ -23,5 +30,5 @@ pub async fn setup_db_and_migrate() -> Pool<MySql> {
         panic!("could not migrate : {e:?}");
     };
 
-    pool
+    DB.get_or_init(|| async move { pool }).await;
 }
