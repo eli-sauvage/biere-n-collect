@@ -5,10 +5,11 @@ import { Cart, type Product, type ProductId } from './types';
 import CartVue from './components/CartView.vue';
 import Button from "primevue/button"
 import Drawer from 'primevue/drawer';
+import { get_stock } from './components/api/order';
 let cart: Ref<Cart> = ref(new Cart([]));
 let visible = ref(false);
 (async () => {
-    cart.value = new Cart(await (await fetch(`${import.meta.env.VITE_API_URL}/stock/get`)).json());
+    console.log(await get_stock())
 })();
 
 </script>
@@ -16,7 +17,7 @@ let visible = ref(false);
 <template>
     <div class="card flex justify-center">
         <Drawer class="drawer-cart" v-model:visible="visible" header="Panier" position="bottom">
-            <CartVue :cart="cart" @validate="cart.validate($router)" />
+            <CartVue :cart="cart" @validate="(email) => cart.validate($router, email)" />
         </Drawer>
         <div class="product-list">
             <ProductVue v-for="element in cart.elements" :cardElement="element" />

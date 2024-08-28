@@ -32,7 +32,10 @@ pub enum ServerError {
 
 impl IntoResponse for ServerError {
     fn into_response(self) -> axum::response::Response {
+        eprintln!("----");
         eprintln!("Internal server error : {self:?}");
+        eprintln!("{self}");
+        eprintln!("----");
 
         (
             StatusCode::INTERNAL_SERVER_ERROR,

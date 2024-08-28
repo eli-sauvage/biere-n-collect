@@ -1,0 +1,7 @@
+services:
+  redirect-webhoooks:
+    image: stripe/stripe-cli:latest
+    network_mode: host
+    environment:
+      STRIPE_API_KEY: ${STRIPE_API_KEY}
+    command: listen --forward-to localhost:8000/api/webhooks

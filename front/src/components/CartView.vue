@@ -2,20 +2,48 @@
 import { f_price, type Cart, type Product, type ProductId } from '@/types';
 import Button from "primevue/button"
 import Tag from 'primevue/tag';
+import { ref } from 'vue';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
 let props = defineProps<{ cart: Cart }>();
-defineEmits<{ validate: [] }>()
+const emit = defineEmits<{ validate: [email: string] }>()
+
+let email_dialog_visible = ref(false);
+let email = ref(localStorage.getItem("email") || "")
+
+function validateEmail() {
+    var re = /^\S+@\S+\.\S+$/;
+    return re.test(email.value);
+}
+
+function validateCart(){
+    if(email.value.length == 0 || !validateEmail()) return
+    localStorage.setItem("email", email.value)
+    emit("validate", email.value);
+}
 </script>
 <template>
+    <Dialog v-model:visible="email_dialog_visible" modal header="Informations" :closable="false">
+        <div class="">
+            <p for="email">Merci d'entrer votre e-mail :</p>
+            <InputText class="email-input" id="email" v-model="email" :invalid="email.length != 0 && !validateEmail()"/>
+        </div>
+        <div class="">
+            <Button type="button" label="Annuler" severity="secondary" @click="email_dialog_visible = false"></Button>
+            <Button type="button" label="Valider" @click="validateCart"></Button>
+        </div>
+    </Dialog>
+
     <div class="cart">
         <div v-for="(elem, index) in cart.elems_with_subtotal()" class="item">
-                <p class="product-name">{{ elem.cart_element.product.name }}</p>
+            <p class="product-name">{{ elem.cart_element.product.name }}</p>
             <div class="name-quantity">
                 <Tag :value="'x' + elem.cart_element.quantity"></Tag>
-            <p class="subtotal">{{ f_price(cart.elems_with_subtotal()[index].subtotal) }}</p>
+                <p class="subtotal">{{ f_price(cart.elems_with_subtotal()[index].subtotal) }}</p>
             </div>
         </div>
         <div class="button">
-            <Button class="valider" @click="$emit('validate')" :badge="'Total: ' + cart.get_total()"
+            <Button class="valider" @click="email_dialog_visible = true" :badge="'Total: ' + cart.get_total()"
                 badge-severity="contrast" label="Valider"></Button>
         </div>
     </div>
@@ -39,7 +67,7 @@ defineEmits<{ validate: [] }>()
     text-transform: capitalize;
 }
 
-.name-quantity{
+.name-quantity {
     display: flex;
 }
 
@@ -76,5 +104,9 @@ defineEmits<{ validate: [] }>()
     bottom: 25%;
     margin-top: 20px;
     font-size: larger;
+}
+
+.email-input{
+    margin-bottom: 20px;
 }
 </style>

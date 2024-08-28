@@ -2,6 +2,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 
 use crate::{

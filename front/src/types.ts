@@ -42,7 +42,7 @@ export class Cart {
     get_total(): string {
         return f_price(this.elements.reduce((acc, e) => acc + e.product.price * e.quantity, 0));
     }
-    async validate(router: Router) {
+    async validate(router: Router, email: string) {
         if (this.elements.length == 0) return
         try {
             let res = await fetch(`${import.meta.env.VITE_API_URL}/order/validate_cart`,
@@ -50,7 +50,8 @@ export class Cart {
                     method: "POST",
                     body: JSON.stringify(
                         {
-                            cart: this.elements.map((el) => {
+                            email: email,
+                            elements: this.elements.map((el) => {
                                 return { product_id: el.product.product_id, quantity: el.quantity }
                             })
                         }

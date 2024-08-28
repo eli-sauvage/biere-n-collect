@@ -3,9 +3,10 @@ pub(crate) mod order_routes;
 
 use axum::{
     async_trait,
-    extract::{rejection::QueryRejection, FromRequestParts, Query},
-    http::{request::Parts, StatusCode},
-    response::IntoResponse,
+    extract::{rejection::QueryRejection, FromRequestParts, Query, Request},
+    http::{request::Parts, HeaderValue, StatusCode},
+    middleware::Next,
+    response::{IntoResponse, Response},
     Json,
 };
 use serde::de::DeserializeOwned;
@@ -31,6 +32,14 @@ pub type AppState = Arc<InnerState>;
 
 pub fn generate_app_state(challenge_manager: ChallengeManager) -> AppState {
     Arc::new(InnerState { challenge_manager })
+}
+
+pub async fn cors(request: Request, next: Next) -> Response {
+    let mut response = next.run(request).await;
+    let headers = response.headers_mut();
+
+    headers.insert("Access-Control-Allow-Origin", HeaderValue::from_static("*"));
+    response
 }
 
 pub struct CustomQuery<T>(pub Query<T>);

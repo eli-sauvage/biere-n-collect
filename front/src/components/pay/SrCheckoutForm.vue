@@ -36,8 +36,6 @@ onMounted(async () => {
         elements = stripe.elements({ clientSecret });
         const paymentElement = elements.create('payment');
         paymentElement.mount("#payment-element");
-        const linkAuthenticationElement = elements.create("linkAuthentication");
-        linkAuthenticationElement.mount("#link-authentication-element");
         isLoading.value = false;
     } catch (e) {
         if (e) {
@@ -84,7 +82,7 @@ function return_home() {
         <h2>Total à payer : {{ total_price }}</h2>
 
         <form id="payment-form" @submit.prevent="handleSubmit">
-            <div id="link-authentication-element" />
+            <!-- <div id="link-authentication-element" @change="console.log"></div> -->
             <div id="payment-element" />
             <button id="submit" :disabled="isLoading">
                 Payer {{ total_price }}

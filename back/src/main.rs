@@ -7,7 +7,7 @@ pub(crate) use db::db;
 mod errors;
 mod routes;
 
-use axum::{routing::get, Router};
+use axum::{middleware, routing::get, Router};
 use errors::ServerError;
 use routes::generate_app_state;
 
@@ -22,7 +22,8 @@ async fn main() -> Result<(), ServerError> {
         .route("/api/config", get(routes::get_config))
         .nest("/api/order", routes::order_routes::get_router())
         .nest("/api/admin", routes::admin::get_router())
-        .with_state(state);
+        .with_state(state)
+        .layer(middleware::from_fn(routes::cors));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
