@@ -4,7 +4,6 @@ import InputText from 'primevue/inputtext';
 import ToggleSwitch from 'primevue/toggleswitch';
 import InputNumber from 'primevue/inputnumber';
 import { ref } from 'vue';
-import { f_price } from '@/scripts/utils';
 import type { Product } from '@/scripts/api/order';
 let props = defineProps<{ product: Product }>()
 let emit = defineEmits<{ close: [], save: [newProduct: Product] }>()

@@ -10,7 +10,6 @@ import DisconnectHeader from './components/DisconnectHeader.vue';
 import Stock from './components/admin/Stock.vue';
 import Users from './components/admin/Users.vue';
 import { get_current_auth } from './scripts/api/admin/auth';
-import type { Product } from './scripts/api/order';
 let router = useRouter();
 
 // let stock: Ref<Product[]> = ref([]);

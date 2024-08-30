@@ -11,7 +11,6 @@ import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import { useConfirm } from 'primevue/useconfirm';
 import { ref, type Ref } from 'vue';
-import { escapeLeadingUnderscores } from 'typescript';
 import { add_user, delete_user, disconnect_user, get_all_users, update_role, type User } from '@/scripts/api/admin/user-management';
 let props = defineProps<{ currentUserEmail: string }>()
 const confirm = useConfirm();
