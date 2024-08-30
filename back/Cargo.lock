@@ -876,6 +876,7 @@ dependencies = [
  "axum-extra",
  "dotenvy",
  "lettre",
+ "qrcode",
  "rand",
  "reqwest",
  "serde",
@@ -1267,6 +1268,12 @@ checksum = "5787f7cda34e3033a72192c018bc5883100330f362ef279a8cbccfce8bb4e874"
 dependencies = [
  "cc",
 ]
+
+[[package]]
+name = "qrcode"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d68782463e408eb1e668cf6152704bd856c78c5b6417adaee3203d8f4c1fc9ec"
 
 [[package]]
 name = "quote"

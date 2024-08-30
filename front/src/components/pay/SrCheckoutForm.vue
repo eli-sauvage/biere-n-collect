@@ -75,7 +75,6 @@ const handleSubmit = async () => {
 let router = useRouter();
 function return_home() {
     router.push({ path: "/" })
-    // router.push({ path: "/", query: { continue_order: order_id } })
 }
 </script>
 <template>

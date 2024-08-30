@@ -1,7 +1,12 @@
 use axum::{
+    body::Body,
+    http::HeaderValue,
+    response::Response,
     routing::{get, post},
     Json, Router,
 };
+use qrcode::{render::svg, QrCode};
+use reqwest::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -23,6 +28,7 @@ pub fn get_router() -> Router<AppState> {
         .route("/validate_cart", post(validate_cart))
         .route("/get_payment_infos", get(get_payment_infos))
         .route("/get_payment_status", get(get_payment_status))
+        .route("/get_qr_code", get(get_qr_code))
 }
 
 async fn get_available_stock() -> Result<Json<Vec<stock::Stock>>, ServerError> {
@@ -89,4 +95,27 @@ async fn get_payment_status(
         status: intent.status,
         receipt: order.receipt,
     }))
+}
+
+async fn get_qr_code(params: Query<PaymentStatusParams>) -> Result<Response, PaymentIntentError> {
+    let receipt =
+        Order::get_from_client_secret(&params.payment_intent_id, &params.client_secret)
+            .await?
+            .ok_or_else(|| PaymentIntentError::OrderNotFoundFromSecrets)?
+            .receipt
+            .ok_or_else(|| PaymentIntentError::NoReceipt)?;
+
+    let qr = QrCode::with_version(receipt, qrcode::Version::Normal(5), qrcode::EcLevel::H)
+        .map_err(ServerError::QrCode)?;
+    let img = qr
+        .render()
+        .min_dimensions(200, 200)
+        .dark_color(svg::Color("#000000"))
+        .light_color(svg::Color("#FFFFFF"))
+        .build();
+
+    let mut response = Response::new(Body::from(img));
+    let headers = response.headers_mut();
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("image/svg+xml"));
+    Ok(response)
 }

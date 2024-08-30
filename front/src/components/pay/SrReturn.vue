@@ -1,60 +1,83 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, type Ref } from "vue";
-import { useRoute } from "vue-router";
-import { loadStripe, type Stripe } from "@stripe/stripe-js";
+import { ref, onMounted, type Ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
-import SrMessages from "./SrMessages.vue";
-import { Error, get_stripe_pub_key } from "@/scripts/api/api";
-import { get_payment_status } from "@/scripts/api/order";
+import Button from "primevue/button";
+import { base, Error, get_stripe_pub_key } from "@/scripts/api/api";
+import { get_payment_status, get_qr_code_url, type PaymentStatus } from "@/scripts/api/order";
 
-const clientSecret = ref('');
+const clientSecret: Ref<string | null> = ref(null);
+const payment_intent_id: Ref<string | null> = ref(null)
 
-const receipt = ref("...")
+const payment_status: Ref<PaymentStatus | null> = ref(null)
 
-
-const currentRoute = computed(() => {
-    return useRoute().query;
-});
-clientSecret.value = currentRoute.value?.payment_intent_client_secret as string;
-
-let stripe: Stripe;
+const currentRoute = useRoute().query as any;
+console.log(currentRoute)
+if (currentRoute && currentRoute.payment_intent_client_secret) {
+    clientSecret.value = currentRoute.payment_intent_client_secret as string;
+}
+if (currentRoute && currentRoute.payment_intent) {
+    payment_intent_id.value = currentRoute.payment_intent as string;
+}
 
 onMounted(async () => {
-    const publishableKey = await get_stripe_pub_key()
-    if (publishableKey == null) return
-    let s = await loadStripe(publishableKey);
-    if (!s) {
-        new Error("impossible de charger l'api stripe", "")
+
+    if (clientSecret.value == null) {
+        new Error("impossible de récupérer le client_secret depuis l'url", "")
         return
     }
-    stripe = s;
-
-    let error_title = "Erreur lors de la récupération du paiement auprès de Stripe"
-
-    const { error, paymentIntent } = await stripe.retrievePaymentIntent(
-        clientSecret.value,
-    );
-
-    if (error) {
-        new Error(error_title, error.message || "error inatendue");
-    }
-
-    if (!paymentIntent) {
-        new Error(error_title, "payment intent in undefined");
+    if (payment_intent_id.value == null) {
+        new Error("impossible de récupérer le client_secret depuis l'url", "")
         return
     }
-    
 
-    let payment_status = await get_payment_status(paymentIntent.id, clientSecret.value)
-    if(payment_status && payment_status.receipt){
-        receipt.value = payment_status.receipt
+    let res = await get_payment_status(payment_intent_id.value, clientSecret.value)
+    if (res) {
+        payment_status.value = res
     }
 });
-
+let router = useRouter();
+function return_home() {
+    router.push({ path: "/" })
+}
 </script>
 
 <template>
-    <a href="/">home</a>
-    <h1>Thank you!</h1>
-    <p>{{ receipt }}</p>
+    <Button icon="pi pi-home" severity="secondary" class="return" @click="return_home"></Button>
+    <div class="container" v-if="payment_status?.receipt != null">
+        <span class="merci">Merci pour votre commande</span>
+        <span>Voici votre reçu à présenter au bar</span>
+        <img class="qr-code" v-if="clientSecret != null && payment_intent_id != null"
+            :src="get_qr_code_url(payment_intent_id, clientSecret)"
+            :alt="' qr code indisponible! montrez ce code à la place :      ' + payment_status.receipt" />
+    </div>
+
 </template>
+
+<style scoped>
+.return {
+    position: fixed;
+    top: 30px;
+    left: 30px;
+}
+
+.container {
+    margin-top: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    align-items: center;
+}
+
+span.merci {
+    font-size: x-large;
+}
+
+img.qr-code {
+    width: 90%;
+}
+
+.receipt {
+    font-size: small;
+}
+</style>

@@ -56,7 +56,11 @@ impl Order {
 
         Ok(order_opt)
     }
-    pub async fn get_from_client_secret(payment_intent_id: &str, client_secret: &str) -> Result<Option<Order>, ServerError> {
+
+    pub async fn get_from_client_secret(
+        payment_intent_id: &str,
+        client_secret: &str,
+    ) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
             Order,
             "SELECT id, timestamp, user_email, receipt, payment_intent_id, served as \"served!: bool\", client_secret from Orders WHERE payment_intent_id = ? AND client_secret = ?",
@@ -64,7 +68,6 @@ impl Order {
         )
         .fetch_optional(db())
         .await?;
-
         Ok(order_opt)
     }
 
@@ -159,7 +162,8 @@ impl Order {
         if intent.status == PaymentIntentStatus::Succeeded {
             let receipt = sqlx::query!("SELECT receipt FROM Orders WHERE id = ?", self.id)
                 .fetch_one(db())
-                .await?.receipt;
+                .await?
+                .receipt;
             if receipt.is_none() {
                 println!("marking as paid");
                 self.mark_as_paid().await?;

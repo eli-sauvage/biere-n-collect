@@ -83,7 +83,8 @@ export async function get_payment_infos(order_id: number): Promise<PaymentInfos 
 
 export type PaymentStatus = {
     status: "canceled" | "processing" | "requiresAction" | "requiresCapture" | "requiresConfirmation" | "requiresPaymentMethod" | "succeeded"
-    receipt?: string
+    receipt?: string,
+    qr_code?: string
 }
 
 export async function get_payment_status(payment_intent_id: string, client_secret: string): Promise<PaymentStatus | null> {
@@ -101,4 +102,8 @@ export async function get_payment_status(payment_intent_id: string, client_secre
         new Error(error_title, e.toString());
         return null
     }
+}
+
+export  function get_qr_code_url(payment_intent_id: string, client_secret: string): string{
+    return `${base}/order/get_qr_code?payment_intent_id=${encodeURIComponent(payment_intent_id)}&client_secret=${encodeURIComponent(client_secret)}`
 }
