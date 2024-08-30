@@ -7,13 +7,17 @@ set_toast(useToast())
 
 <template>
   <main>
-    <Toast class="error-toast"/>
+    <Toast class="error-toast" />
     <RouterView />
   </main>
 </template>
 
 <style>
-.error-toast{
+.error-toast {
   max-width: calc(100vw - 40px);
+}
+
+* {
+  touch-action: manipulation;
 }
 </style>
