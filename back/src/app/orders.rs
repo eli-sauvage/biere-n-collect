@@ -34,8 +34,10 @@ pub struct Order {
     #[serde(serialize_with = "serialize_time")]
     timestamp: OffsetDateTime,
     user_email: String,
-    receipt: Option<Receipt>,
+    pub receipt: Option<Receipt>,
     payment_intent_id: String,
+    client_secret: String,
+    served: bool,
 }
 fn serialize_time<S: Serializer>(dt: &OffsetDateTime, serializer: S) -> Result<S::Ok, S::Error> {
     let time = dt.to_string();
@@ -46,8 +48,19 @@ impl Order {
     pub async fn get(id: OrderId) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt, payment_intent_id  from Orders WHERE id = ?",
+            "SELECT id, timestamp, user_email, receipt, payment_intent_id, served as \"served!: bool\", client_secret from Orders WHERE id = ?",
             id
+        )
+        .fetch_optional(db())
+        .await?;
+
+        Ok(order_opt)
+    }
+    pub async fn get_from_client_secret(payment_intent_id: &str, client_secret: &str) -> Result<Option<Order>, ServerError> {
+        let order_opt = sqlx::query_as!(
+            Order,
+            "SELECT id, timestamp, user_email, receipt, payment_intent_id, served as \"served!: bool\", client_secret from Orders WHERE payment_intent_id = ? AND client_secret = ?",
+            payment_intent_id, client_secret
         )
         .fetch_optional(db())
         .await?;
@@ -117,10 +130,11 @@ impl Order {
         let payment_intent = stripe::api::create_payment_intent(total_price as i64).await?;
         let expires = OffsetDateTime::now_utc() + Duration::from_secs(60 * ORDER_DURATION_MINUTES);
         let order_id = sqlx::query!(
-            "INSERT INTO Orders (user_email, expires, payment_intent_id) VALUES (?, ?, ?)",
+            "INSERT INTO Orders (user_email, expires, payment_intent_id, client_secret) VALUES (?, ?, ?, ?)",
             cart.email,
             expires,
-            payment_intent.id
+            payment_intent.id,
+            payment_intent.client_secret
         )
         .execute(db())
         .await
@@ -144,30 +158,21 @@ impl Order {
         let intent = api::fetch_payment_intent(&self.payment_intent_id).await?;
         if intent.status == PaymentIntentStatus::Succeeded {
             let receipt = sqlx::query!("SELECT receipt FROM Orders WHERE id = ?", self.id)
-                .fetch_optional(db())
-                .await?;
+                .fetch_one(db())
+                .await?.receipt;
             if receipt.is_none() {
+                println!("marking as paid");
                 self.mark_as_paid().await?;
             }
         }
         Ok(intent)
     }
-    // pub async fn get_full_price(&self, pool: &Pool<MySql>) -> Result<i64, ServerError> {
-    //     let total = sqlx::query!(
-    //         "SELECT cast(SUM(price * OrderDetails.quantity) as int) as result from OrderDetails INNER JOIN Stock ON OrderDetails.product_id = Stock.product_id WHERE order_id = ? ;",
-    //         self.id
-    //     ).fetch_one(pool).await.map_err(ServerError::Sqlx)?;
-
-    //     total
-    //         .result
-    //         .ok_or(ServerError::Sqlx(sqlx::Error::RowNotFound))
-    // }
 }
 
 pub async fn get_all_orders() -> Result<Vec<Order>, ServerError> {
     let orders = sqlx::query_as!(
         Order,
-        "SELECT id, timestamp, user_email, receipt, payment_intent_id from Orders"
+        "SELECT id, timestamp, user_email, receipt, payment_intent_id, served as \"served!: bool\", client_secret from Orders"
     )
     .fetch_all(db())
     .await?;

@@ -14,9 +14,11 @@ CREATE TABLE IF NOT EXISTS Orders
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires TIMESTAMP,
     payment_intent_id VARCHAR(255) NOT NULL UNIQUE,
+    client_secret VARCHAR(255) NOT NULL UNIQUE,
     payment_status ENUM("canceled", "processing", "succeeded"),
     user_email VARCHAR(255) NOT NULL,
-    receipt VARCHAR(255)
+    receipt VARCHAR(255),
+    served BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 -- CREATE TABLE IF NOT EXISTS Payments

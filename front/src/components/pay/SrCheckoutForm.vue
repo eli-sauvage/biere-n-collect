@@ -4,12 +4,12 @@ import { loadStripe } from "@stripe/stripe-js";
 import type { Stripe, StripeElement, StripeElements } from "@stripe/stripe-js";
 import SrMessages from "./SrMessages.vue";
 import { useRoute, useRouter } from "vue-router";
-import { f_price } from "@/types";
+import { f_price } from "@/scripts/utils";
 import Button from "primevue/button";
+import { get_payment_infos } from "@/scripts/api/order";
+import { get_stripe_pub_key } from "@/scripts/api/api";
 // let props = defineProps<{ order_id: number }>();
 let order_id = useRoute().query.order_id
-console.log("-----")
-console.log(order_id)
 
 const isLoading = ref(false);
 const messages: Ref<string[]> = ref([]);
@@ -20,18 +20,21 @@ let elements: StripeElements;
 
 onMounted(async () => {
     try {
-        const { publishableKey } = await fetch(`${import.meta.env.VITE_API_URL}/config`).then((res) => res.json()) as { publishableKey: string };
+        const publishableKey = await get_stripe_pub_key();
+        if(publishableKey == null)return
         let config_res = await loadStripe(publishableKey);
         if (!config_res) {
             return
         }
         stripe = config_res;
 
-        const intent_res = await fetch(`${import.meta.env.VITE_API_URL}/create-payment-intent?order_id=${order_id}`).then((res) => res.json());
-        let clientSecret = intent_res.clientSecret as string;
-        total_price.value = f_price(intent_res.total_price as number);
-
-        // messages.value.push(`Client secret returned.`);
+        let parsed_order_id = parseInt(order_id as string)
+        if(typeof parsed_order_id != "number" || Number.isNaN(parsed_order_id)) return
+        let payment_infos = await get_payment_infos(parsed_order_id)
+        if(payment_infos == null) return
+        let clientSecret = payment_infos.client_secret;
+        total_price.value = f_price(payment_infos.total_price);
+        console.log(clientSecret)
 
         elements = stripe.elements({ clientSecret });
         const paymentElement = elements.create('payment');

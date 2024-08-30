@@ -5,6 +5,10 @@ use super::ErrorResponse;
 
 #[derive(Error, Debug)]
 pub enum UserManagementError {
+    #[error("user already exists with email {0}")]
+    UserAlreadyExists(String),
+    #[error("invalid email address {1}: {0}")]
+    InvalidEmailAddress(String, lettre::address::AddressError),
     #[error("user could not be identified")]
     UserDoesNotExist(String),
     #[error("A user cannot modify its role or delete itself")]
@@ -19,7 +23,9 @@ impl IntoResponse for UserManagementError {
         } else {
             let status = match self {
                 Self::UserDoesNotExist(_) => StatusCode::NOT_FOUND,
-                UserManagementError::UserCannotUpdateItSelf => StatusCode::BAD_REQUEST,
+                UserManagementError::UserCannotUpdateItSelf
+                | UserManagementError::UserAlreadyExists(_)
+                | UserManagementError::InvalidEmailAddress(_, _) => StatusCode::BAD_REQUEST,
                 Self::ServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             };
             (status, ErrorResponse::json(self.to_string())).into_response()
@@ -62,7 +68,6 @@ impl IntoResponse for SessionError {
         }
     }
 }
-
 
 #[derive(Error, Debug)]
 pub enum UserParseError {

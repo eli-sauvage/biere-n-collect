@@ -3,12 +3,17 @@ pub(crate) mod order_routes;
 
 use axum::{
     async_trait,
-    extract::{rejection::QueryRejection, FromRequestParts, Query, Request},
+    body::Body,
+    extract::{
+        rejection::{JsonRejection, QueryRejection},
+        FromRequest, FromRequestParts, Query, Request,
+    },
     http::{request::Parts, HeaderValue, StatusCode},
     middleware::Next,
     response::{IntoResponse, Response},
     Json,
 };
+use axum_extra::extract::CookieJar;
 use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 
@@ -25,6 +30,38 @@ pub async fn get_config() -> Result<Json<Value>, ServerError> {
     Ok(Json(json!({"publishable_key": pub_key})))
 }
 
+pub async fn handler_404(request: Request) -> Response {
+    let path = request.uri().path();
+    (
+        StatusCode::NOT_FOUND,
+        ErrorResponse::json(format!("404: url {} not found", path)),
+    )
+        .into_response()
+}
+
+pub struct OkEmptyResponse {
+    pub cookies: Option<CookieJar>,
+}
+impl OkEmptyResponse {
+    pub fn new() -> Self {
+        OkEmptyResponse { cookies: None }
+    }
+    pub fn new_with_cookies(cookies: CookieJar) -> Self {
+        OkEmptyResponse {
+            cookies: Some(cookies),
+        }
+    }
+}
+impl IntoResponse for OkEmptyResponse {
+    fn into_response(self) -> Response {
+        if let Some(cookies) = self.cookies {
+            (StatusCode::OK, cookies, Json(json!({}))).into_response()
+        } else {
+            (StatusCode::OK, Json(json!({}))).into_response()
+        }
+    }
+}
+
 pub struct InnerState {
     pub challenge_manager: ChallengeManager,
 }
@@ -35,10 +72,29 @@ pub fn generate_app_state(challenge_manager: ChallengeManager) -> AppState {
 }
 
 pub async fn cors(request: Request, next: Next) -> Response {
-    let mut response = next.run(request).await;
+    let mut response = if request.method() == axum::http::Method::OPTIONS {
+        (StatusCode::OK, "").into_response()
+    } else {
+        next.run(request).await
+    };
     let headers = response.headers_mut();
 
-    headers.insert("Access-Control-Allow-Origin", HeaderValue::from_static("*"));
+    headers.insert(
+        "Access-Control-Allow-Origin",
+        HeaderValue::from_str(&env::var("VITE_SITE_URL").unwrap()).unwrap(),
+    );
+    headers.insert(
+        "Access-Control-Allow-Headers",
+        HeaderValue::from_static("Content-Type,Authorization"),
+    );
+    headers.insert(
+        "Access-Control-Allow-Methods",
+        HeaderValue::from_static("GET,PUT,POST,DELETE,OPTIONS,PATCH"),
+    );
+    headers.insert(
+        "Access-Control-Allow-Credentials",
+        HeaderValue::from_static("true"),
+    );
     response
 }
 
@@ -66,6 +122,39 @@ impl<T> Deref for CustomQuery<T> {
 }
 pub struct CustomQueryRejection(pub QueryRejection);
 impl IntoResponse for CustomQueryRejection {
+    fn into_response(self) -> axum::response::Response {
+        (
+            StatusCode::BAD_REQUEST,
+            ErrorResponse::json(self.0.body_text()),
+        )
+            .into_response()
+    }
+}
+
+pub struct CustomJsonExtractor<T>(pub Json<T>);
+#[async_trait]
+impl<T, S> FromRequest<S> for CustomJsonExtractor<T>
+where
+    T: DeserializeOwned,
+    S: Send + Sync,
+{
+    type Rejection = CustomJsonRejection;
+    async fn from_request(request: Request<Body>, state: &S) -> Result<Self, Self::Rejection> {
+        let json = Json::from_request(request, state)
+            .await
+            .map_err(CustomJsonRejection)?;
+
+        Ok(CustomJsonExtractor(json))
+    }
+}
+impl<T> Deref for CustomJsonExtractor<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+pub struct CustomJsonRejection(pub JsonRejection);
+impl IntoResponse for CustomJsonRejection {
     fn into_response(self) -> axum::response::Response {
         (
             StatusCode::BAD_REQUEST,

@@ -4,6 +4,7 @@ import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import { ref, type Ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { create_challenge, get_current_auth, verify_challenge } from '@/scripts/api/admin/auth';
 let router = useRouter()
 let code = ref("");
 
@@ -15,8 +16,8 @@ let email = ref("");
 let message = ref("");
 
 (async () => {
-    let res = await fetch(`${import.meta.env.VITE_API_URL}/challenge/get_auth`, {credentials: "include"}).then((r) => r.json())
-    if(res.authenticated && res.authenticated == true){
+    let auth = await get_current_auth()
+    if (auth && auth.authenticated) {
         router.push("/serveur")
     }
 })()
@@ -25,22 +26,18 @@ async function validate() {
     if (!challenge_created.value) { //email
         if (email.value.length == 0) return
         btn_loading.value = true;
-        let res = await fetch(`${import.meta.env.VITE_API_URL}/challenge/create?email=${email.value}`, { method: "POST", credentials: "same-origin" }).then((r) => r.json())
+        let challenge = await create_challenge(email.value);
         btn_loading.value = false
-        if (res.error) {
-            message.value = res.error
-        } else if (res.success == true) {
+        if (challenge) {
             challenge_created.value = true
         }
     }
     if (challenge_created.value) {
         if (code.value.length == 0) return
         btn_loading.value = true
-        let res = await fetch(`${import.meta.env.VITE_API_URL}/challenge/verify?email=${email.value}&code=${code.value}`, { method: "POST", credentials: "include" }).then((r) => r.json())
+        let verify = await verify_challenge(email.value, code.value);
         btn_loading.value = false;
-        if (res.error) {
-            message.value = res.error;
-        } else if (res.success == true) {
+        if (verify) {
             router.push("/serveur")
         }
     }

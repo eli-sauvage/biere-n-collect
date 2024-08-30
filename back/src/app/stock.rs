@@ -1,4 +1,7 @@
-use crate::{db, errors::{ManageStockError, ServerError}};
+use crate::{
+    db,
+    errors::{ManageStockError, ServerError},
+};
 use serde::{Deserialize, Serialize};
 use sqlx::{MySql, Transaction};
 
@@ -12,7 +15,7 @@ pub struct Stock {
 }
 
 #[derive(Deserialize, Copy, Clone)]
-#[serde(rename_all="lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum MoveDirection {
     Up,
     Down,
@@ -94,10 +97,7 @@ pub async fn delete_stock(product_id: u32) -> Result<(), ServerError> {
     Ok(())
 }
 
-pub async fn move_stock(
-    direction: MoveDirection,
-    product_id: u32,
-) -> Result<(), ManageStockError> {
+pub async fn move_stock(direction: MoveDirection, product_id: u32) -> Result<(), ManageStockError> {
     let current_position = sqlx::query!(
         "SELECT position from Stock WHERE product_id = ?",
         product_id

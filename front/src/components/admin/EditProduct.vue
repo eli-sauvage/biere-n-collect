@@ -4,7 +4,8 @@ import InputText from 'primevue/inputtext';
 import ToggleSwitch from 'primevue/toggleswitch';
 import InputNumber from 'primevue/inputnumber';
 import { ref } from 'vue';
-import { f_price, type Product } from '@/types';
+import { f_price } from '@/scripts/utils';
+import type { Product } from '@/scripts/api/order';
 let props = defineProps<{ product: Product }>()
 let emit = defineEmits<{ close: [], save: [newProduct: Product] }>()
 let prod = ref({ ...props.product })
@@ -12,7 +13,7 @@ let prod = ref({ ...props.product })
 let price = ref(prod.value.price / 100);
 
 function save() {
-    prod.value.price = price.value * 100;
+    prod.value.price = Math.round(price.value * 100);
     emit("save", prod.value)
 }
 </script>

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 pub type PaymentIntentId = String;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all="snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum PaymentIntentStatus {
     Canceled,
     Processing,

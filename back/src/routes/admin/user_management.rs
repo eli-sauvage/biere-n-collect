@@ -1,7 +1,10 @@
+use std::str::FromStr;
+
 use axum::{
     routing::{get, patch, post},
     Json, Router,
 };
+use lettre::message::Mailbox;
 use serde::Deserialize;
 
 use crate::{
@@ -10,7 +13,7 @@ use crate::{
         user::{AdminUser, Role, User},
     },
     errors::UserManagementError,
-    routes::{AppState, CustomQuery as Query},
+    routes::{AppState, CustomQuery as Query, OkEmptyResponse},
 };
 
 pub fn get_router() -> Router<AppState> {
@@ -34,10 +37,19 @@ struct AddUserParams {
 async fn add_user(
     _user: AdminUser,
     params: Query<AddUserParams>,
-) -> Result<(), UserManagementError> {
+) -> Result<OkEmptyResponse, UserManagementError> {
+    if let Some(_existing_user) = User::get_from_email(&params.email).await? {
+        return Err(UserManagementError::UserAlreadyExists(params.email.clone()));
+    }
+    if let Err(e) = Mailbox::from_str(&params.email) {
+        return Err(UserManagementError::InvalidEmailAddress(
+            params.email.clone(),
+            e,
+        ));
+    }
     User::create(&params.email, params.role).await?;
 
-    Ok(())
+    Ok(OkEmptyResponse::new())
 }
 
 #[derive(Deserialize)]
@@ -47,7 +59,7 @@ struct DeleteUserParams {
 async fn delete_user(
     user: AdminUser,
     params: Query<DeleteUserParams>,
-) -> Result<(), UserManagementError> {
+) -> Result<OkEmptyResponse, UserManagementError> {
     if user.0.email == params.email {
         return Err(UserManagementError::UserCannotUpdateItSelf);
     }
@@ -62,7 +74,7 @@ async fn delete_user(
 
     user_to_delete.delete().await?;
 
-    Ok(())
+    Ok(OkEmptyResponse::new())
 }
 
 #[derive(Deserialize)]
@@ -73,7 +85,7 @@ struct UpdateRoleParams {
 async fn update_role(
     user: AdminUser,
     params: Query<UpdateRoleParams>,
-) -> Result<(), UserManagementError> {
+) -> Result<OkEmptyResponse, UserManagementError> {
     if user.0.email == params.email {
         return Err(UserManagementError::UserCannotUpdateItSelf);
     }
@@ -84,7 +96,7 @@ async fn update_role(
 
     user_to_update.update_role(params.new_role).await?;
 
-    Ok(())
+    Ok(OkEmptyResponse::new())
 }
 
 #[derive(Deserialize)]
@@ -94,7 +106,7 @@ struct DisconnectUserParams {
 async fn disconnect_user(
     user: AdminUser,
     params: Query<DisconnectUserParams>,
-) -> Result<(), UserManagementError> {
+) -> Result<OkEmptyResponse, UserManagementError> {
     if user.0.email == params.email {
         return Err(UserManagementError::UserCannotUpdateItSelf);
     }
@@ -107,5 +119,5 @@ async fn disconnect_user(
         Session::delete_if_exists(&session.uuid).await?;
     }
 
-    Ok(())
+    Ok(OkEmptyResponse::new())
 }

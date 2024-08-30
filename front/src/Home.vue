@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { reactive, ref, type Ref } from 'vue';
 import ProductVue from './components/ProductView.vue';
-import { Cart, type Product, type ProductId } from './types';
+import { Cart, type ProductId } from './scripts/cart';
 import CartVue from './components/CartView.vue';
 import Button from "primevue/button"
 import Drawer from 'primevue/drawer';
-import { get_stock } from './components/api/order';
+import { get_stock } from './scripts/api/order';
 let cart: Ref<Cart> = ref(new Cart([]));
 let visible = ref(false);
 (async () => {
-    console.log(await get_stock())
+    cart.value = new Cart(await get_stock())
 })();
 
 </script>

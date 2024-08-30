@@ -4,9 +4,12 @@ import { useRoute } from "vue-router";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 
 import SrMessages from "./SrMessages.vue";
+import { Error, get_stripe_pub_key } from "@/scripts/api/api";
+import { get_payment_status } from "@/scripts/api/order";
 
-const messages: Ref<string[]> = ref([]);
 const clientSecret = ref('');
+
+const receipt = ref("...")
 
 
 const currentRoute = computed(() => {
@@ -17,24 +20,35 @@ clientSecret.value = currentRoute.value?.payment_intent_client_secret as string;
 let stripe: Stripe;
 
 onMounted(async () => {
-    const { publishableKey } = await fetch("/api/config").then((res) => res.json());
+    const publishableKey = await get_stripe_pub_key()
+    if (publishableKey == null) return
     let s = await loadStripe(publishableKey);
-    if (!s) return
+    if (!s) {
+        new Error("impossible de charger l'api stripe", "")
+        return
+    }
     stripe = s;
+
+    let error_title = "Erreur lors de la récupération du paiement auprès de Stripe"
 
     const { error, paymentIntent } = await stripe.retrievePaymentIntent(
         clientSecret.value,
     );
 
     if (error) {
-        messages.value.push(error.message || "undef error");
+        new Error(error_title, error.message || "error inatendue");
     }
 
     if (!paymentIntent) {
-        messages.value.push("payment intent in undef")
+        new Error(error_title, "payment intent in undefined");
         return
     }
-    messages.value.push(`Payment ${paymentIntent.status}: ${paymentIntent.id}`)
+    
+
+    let payment_status = await get_payment_status(paymentIntent.id, clientSecret.value)
+    if(payment_status && payment_status.receipt){
+        receipt.value = payment_status.receipt
+    }
 });
 
 </script>
@@ -42,5 +56,5 @@ onMounted(async () => {
 <template>
     <a href="/">home</a>
     <h1>Thank you!</h1>
-    <sr-messages v-if="clientSecret" :messages="messages" />
+    <p>{{ receipt }}</p>
 </template>

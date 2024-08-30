@@ -45,17 +45,17 @@ const router = createRouter({
 const MyPreset = definePreset(Aura, {
     semantic: {
         primary: {
-            50: '#e2b42c',
-            100: '#e2b42c',
-            200: '#e2b42c',
-            300: '#e2b42c',
-            400: '#e2b42c',
-            500: '#e2b42c',
-            600: '#e2b42c',
-            700: '#e2b42c',
-            800: '#e2b42c',
-            900: '#e2b42c',
-            950: '#e2b42c'
+            50: '{yellow.50}',
+            100: '{yellow.100}',
+            200: '{yellow.200}',
+            300: '{yellow.300}',
+            400: '{yellow.400}',
+            500: '{yellow.500}',
+            600: '{yellow.600}',
+            700: '{yellow.700}',
+            800: '{yellow.800}',
+            900: '{yellow.900}',
+            950: '{yellow.950}'
         }
     }
 });

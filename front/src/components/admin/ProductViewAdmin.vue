@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { f_price, type CartElement, type Product } from '@/types';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
 import ConfirmPopup from 'primevue/confirmpopup';
 import ToggleSwitch from 'primevue/toggleswitch';
 import { useConfirm } from 'primevue/useconfirm';
-import { useToast } from 'primevue/usetoast';
+import type { Product } from '@/scripts/api/order';
+import { f_price } from '@/scripts/utils';
 let props = defineProps<{ product: Product, first?: boolean, last?:boolean }>();
 let emit = defineEmits<{
     requestEdit: [product: Product],

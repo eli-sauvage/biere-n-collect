@@ -28,4 +28,3 @@ impl IntoResponse for ManageStockError {
         }
     }
 }
-

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { f_price, type CartElement, type Product } from '@/types';
+import type { CartElement } from '@/scripts/cart';
+import { f_price } from '@/scripts/utils';
 import Button from 'primevue/button';
 import InputNumber from 'primevue/inputnumber';
 import Tag from 'primevue/tag';

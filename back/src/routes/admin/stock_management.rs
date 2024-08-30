@@ -8,7 +8,7 @@ use crate::{
     admin::user::AdminUser,
     app::stock::{self, Stock},
     errors::ManageStockError,
-    routes::{AppState, CustomQuery as Query},
+    routes::{AppState, CustomQuery as Query, OkEmptyResponse},
 };
 
 pub fn get_router() -> Router<AppState> {
@@ -20,22 +20,6 @@ pub fn get_router() -> Router<AppState> {
         .route("/move", patch(move_stock))
 }
 
-async fn update_stock(
-    _user: AdminUser,
-    Json(new_stock): Json<Stock>,
-) -> Result<(), ManageStockError> {
-    if !stock::get_all_stocks()
-        .await?
-        .into_iter()
-        .any(|stock| stock.product_id == new_stock.product_id)
-    {
-        return Err(ManageStockError::StockNotFound(new_stock.product_id));
-    }
-
-    stock::update_stock(new_stock).await?;
-
-    Ok(())
-}
 
 #[derive(Deserialize)]
 struct InsertStockParams {
@@ -47,7 +31,7 @@ struct InsertStockParams {
 async fn insert_stock(
     _user: AdminUser,
     params: Query<InsertStockParams>,
-) -> Result<(), ManageStockError> {
+) -> Result<OkEmptyResponse, ManageStockError> {
     stock::insert_stock(
         &params.name,
         params.price,
@@ -56,7 +40,24 @@ async fn insert_stock(
     )
     .await?;
 
-    Ok(())
+    Ok(OkEmptyResponse::new())
+}
+
+async fn update_stock(
+    _user: AdminUser,
+    Json(new_stock): Json<Stock>,
+) -> Result<OkEmptyResponse, ManageStockError> {
+    if !stock::get_all_stocks()
+        .await?
+        .into_iter()
+        .any(|stock| stock.product_id == new_stock.product_id)
+    {
+        return Err(ManageStockError::StockNotFound(new_stock.product_id));
+    }
+
+    stock::update_stock(new_stock).await?;
+
+    Ok(OkEmptyResponse::new())
 }
 
 #[derive(Deserialize)]
@@ -66,7 +67,7 @@ struct DeleteStockParams {
 async fn delete_stock(
     _user: AdminUser,
     params: Query<DeleteStockParams>,
-) -> Result<(), ManageStockError> {
+) -> Result<OkEmptyResponse, ManageStockError> {
     if !stock::get_all_stocks()
         .await?
         .into_iter()
@@ -77,7 +78,7 @@ async fn delete_stock(
 
     stock::delete_stock(params.product_id).await?;
 
-    Ok(())
+    Ok(OkEmptyResponse::new())
 }
 
 #[derive(Deserialize)]
@@ -88,7 +89,7 @@ struct MoveStockParams {
 async fn move_stock(
     _user: AdminUser,
     params: Query<MoveStockParams>,
-) -> Result<(), ManageStockError> {
+) -> Result<OkEmptyResponse, ManageStockError> {
     if !stock::get_all_stocks()
         .await?
         .into_iter()
@@ -99,5 +100,5 @@ async fn move_stock(
 
     stock::move_stock(params.direction, params.product_id).await?;
 
-    Ok(())
+    Ok(OkEmptyResponse::new())
 }

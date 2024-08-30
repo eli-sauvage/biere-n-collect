@@ -3,31 +3,34 @@ import { ref, type Ref } from 'vue';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import ProductViewAdmin from './ProductViewAdmin.vue';
-import type { Product } from '@/types';
 import EditProduct from './EditProduct.vue';
+import { get_stock, type Product } from '@/scripts/api/order';
+import { delete_stock, insert_stock, move_stock, update_stock } from '@/scripts/api/admin/stock-management';
 
 let stock: Ref<Product[]> = ref([]);
 
 let refresh_stock = async () => {
-    let res_stock = await fetch(`${import.meta.env.VITE_API_URL}/stock/get_all`, { credentials: "include" }).then(e => e.json());
-    stock.value = res_stock
+    stock.value = await get_stock()
 };
 refresh_stock()
 
+
+
 let editing_product: Ref<Product | null> = ref(null);
 async function saveEdit(new_prod: Product) {
+    console.log(new_prod)
     if (editing_product == null) return;
-    let res = await fetch(`${import.meta.env.VITE_API_URL}/stock`, { method: "PUT", credentials: "include", headers: { ContentType: "application/json" }, body: JSON.stringify(new_prod) }).then(e => e.json());
-    console.log(res);
-    editing_product.value = null;
-    refresh_stock()
+    if (await update_stock(new_prod)) {
+        editing_product.value = null;
+        refresh_stock()
+    }
 }
 
 async function delete_product(product_id: number) {
-    let res = await fetch(`${import.meta.env.VITE_API_URL}/stock?product_id=${product_id}`, { method: "DELETE", credentials: "include" }).then(e => e.json());
-    console.log(res);
-    editing_product.value = null;
-    refresh_stock()
+    if (await delete_stock(product_id)) {
+        editing_product.value = null;
+        refresh_stock()
+    }
 }
 
 async function requestCreateProduct() {
@@ -36,18 +39,16 @@ async function requestCreateProduct() {
 
 async function createProduct(new_prod: Product) {
     if (editing_product.value == null) return;
-    let res = await fetch(`${import.meta.env.VITE_API_URL}/stock?name=${new_prod.name}&price=${new_prod.price}&quantity=${new_prod.quantity}&available=${new_prod.available}`,
-        { method: "POST", credentials: "include" }).then(e => e.json());
-    console.log(res);
-    editing_product.value = null;
-    refresh_stock()
+    if (await insert_stock(new_prod)) {
+        editing_product.value = null;
+        refresh_stock()
+    }
 }
 
 async function moveProduct(product_id: number, direction: "up" | "down") {
-    let res = await fetch(`${import.meta.env.VITE_API_URL}/stock/move?product_id=${product_id}&direction=${direction}`,
-        { method: "PATCH", credentials: "include" }).then(e => e.json());
-    console.log(res);
-    refresh_stock()
+    if (await move_stock(product_id, direction)) {
+        refresh_stock()
+    }
 }
 </script>
 

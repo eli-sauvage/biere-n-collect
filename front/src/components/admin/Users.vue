@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { User } from '@/types';
 import Accordion from 'primevue/accordion';
 import AccordionContent from 'primevue/accordioncontent';
 import AccordionHeader from 'primevue/accordionheader';
@@ -13,6 +12,7 @@ import InputText from 'primevue/inputtext';
 import { useConfirm } from 'primevue/useconfirm';
 import { ref, type Ref } from 'vue';
 import { escapeLeadingUnderscores } from 'typescript';
+import { add_user, delete_user, disconnect_user, get_all_users, update_role, type User } from '@/scripts/api/admin/user-management';
 let props = defineProps<{ currentUserEmail: string }>()
 const confirm = useConfirm();
 
@@ -27,29 +27,28 @@ let existing_roles: Ref<{ role: "admin" | "waiter", translated: string }[]> = re
 let user_to_add: Ref<{ email: string, role: "admin" | "waiter" } | null> = ref(null);
 async function addUser() {
     if (user_to_add.value == null) return
-    let res = await fetch(`${import.meta.env.VITE_API_URL}/users?email=${encodeURIComponent(user_to_add.value.email)}&role=${user_to_add.value.role}`, { method: "POST", credentials: "include" }).then(e => e.json());
-    console.log(res)
-    user_to_add.value = null
-    refreshUsers()
+    if (await add_user(user_to_add.value.email, user_to_add.value.role)) {
+        user_to_add.value = null
+        refreshUsers()
+    }
 }
 
 async function refreshUsers() {
-    let res_users = await fetch(`${import.meta.env.VITE_API_URL}/users/get_all`, { credentials: "include" }).then(e => e.json());
-    users.value = res_users
+    users.value = await get_all_users()
 }
 refreshUsers()
 
-async function change_role(email: string, new_role: string) {
-    let res = await fetch(`${import.meta.env.VITE_API_URL}/users/update_role?email=${encodeURIComponent(email)}&new_role=${new_role}`, { method: "PATCH", credentials: "include" }).then(e => e.json());
-    console.log(res)
-    refreshUsers()
+async function updateRole(email: string, new_role: "admin" | "waiter") {
+    if (await update_role(email, new_role)) {
+        refreshUsers()
+    }
 }
 
-async function disconnect_user(email: string) {
-    let res = await fetch(`${import.meta.env.VITE_API_URL}/users/disconnect?email=${encodeURIComponent(email)}`, { method: "PATCH", credentials: "include" }).then(e => e.json());
-    console.log(res)
+async function disconnectUser(email: string) {
+    if(await disconnect_user(email)){
     selectedUser.value = null
     refreshUsers()
+    }
 }
 
 const confirm_delete = (event: Event, email: string) => {
@@ -67,9 +66,9 @@ const confirm_delete = (event: Event, email: string) => {
             severity: 'danger'
         },
         accept: async () => {
-            let res = await fetch(`${import.meta.env.VITE_API_URL}/users?email=${encodeURIComponent(email)}`, { method: "DELETE", credentials: "include" }).then(e => e.json());
-            console.log(res)
-            refreshUsers()
+            if (await delete_user(email)) {
+                refreshUsers()
+            }
         },
         reject: () => { }
     });
@@ -107,12 +106,12 @@ const confirm_delete = (event: Event, email: string) => {
                         <div class="change-role">
                             <span>Role: </span>
                             <Select :model-value="users[index].role" optionLabel="translated" :options="existing_roles"
-                                option-value="role" @change="(e) => change_role(user.email, e.value)"
+                                option-value="role" @change="(e) => updateRole(user.email, e.value)"
                                 :disabled="user.email == currentUserEmail"></Select>
                         </div>
                         <p>Déconnecter l'utilisateur</p>
-                        <Button icon="pi pi-sign-out" :badge="user.sessions.toString() + ' sessions'"
-                            @click="disconnect_user(user.email)" :disabled="user.email == currentUserEmail"></Button>
+                        <Button icon="pi pi-sign-out" :badge="user.active_sessions.toString() + ' sessions'"
+                            @click="disconnectUser(user.email)" :disabled="user.email == currentUserEmail"></Button>
                     </div>
 
                     <ConfirmPopup></ConfirmPopup>

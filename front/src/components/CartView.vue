@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { f_price, type Cart, type Product, type ProductId } from '@/types';
 import Button from "primevue/button"
 import Tag from 'primevue/tag';
 import { ref } from 'vue';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
+import type { Cart } from "@/scripts/cart";
+import { f_price } from "@/scripts/utils";
 let props = defineProps<{ cart: Cart }>();
 const emit = defineEmits<{ validate: [email: string] }>()
 
@@ -16,8 +17,8 @@ function validateEmail() {
     return re.test(email.value);
 }
 
-function validateCart(){
-    if(email.value.length == 0 || !validateEmail()) return
+function validateCart() {
+    if (email.value.length == 0 || !validateEmail()) return
     localStorage.setItem("email", email.value)
     emit("validate", email.value);
 }
@@ -26,7 +27,8 @@ function validateCart(){
     <Dialog v-model:visible="email_dialog_visible" modal header="Informations" :closable="false">
         <div class="">
             <p for="email">Merci d'entrer votre e-mail :</p>
-            <InputText class="email-input" id="email" v-model="email" :invalid="email.length != 0 && !validateEmail()"/>
+            <InputText class="email-input" id="email" v-model="email"
+                :invalid="email.length != 0 && !validateEmail()" />
         </div>
         <div class="">
             <Button type="button" label="Annuler" severity="secondary" @click="email_dialog_visible = false"></Button>
@@ -106,7 +108,7 @@ function validateCart(){
     font-size: larger;
 }
 
-.email-input{
+.email-input {
     margin-bottom: 20px;
 }
 </style>

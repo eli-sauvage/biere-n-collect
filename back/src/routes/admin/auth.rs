@@ -12,7 +12,7 @@ use crate::{
         user::{Role, User},
     },
     errors::SessionError,
-    routes::AppState,
+    routes::{AppState, OkEmptyResponse},
 };
 
 pub fn get_router() -> Router<AppState> {
@@ -47,7 +47,7 @@ async fn get_auth(request: Request) -> Json<Auth> {
     }
 }
 
-async fn delete_current(_user: User, cookie_jar: CookieJar) -> Result<CookieJar, SessionError> {
+async fn delete_current(_user: User, cookie_jar: CookieJar) -> Result<OkEmptyResponse, SessionError> {
     let session = cookie_jar
         .get("session")
         .ok_or_else(|| SessionError::SessionNotFound)?
@@ -57,7 +57,7 @@ async fn delete_current(_user: User, cookie_jar: CookieJar) -> Result<CookieJar,
 
     Session::delete_if_exists(&session).await?;
 
-    Ok(cookie_jar)
+    Ok(OkEmptyResponse::new_with_cookies(cookie_jar))
 }
 
 #[derive(Deserialize)]
@@ -67,12 +67,12 @@ struct CreateChallengeParams {
 async fn create_challenge(
     State(state): State<AppState>,
     params: Query<CreateChallengeParams>,
-) -> Result<(), SessionError> {
+) -> Result<OkEmptyResponse, SessionError> {
     state
         .challenge_manager
         .create_challenge(&params.email)
         .await?;
-    Ok(())
+    Ok(OkEmptyResponse::new())
 }
 
 #[derive(Deserialize)]
@@ -84,7 +84,7 @@ async fn verify_challenge(
     cookies: CookieJar,
     State(state): State<AppState>,
     params: Query<VerifyChallengeParams>,
-) -> Result<CookieJar, SessionError> {
+) -> Result<OkEmptyResponse, SessionError> {
     let session = state
         .challenge_manager
         .verify_challenge(&params.email, &params.code)
@@ -96,5 +96,5 @@ async fn verify_challenge(
         .secure(true);
 
     let cookies = cookies.add(cookie);
-    Ok(cookies)
+    Ok(OkEmptyResponse::new_with_cookies(cookies))
 }

@@ -3,16 +3,17 @@ import { useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import { ref, type Ref } from 'vue';
 import DisconnectHeader from './components/DisconnectHeader.vue';
+import { get_current_auth } from './scripts/api/admin/auth';
 let router = useRouter();
 
 type role = "admin" | "waiter" | null;
 let role: Ref<role> = ref(null);
 (async () => {
-    let res = await fetch(`${import.meta.env.VITE_API_URL}/challenge/get_auth`, { credentials: "include" }).then((r) => r.json())
-    if (!res.authenticated) {
+    let auth = await get_current_auth()
+    if(auth && auth.authenticated && auth.role && (auth.role == "admin" || auth.role == "waiter")){
+        role.value = auth.role
+    }else{
         router.push("/login")
-    } else if (res.role && res.role == "admin" || res.role == "waiter") {
-        role.value = res.role
     }
 })()
 

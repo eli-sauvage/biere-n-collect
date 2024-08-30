@@ -2,7 +2,6 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -12,7 +11,8 @@ use crate::{
         stripe::payment_intents::PaymentIntentStatus,
     },
     errors::{OrderProcessError, PaymentIntentError, ServerError},
-    routes::CustomQuery as Query
+    routes::CustomJsonExtractor as JsonExtractor,
+    routes::CustomQuery as Query,
 };
 
 use super::AppState;
@@ -35,14 +35,15 @@ struct ValidateCartResponse {
     order_id: OrderId,
 }
 async fn validate_cart(
-    Json(cart): Json<Cart>,
+    JsonExtractor(Json(cart)): JsonExtractor<Cart>,
 ) -> Result<Json<ValidateCartResponse>, OrderProcessError> {
+    println!("here");
     let order_id = Order::generate_from_cart(cart).await?;
     Ok(Json(ValidateCartResponse { order_id }))
 }
 
 #[derive(Deserialize)]
-struct OrderIdParam {
+struct PaymentInfosParams {
     order_id: OrderId,
 }
 #[derive(Serialize)]
@@ -51,7 +52,7 @@ struct PaymentInfos {
     total_price: i32,
 }
 async fn get_payment_infos(
-    params: Query<OrderIdParam>,
+    params: Query<PaymentInfosParams>,
 ) -> Result<Json<PaymentInfos>, PaymentIntentError> {
     let mut order = Order::get(params.order_id)
         .await?
@@ -65,20 +66,27 @@ async fn get_payment_infos(
     }))
 }
 
+#[derive(Deserialize)]
+struct PaymentStatusParams {
+    payment_intent_id: String,
+    client_secret: String,
+}
 #[derive(Serialize)]
 struct PaymentStatusResponse {
     status: PaymentIntentStatus,
+    receipt: Option<String>,
 }
 async fn get_payment_status(
-    params: Query<OrderIdParam>,
+    params: Query<PaymentStatusParams>,
 ) -> Result<Json<PaymentStatusResponse>, PaymentIntentError> {
-    let mut order = Order::get(params.order_id)
+    let mut order = Order::get_from_client_secret(&params.payment_intent_id, &params.client_secret)
         .await?
-        .ok_or_else(|| PaymentIntentError::OrderNotFound(params.order_id))?;
+        .ok_or_else(|| PaymentIntentError::OrderNotFoundFromSecrets)?;
 
     let intent = order.get_payment_intent().await?;
 
     Ok(Json(PaymentStatusResponse {
         status: intent.status,
+        receipt: order.receipt,
     }))
 }
