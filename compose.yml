@@ -16,10 +16,15 @@ services:
       - lhavrais-pay
   server:
     build:
-      context: back
+      context: .
+      args:
+        - VITE_SITE_URL=${VITE_SITE_URL}
+        - VITE_API_URL=${VITE_API_URL}
     volumes:
       - ${PWD}/.env:/.env
     image: ${DOCKER_IMAGE_URL_BASE}lhavrais-pay:latest
+    ports:
+      - 8000:8000
     environment:
       - MARIADB_HOST=db
     depends_on:
@@ -27,18 +32,18 @@ services:
         condition: service_healthy
     networks:
       - lhavrais-pay
-  front:
-    build:
-      args:
-        - VITE_SITE_URL=${VITE_SITE_URL}
-        - VITE_API_URL=${VITE_API_URL}
-      context: .
-      dockerfile: front/Dockerfile
-    image: ${DOCKER_IMAGE_URL_BASE}lhavrais-pay-front:latest
-    ports:
-      - 8080:8080
-    networks:
-      - lhavrais-pay
+  # front:
+  #   build:
+  #     args:
+  #       - VITE_SITE_URL=${VITE_SITE_URL}
+  #       - VITE_API_URL=${VITE_API_URL}
+  #     context: .
+  #     dockerfile: front/Dockerfile
+  #   image: ${DOCKER_IMAGE_URL_BASE}lhavrais-pay-front:latest
+  #   ports:
+  #     - 8080:8080
+  #   networks:
+  #     - lhavrais-pay
 
 volumes:
   sql-data:
