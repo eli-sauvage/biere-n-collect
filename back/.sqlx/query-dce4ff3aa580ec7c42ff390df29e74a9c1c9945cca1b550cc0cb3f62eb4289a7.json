@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\"  from Orders",
+  "query": "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE receipt = ?",
   "describe": {
     "columns": [
       {
@@ -35,7 +35,7 @@
         "name": "receipt: Receipt",
         "type_info": {
           "type": "VarString",
-          "flags": "",
+          "flags": "UNIQUE_KEY",
           "max_size": 1020
         }
       },
@@ -59,7 +59,7 @@
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 1
     },
     "nullable": [
       false,
@@ -70,5 +70,5 @@
       false
     ]
   },
-  "hash": "3de6835ccb43fe87ed5da4a70e8143c8b783a3fea4e3141ad1930d552427fe15"
+  "hash": "dce4ff3aa580ec7c42ff390df29e74a9c1c9945cca1b550cc0cb3f62eb4289a7"
 }

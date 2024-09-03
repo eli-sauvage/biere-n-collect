@@ -35,7 +35,7 @@
         "name": "receipt: Receipt",
         "type_info": {
           "type": "VarString",
-          "flags": "",
+          "flags": "UNIQUE_KEY",
           "max_size": 1020
         }
       },
