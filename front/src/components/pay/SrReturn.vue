@@ -66,7 +66,7 @@ function return_home() {
       <DataTable :value="payment_status.detail">
         <Column field="name" header="Article"></Column>
         <Column field="quantity" header="Quantité"></Column>
-        <Column :field="(e) => f_price(e.subtotal)" header="Sous-total"></Column>
+        <Column :field="(e: any) => f_price(e.subtotal)" header="Sous-total"></Column>
         <ColumnGroup type="footer">
           <Row>
             <Column footer="Total:" :colspan="2" footerStyle="text-align:right" />

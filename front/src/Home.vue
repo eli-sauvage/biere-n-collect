@@ -17,7 +17,7 @@ let visible = ref(false);
 <template>
     <div class="card flex justify-center">
         <Drawer class="drawer-cart" v-model:visible="visible" header="Panier" position="bottom">
-            <CartVue :cart="cart" @validate="(email) => cart.validate($router, email)" />
+            <CartVue :cart="cart" @validate="cart.validate($router)" />
         </Drawer>
         <div class="product-list">
             <ProductVue v-for="element in cart.elements" :cardElement="element" />

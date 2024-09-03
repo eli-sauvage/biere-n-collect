@@ -32,9 +32,9 @@ export class Cart {
     get_total(): string {
         return f_price(this.elements.reduce((acc, e) => acc + e.product.price * e.quantity, 0));
     }
-    async validate(router: Router, email: string) {
+    async validate(router: Router) {
         if (this.elements.length == 0) return
-        let order_id = await validate_cart(this, email);
+        let order_id = await validate_cart(this);
         if (order_id != null)
             router.push({ path: "/checkout", query: { order_id: order_id } })
     }
