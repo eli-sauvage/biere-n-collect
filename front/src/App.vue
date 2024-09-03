@@ -16,7 +16,6 @@ set_toast(useToast())
 .error-toast {
   max-width: calc(100vw - 40px);
 }
-
 * {
   touch-action: manipulation;
 }
