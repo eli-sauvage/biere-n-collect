@@ -66,7 +66,10 @@ createApp(App)
     .use(
         PrimeVue, {
             theme: {
-                preset: MyPreset
+                preset: MyPreset,
+                options: {
+                    darkModeSelector: '.dark-mode',
+                }
             }
         }
     )
