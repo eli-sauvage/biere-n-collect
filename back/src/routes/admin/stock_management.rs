@@ -20,7 +20,6 @@ pub fn get_router() -> Router<AppState> {
         .route("/move", patch(move_stock))
 }
 
-
 #[derive(Deserialize)]
 struct InsertStockParams {
     name: String,

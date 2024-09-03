@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
+import { delete_current_auth } from '@/scripts/api/admin/auth';
 useRoute()
 defineProps<{ page: "admin" | "serveur", isAdmin?: boolean }>()
 const router = useRouter()
@@ -10,8 +11,8 @@ let disconnecting = ref(false)
 
 async function disconnect() {
     disconnecting.value = true;
-    await fetch(`${import.meta.env.VITE_API_URL}/session/end`, { method: "POST", credentials: "include" }).then((r) => r.json());
-    router.push("/login")
+    if (await delete_current_auth())
+        router.push("/login")
 }
 
 </script>

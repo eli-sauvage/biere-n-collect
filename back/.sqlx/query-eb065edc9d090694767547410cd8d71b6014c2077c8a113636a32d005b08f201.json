@@ -17,8 +17,8 @@
         "name": "quantity",
         "type_info": {
           "type": "Long",
-          "flags": "NOT_NULL | UNSIGNED | NO_DEFAULT_VALUE",
-          "max_size": 10
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 11
         }
       },
       {

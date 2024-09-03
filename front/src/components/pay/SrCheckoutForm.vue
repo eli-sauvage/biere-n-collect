@@ -6,14 +6,17 @@ import SrMessages from "./SrMessages.vue";
 import { useRoute, useRouter } from "vue-router";
 import { f_price } from "@/scripts/utils";
 import Button from "primevue/button";
-import { get_payment_infos } from "@/scripts/api/order";
-import { get_stripe_pub_key } from "@/scripts/api/api";
+import { get_payment_infos, set_email } from "@/scripts/api/order";
+import { Error, get_stripe_pub_key } from "@/scripts/api/api";
 // let props = defineProps<{ order_id: number }>();
 let order_id = useRoute().query.order_id
 
 const isLoading = ref(false);
 const messages: Ref<string[]> = ref([]);
-const total_price: Ref<string> = ref("")
+const total_price: Ref<string> = ref("");
+const client_secret: Ref<string | null> = ref(null);
+const email: Ref<string> = ref("")
+
 
 let stripe: Stripe;
 let elements: StripeElements;
@@ -21,7 +24,7 @@ let elements: StripeElements;
 onMounted(async () => {
     try {
         const publishableKey = await get_stripe_pub_key();
-        if(publishableKey == null)return
+        if (publishableKey == null) return
         let config_res = await loadStripe(publishableKey);
         if (!config_res) {
             return
@@ -29,16 +32,21 @@ onMounted(async () => {
         stripe = config_res;
 
         let parsed_order_id = parseInt(order_id as string)
-        if(typeof parsed_order_id != "number" || Number.isNaN(parsed_order_id)) return
+        if (typeof parsed_order_id != "number" || Number.isNaN(parsed_order_id)) return
         let payment_infos = await get_payment_infos(parsed_order_id)
-        if(payment_infos == null) return
-        let clientSecret = payment_infos.client_secret;
+        if (payment_infos == null) return
+        client_secret.value = payment_infos.client_secret;
         total_price.value = f_price(payment_infos.total_price);
-        console.log(clientSecret)
 
-        elements = stripe.elements({ clientSecret });
+        elements = stripe.elements({ clientSecret: payment_infos.client_secret });
         const paymentElement = elements.create('payment');
         paymentElement.mount("#payment-element");
+        const linkAuthenticationElement = elements.create("linkAuthentication", { defaultValues: { email: localStorage.getItem("email") || "" } });
+        linkAuthenticationElement.mount("#link-authentication-element");
+        linkAuthenticationElement.on("change", (e) => {
+            console.log(e.value.email)
+            email.value = e.value.email
+        });
         isLoading.value = false;
     } catch (e) {
         if (e) {
@@ -56,12 +64,21 @@ const handleSubmit = async () => {
     isLoading.value = true;
     console.log(elements)
 
+    if (client_secret.value) {
+        localStorage.setItem("email", email.value)
+        let res = await set_email(client_secret.value, email.value)
+        if (!res) return
+    } else {
+        new Error("erreur lors de l'envoi de l'adresse mail", "")
+    }
+
     const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
             return_url: `${window.location.origin}/return`
         }
     });
+
 
     if (error.message && (error.type === "card_error" || error.type === "validation_error")) {
         messages.value.push(error.message);
@@ -84,8 +101,8 @@ function return_home() {
         <h2>Total à payer : {{ total_price }}</h2>
 
         <form id="payment-form" @submit.prevent="handleSubmit">
-            <!-- <div id="link-authentication-element" @change="console.log"></div> -->
-            <div id="payment-element" />
+            <div id="link-authentication-element"></div>
+            <div id="payment-element"></div>
             <button id="submit" :disabled="isLoading">
                 Payer {{ total_price }}
             </button>

@@ -29,7 +29,7 @@ pub enum ServerError {
     #[error("email send error")]
     EmailSend(#[from] lettre::transport::smtp::Error),
     #[error("could not generate qr code")]
-    QrCode(#[from] qrcode::types::QrError)
+    QrCode(#[from] qrcode::types::QrError),
 }
 
 impl IntoResponse for ServerError {

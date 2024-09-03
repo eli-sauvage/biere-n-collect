@@ -11,6 +11,7 @@ pub use admin_errors::UserParseError;
 mod order_errors;
 pub use order_errors::OrderManagementError;
 pub use order_errors::OrderProcessError;
+pub use order_errors::SendReceiptEmailError;
 
 mod stock_management_errors;
 pub use stock_management_errors::ManageStockError;

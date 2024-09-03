@@ -16,6 +16,7 @@
   "dependencies": {
     "@primevue/themes": "^4.0.4",
     "primevue": "^4.0.4",
+    "qr-scanner": "^1.4.2",
     "vue": "^3.4.29",
     "vue-router": "^4.4.3"
   },

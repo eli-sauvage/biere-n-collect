@@ -1,41 +1,13 @@
 <script setup lang="ts">
 import Button from "primevue/button"
 import Tag from 'primevue/tag';
-import { ref } from 'vue';
-import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
 import type { Cart } from "@/scripts/cart";
 import { f_price } from "@/scripts/utils";
-let props = defineProps<{ cart: Cart }>();
-const emit = defineEmits<{ validate: [email: string] }>()
+defineProps<{ cart: Cart }>();
+const emit = defineEmits<{ validate: [] }>()
 
-let email_dialog_visible = ref(false);
-let email = ref(localStorage.getItem("email") || "")
-
-function validateEmail() {
-    var re = /^\S+@\S+\.\S+$/;
-    return re.test(email.value);
-}
-
-function validateCart() {
-    if (email.value.length == 0 || !validateEmail()) return
-    localStorage.setItem("email", email.value)
-    emit("validate", email.value);
-}
 </script>
 <template>
-    <Dialog v-model:visible="email_dialog_visible" modal header="Informations" :closable="false">
-        <div class="">
-            <p for="email">Merci d'entrer votre e-mail :</p>
-            <InputText class="email-input" id="email" v-model="email"
-                :invalid="email.length != 0 && !validateEmail()" />
-        </div>
-        <div class="">
-            <Button type="button" label="Annuler" severity="secondary" @click="email_dialog_visible = false"></Button>
-            <Button type="button" label="Valider" @click="validateCart"></Button>
-        </div>
-    </Dialog>
-
     <div class="cart">
         <div v-for="(elem, index) in cart.elems_with_subtotal()" class="item">
             <p class="product-name">{{ elem.cart_element.product.name }}</p>
@@ -45,7 +17,7 @@ function validateCart() {
             </div>
         </div>
         <div class="button">
-            <Button class="valider" @click="email_dialog_visible = true" :badge="'Total: ' + cart.get_total()"
+            <Button class="valider" @click="$emit('validate')" :badge="'Total: ' + cart.get_total()"
                 badge-severity="contrast" label="Valider"></Button>
         </div>
     </div>
@@ -106,9 +78,5 @@ function validateCart() {
     bottom: 25%;
     margin-top: 20px;
     font-size: larger;
-}
-
-.email-input {
-    margin-bottom: 20px;
 }
 </style>

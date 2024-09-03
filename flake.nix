@@ -22,6 +22,7 @@
 	    openssl
 	    pkg-config
 	    sqlx-cli
+	    lld
         ];
         };
         });

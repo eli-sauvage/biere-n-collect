@@ -1,12 +1,13 @@
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use sqlx::{types::time::OffsetDateTime, MySql, Transaction};
 use uuid::Uuid;
 
 use super::stripe::api;
 use super::stripe::payment_intents::{PaymentIntent, PaymentIntentStatus};
 use super::{stock, stripe};
+use crate::app::receipt::Receipt;
 use crate::db;
 use crate::errors::{OrderProcessError, ServerError};
 
@@ -22,33 +23,31 @@ struct CartElement {
 #[derive(Deserialize, Debug, Clone)]
 pub struct Cart {
     elements: Vec<CartElement>,
-    email: String,
 }
 
 pub type OrderId = u64;
-pub type Receipt = String;
+#[derive(Serialize)]
+pub struct OrderDetailElement {
+    pub name: String,
+    pub quantity: u8,
+    pub subtotal: i32,
+}
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub struct Order {
     pub id: OrderId,
-    #[serde(serialize_with = "serialize_time")]
-    timestamp: OffsetDateTime,
-    user_email: String,
+    pub timestamp: OffsetDateTime,
+    pub user_email: Option<String>,
     pub receipt: Option<Receipt>,
     payment_intent_id: String,
-    client_secret: String,
-    served: bool,
-}
-fn serialize_time<S: Serializer>(dt: &OffsetDateTime, serializer: S) -> Result<S::Ok, S::Error> {
-    let time = dt.to_string();
-    serializer.serialize_str(&time)
+    pub served: bool,
 }
 
 impl Order {
     pub async fn get(id: OrderId) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt, payment_intent_id, served as \"served!: bool\", client_secret from Orders WHERE id = ?",
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE id = ?",
             id
         )
         .fetch_optional(db())
@@ -57,18 +56,43 @@ impl Order {
         Ok(order_opt)
     }
 
-    pub async fn get_from_client_secret(
-        payment_intent_id: &str,
-        client_secret: &str,
-    ) -> Result<Option<Order>, ServerError> {
+    pub async fn get_from_client_secret(client_secret: &str) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt, payment_intent_id, served as \"served!: bool\", client_secret from Orders WHERE payment_intent_id = ? AND client_secret = ?",
-            payment_intent_id, client_secret
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE client_secret = ?",
+            client_secret
         )
         .fetch_optional(db())
         .await?;
         Ok(order_opt)
+    }
+
+    pub async fn set_email(&mut self, email: &str) -> Result<(), ServerError> {
+        sqlx::query!(
+            "UPDATE Orders SET user_email = ? WHERE id = ?",
+            email,
+            self.id
+        )
+        .execute(db())
+        .await?;
+        Ok(())
+    }
+
+    pub async fn get_details(&self) -> Result<Vec<OrderDetailElement>, ServerError> {
+        let detail = sqlx::query!(
+            "SELECT Stock.name, OrderDetails.quantity, (Stock.price * OrderDetails.quantity) as subtotal FROM OrderDetails INNER JOIN Stock ON OrderDetails.product_id = Stock.product_id WHERE order_id = ? AND OrderDetails.quantity != 0",
+            self.id
+        ).fetch_all(db()).await?;
+        let detail: Vec<OrderDetailElement> = detail
+            .into_iter()
+            .map(|r| OrderDetailElement {
+                name: r.name,
+                quantity: r.quantity as u8,
+                subtotal: r.subtotal as i32,
+            })
+            .collect();
+
+        Ok(detail)
     }
 
     async fn mark_as_paid(&mut self) -> Result<(), ServerError> {
@@ -80,8 +104,13 @@ impl Order {
         )
         .execute(db())
         .await?;
-        self.receipt = Some(receipt);
-
+        self.receipt = Some(Receipt(receipt));
+        let self_thread = self.clone();
+        tokio::spawn(async move {
+            if let Err(e) = self_thread.send_qr().await {
+                eprintln!("error while sending receipt mail : {e:?}")
+            }
+        });
         let detail: Vec<(u32, u32)> = sqlx::query!(
             "SELECT product_id, quantity FROM OrderDetails WHERE order_id = ?",
             self.id
@@ -133,8 +162,7 @@ impl Order {
         let payment_intent = stripe::api::create_payment_intent(total_price as i64).await?;
         let expires = OffsetDateTime::now_utc() + Duration::from_secs(60 * ORDER_DURATION_MINUTES);
         let order_id = sqlx::query!(
-            "INSERT INTO Orders (user_email, expires, payment_intent_id, client_secret) VALUES (?, ?, ?, ?)",
-            cart.email,
+            "INSERT INTO Orders (expires, payment_intent_id, client_secret) VALUES (?, ?, ?)",
             expires,
             payment_intent.id,
             payment_intent.client_secret
@@ -165,18 +193,28 @@ impl Order {
                 .await?
                 .receipt;
             if receipt.is_none() {
-                println!("marking as paid");
                 self.mark_as_paid().await?;
             }
         }
         Ok(intent)
+    }
+    pub async fn get_full_price(&self) -> Result<i32, ServerError> {
+        let total = sqlx::query!(
+            "SELECT cast(SUM(Stock.price * OrderDetails.quantity) as int) as result from OrderDetails INNER JOIN Stock ON OrderDetails.product_id = Stock.product_id WHERE order_id = ? ;",
+            self.id
+        ).fetch_one(db()).await.map_err(ServerError::Sqlx)?;
+
+        let res = total
+            .result
+            .ok_or(ServerError::Sqlx(sqlx::Error::RowNotFound))?;
+        Ok(res as i32)
     }
 }
 
 pub async fn get_all_orders() -> Result<Vec<Order>, ServerError> {
     let orders = sqlx::query_as!(
         Order,
-        "SELECT id, timestamp, user_email, receipt, payment_intent_id, served as \"served!: bool\", client_secret from Orders"
+        "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\"  from Orders"
     )
     .fetch_all(db())
     .await?;

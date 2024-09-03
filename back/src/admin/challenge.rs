@@ -43,19 +43,9 @@ impl ChallengeManager {
             .ok_or_else(|| SessionError::ChallengeNotFound(email.to_owned()))?;
         let challenge = Challenge::new();
 
-        let code = challenge
-            .code
-            .iter()
-            .map(|e| e.to_string())
-            .collect::<Vec<String>>()
-            .chunks(2)
-            .map(|chunk| chunk.concat())
-            .collect::<Vec<String>>()
-            .join(" - ");
-
         let email: Mailbox = email.parse()?;
 
-        mail::send_code(&email, code).await?;
+        mail::send_code(&email, challenge.code).await?;
 
         //doesn't matter if the user already has a challenge, we want it to be overwritten (new attempt)
         challenges.insert(email.to_string(), challenge);

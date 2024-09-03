@@ -9,7 +9,7 @@ export async function get_current_auth(): Promise<Auth | null> {
     let url = `${base}/admin/auth/get_current`
     // let error_title = "Erreur lors de la récupération du compte actuel"
     try {
-        let res = await fetch(url, {credentials: "include"}).then(e => e.json());
+        let res = await fetch(url, { credentials: "include" }).then(e => e.json());
         if (res.error) {
             // new Error(error_title, res.error)
             return null
@@ -27,7 +27,7 @@ export async function delete_current_auth(): Promise<boolean> {
     let url = `${base}/admin/auth/delete_current`
     let error_title = "Erreur lors de la déconnexion"
     try {
-        let res = await fetch(url).then(e => e.json());
+        let res = await fetch(url, { credentials: "include", method: "DELETE" }).then(e => e.json());
         if (res.error) {
             new Error(error_title, res.error)
             return false
@@ -67,7 +67,6 @@ export async function verify_challenge(email: string, code: string): Promise<boo
     let error_title = "Erreur lors de la vérification du challenge d'authentification"
     try {
         let res = await fetch(url, {
-            method: "POST",
             credentials: "include"
         }).then(e => e.json());
         if (res.error) {

@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT id, timestamp, validated as \"validated!: bool\", user_email, receipt, payment_intent_id from Orders WHERE id = ?",
+  "query": "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE client_secret = ?",
   "describe": {
     "columns": [
       {
@@ -23,38 +23,38 @@
       },
       {
         "ordinal": 2,
-        "name": "validated!: bool",
+        "name": "user_email",
         "type_info": {
-          "type": "Tiny",
-          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
-          "max_size": 1
+          "type": "VarString",
+          "flags": "",
+          "max_size": 1020
         }
       },
       {
         "ordinal": 3,
-        "name": "user_email",
+        "name": "receipt: Receipt",
         "type_info": {
           "type": "VarString",
-          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "flags": "",
           "max_size": 1020
         }
       },
       {
         "ordinal": 4,
-        "name": "receipt",
+        "name": "payment_intent_id",
         "type_info": {
           "type": "VarString",
-          "flags": "",
+          "flags": "NOT_NULL | UNIQUE_KEY | NO_DEFAULT_VALUE",
           "max_size": 1020
         }
       },
       {
         "ordinal": 5,
-        "name": "payment_intent_id",
+        "name": "served!: bool",
         "type_info": {
-          "type": "VarString",
-          "flags": "",
-          "max_size": 1020
+          "type": "Tiny",
+          "flags": "NOT_NULL",
+          "max_size": 1
         }
       }
     ],
@@ -64,11 +64,11 @@
     "nullable": [
       false,
       false,
-      false,
-      false,
       true,
-      true
+      true,
+      false,
+      false
     ]
   },
-  "hash": "9865f65b805318fc95dc5716a769808f452095ef7435a002a611c420f8b9835d"
+  "hash": "9cf90e5f9d0219038fcb389e303fb0eb23e32da7c3ed690a69fc4c7f1cb07522"
 }

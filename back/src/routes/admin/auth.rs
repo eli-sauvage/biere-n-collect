@@ -20,7 +20,7 @@ pub fn get_router() -> Router<AppState> {
         .route("/get_current", get(get_auth))
         .route("/delete_current", delete(delete_current))
         .route("/challenge/create", post(create_challenge))
-        .route("/challenge/verify", post(verify_challenge))
+        .route("/challenge/verify", get(verify_challenge))
 }
 
 #[derive(Serialize, Default)]
@@ -47,13 +47,17 @@ async fn get_auth(request: Request) -> Json<Auth> {
     }
 }
 
-async fn delete_current(_user: User, cookie_jar: CookieJar) -> Result<OkEmptyResponse, SessionError> {
+async fn delete_current(
+    _user: User,
+    cookie_jar: CookieJar,
+) -> Result<OkEmptyResponse, SessionError> {
+    println!("delete");
     let session = cookie_jar
         .get("session")
         .ok_or_else(|| SessionError::SessionNotFound)?
         .to_string();
 
-    let cookie_jar = cookie_jar.remove("session");
+    let cookie_jar = cookie_jar.remove(Cookie::build("session").path("/"));
 
     Session::delete_if_exists(&session).await?;
 

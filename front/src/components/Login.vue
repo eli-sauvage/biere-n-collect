@@ -3,15 +3,17 @@ import InputOtp from 'primevue/inputotp';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import { ref, type Ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { create_challenge, get_current_auth, verify_challenge } from '@/scripts/api/admin/auth';
 let router = useRouter()
+const route = useRoute()
 let code = ref("");
 
 let challenge_created = ref(false);
 
 let btn_loading = ref(false);
-let email = ref("");
+let email = ref(localStorage.getItem("email") || "");
+
 
 let message = ref("");
 
@@ -20,12 +22,20 @@ let message = ref("");
     if (auth && auth.authenticated) {
         router.push("/serveur")
     }
+    if (route && route.query && route.query.email && route.query.code) {
+        code.value = route.query.code as string
+        email.value = route.query.email as string
+        btn_loading.value = true;
+        challenge_created.value = true;
+        validate()
+    }
 })()
 
 async function validate() {
     if (!challenge_created.value) { //email
         if (email.value.length == 0) return
         btn_loading.value = true;
+        localStorage.setItem("email", email.value)
         let challenge = await create_challenge(email.value);
         btn_loading.value = false
         if (challenge) {

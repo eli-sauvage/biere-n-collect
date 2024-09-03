@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT email, role FROM Users WHERE email = ?",
+  "query": "SELECT email, role as \"role: Role\" FROM Users",
   "describe": {
     "columns": [
       {
@@ -14,7 +14,7 @@
       },
       {
         "ordinal": 1,
-        "name": "role",
+        "name": "role: Role",
         "type_info": {
           "type": "String",
           "flags": "NOT_NULL | ENUM | NO_DEFAULT_VALUE",
@@ -23,12 +23,12 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
       false,
       false
     ]
   },
-  "hash": "b29bbf4604f7c8117b6adc3bdc781c5ce862ef55eb54c562e1e6a7cb90fe41d1"
+  "hash": "7da3ec6649ad2ae5dd3b9b7ab812b05df3e0c7db9d1a793e3804bdec6fe4574a"
 }

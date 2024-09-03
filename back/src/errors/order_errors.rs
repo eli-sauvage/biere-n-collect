@@ -1,5 +1,4 @@
-use axum::response::IntoResponse;
-use reqwest::StatusCode;
+use axum::{http::StatusCode, response::IntoResponse};
 use thiserror::Error;
 
 use super::{ErrorResponse, ServerError};
@@ -30,8 +29,6 @@ impl IntoResponse for OrderProcessError {
 
 #[derive(Error, Debug)]
 pub enum OrderManagementError {
-    // #[error("User could not be identified: {0}")]
-    // NotAuthorized(ParseUserErrorMsg),
     #[error("server error")]
     ServerError(#[from] ServerError),
 }
@@ -40,10 +37,19 @@ impl IntoResponse for OrderManagementError {
         match self {
             Self::ServerError(e) => e.into_response(),
         }
-        // if let OrderManagementError::ServerError(e) = self{
-        //     e.into_response()
-        // }else{
-        //     todo!()
-        // }
     }
+}
+
+#[derive(Error, Debug)]
+pub enum SendReceiptEmailError {
+    #[error("could not find user email address")]
+    NoEmailAddress,
+    #[error("invalid email address")]
+    InvalidEmailAddress(#[from] lettre::address::AddressError),
+    #[error("no receipt found in current order")]
+    NoReceipt,
+    #[error("error while generating qr code image")]
+    ImageError(#[from] image::error::ImageError),
+    #[error("server error")]
+    ServerError(#[from] ServerError),
 }

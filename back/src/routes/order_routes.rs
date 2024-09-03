@@ -2,31 +2,31 @@ use axum::{
     body::Body,
     http::HeaderValue,
     response::Response,
-    routing::{get, post},
+    routing::{get, patch, post},
     Json, Router,
 };
-use qrcode::{render::svg, QrCode};
+use qrcode::render::svg;
 use reqwest::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     app::{
-        orders::{Cart, Order, OrderId},
+        orders::{Cart, Order, OrderDetailElement, OrderId},
         stock,
         stripe::payment_intents::PaymentIntentStatus,
     },
     errors::{OrderProcessError, PaymentIntentError, ServerError},
-    routes::CustomJsonExtractor as JsonExtractor,
-    routes::CustomQuery as Query,
+    routes::{CustomJsonExtractor as JsonExtractor, CustomQuery as Query},
 };
 
-use super::AppState;
+use super::{AppState, OkEmptyResponse};
 
 pub fn get_router() -> Router<AppState> {
     Router::new()
         .route("/get_available_stock", get(get_available_stock))
         .route("/validate_cart", post(validate_cart))
         .route("/get_payment_infos", get(get_payment_infos))
+        .route("/set_email", patch(set_email))
         .route("/get_payment_status", get(get_payment_status))
         .route("/get_qr_code", get(get_qr_code))
 }
@@ -43,7 +43,6 @@ struct ValidateCartResponse {
 async fn validate_cart(
     JsonExtractor(Json(cart)): JsonExtractor<Cart>,
 ) -> Result<Json<ValidateCartResponse>, OrderProcessError> {
-    println!("here");
     let order_id = Order::generate_from_cart(cart).await?;
     Ok(Json(ValidateCartResponse { order_id }))
 }
@@ -73,41 +72,62 @@ async fn get_payment_infos(
 }
 
 #[derive(Deserialize)]
+struct SetEmailParams {
+    client_secret: String,
+    email: String,
+}
+
+async fn set_email(params: Query<SetEmailParams>) -> Result<OkEmptyResponse, PaymentIntentError> {
+    let mut order = Order::get_from_client_secret(&params.client_secret)
+        .await?
+        .ok_or_else(|| PaymentIntentError::OrderNotFoundFromSecrets)?;
+    order.set_email(&params.email).await?;
+    println!("setting email");
+
+    Ok(OkEmptyResponse::new())
+}
+
+#[derive(Deserialize)]
 struct PaymentStatusParams {
-    payment_intent_id: String,
     client_secret: String,
 }
 #[derive(Serialize)]
 struct PaymentStatusResponse {
     status: PaymentIntentStatus,
     receipt: Option<String>,
+    email: Option<String>,
+    detail: Vec<OrderDetailElement>,
+    total_price: i32,
 }
 async fn get_payment_status(
     params: Query<PaymentStatusParams>,
 ) -> Result<Json<PaymentStatusResponse>, PaymentIntentError> {
-    let mut order = Order::get_from_client_secret(&params.payment_intent_id, &params.client_secret)
+    let mut order = Order::get_from_client_secret(&params.client_secret)
         .await?
         .ok_or_else(|| PaymentIntentError::OrderNotFoundFromSecrets)?;
 
     let intent = order.get_payment_intent().await?;
+    let total_price = intent.amount;
 
-    Ok(Json(PaymentStatusResponse {
+    let res = Json(PaymentStatusResponse {
         status: intent.status,
-        receipt: order.receipt,
-    }))
+        receipt: order.receipt.as_deref().cloned(),
+        email: order.user_email.clone(),
+        detail: order.get_details().await?,
+        total_price,
+    });
+
+    Ok(res)
 }
 
 async fn get_qr_code(params: Query<PaymentStatusParams>) -> Result<Response, PaymentIntentError> {
-    let receipt =
-        Order::get_from_client_secret(&params.payment_intent_id, &params.client_secret)
-            .await?
-            .ok_or_else(|| PaymentIntentError::OrderNotFoundFromSecrets)?
-            .receipt
-            .ok_or_else(|| PaymentIntentError::NoReceipt)?;
+    let order = Order::get_from_client_secret(&params.client_secret)
+        .await?
+        .ok_or_else(|| PaymentIntentError::OrderNotFoundFromSecrets)?;
+    let receipt = order.receipt.ok_or_else(|| PaymentIntentError::NoReceipt)?;
 
-    let qr = QrCode::with_version(receipt, qrcode::Version::Normal(5), qrcode::EcLevel::H)
-        .map_err(ServerError::QrCode)?;
-    let img = qr
+    let img = receipt
+        .get_qr_code()?
         .render()
         .min_dimensions(200, 200)
         .dark_color(svg::Color("#000000"))

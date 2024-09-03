@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT cast(SUM(price * OrderDetails.quantity) as int) as result from OrderDetails INNER JOIN Stock ON OrderDetails.product_id = Stock.product_id WHERE order_id = ? ;",
+  "query": "SELECT cast(SUM(Stock.price * OrderDetails.quantity) as int) as result from OrderDetails INNER JOIN Stock ON OrderDetails.product_id = Stock.product_id WHERE order_id = ? ;",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": {
           "type": "LongLong",
           "flags": "BINARY",
-          "max_size": 20
+          "max_size": 21
         }
       }
     ],
@@ -20,5 +20,5 @@
       true
     ]
   },
-  "hash": "f84caa9276d8547a2d3c908b42f3171e8af15df51b7fc2f6bc3085ca582a25fc"
+  "hash": "c20294a8aeaad82389de8aa646af4a5521baf2751d625b494400ae7f026e74c8"
 }
