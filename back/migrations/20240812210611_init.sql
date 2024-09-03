@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS Orders
     client_secret VARCHAR(255) NOT NULL UNIQUE,
     payment_status ENUM("canceled", "processing", "succeeded"),
     user_email VARCHAR(255),
-    receipt VARCHAR(255),
+    receipt VARCHAR(255) UNIQUE,
     served BOOLEAN NOT NULL DEFAULT FALSE
 );
 

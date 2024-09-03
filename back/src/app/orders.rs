@@ -67,6 +67,17 @@ impl Order {
         Ok(order_opt)
     }
 
+    pub async fn get_by_receipt(receipt: &str) -> Result<Option<Order>, ServerError> {
+        let order_opt = sqlx::query_as!(
+            Order,
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE receipt = ?",
+            receipt
+        )
+        .fetch_optional(db())
+        .await?;
+        Ok(order_opt)
+    }
+
     pub async fn set_email(&mut self, email: &str) -> Result<(), ServerError> {
         sqlx::query!(
             "UPDATE Orders SET user_email = ? WHERE id = ?",
@@ -75,6 +86,15 @@ impl Order {
         )
         .execute(db())
         .await?;
+        self.user_email = Some(email.to_owned());
+        Ok(())
+    }
+
+    pub async fn set_served(&mut self, served: bool) -> Result<(), ServerError> {
+        sqlx::query!("UPDATE Orders SET served = ? WHERE id = ?", served, self.id)
+            .execute(db())
+            .await?;
+        self.served = served;
         Ok(())
     }
 
@@ -211,12 +231,31 @@ impl Order {
     }
 }
 
-pub async fn get_all_orders() -> Result<Vec<Order>, ServerError> {
-    let orders = sqlx::query_as!(
-        Order,
-        "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\"  from Orders"
-    )
-    .fetch_all(db())
-    .await?;
+pub async fn search_orders(
+    email: Option<&str>,
+    date_begin: Option<OffsetDateTime>,
+    date_end: Option<OffsetDateTime>,
+    receipt: Option<&str>,
+) -> Result<Vec<Order>, ServerError> {
+    let orders = if let Some(date_end) = date_end {
+        sqlx::query_as!(
+            Order,
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\"  from Orders
+            WHERE user_email LIKE CONCAT('%', ?, '%') AND receipt LIKE CONCAT('%', ?, '%') AND timestamp > ? AND timestamp < ? ORDER BY timestamp DESC",
+            email.unwrap_or(""),
+            receipt.unwrap_or(""),
+            date_begin.unwrap_or(OffsetDateTime::UNIX_EPOCH),
+            date_end
+        ).fetch_all(db()).await?
+    } else {
+        sqlx::query_as!(
+            Order,
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\"  from Orders
+            WHERE user_email LIKE CONCAT('%', ?, '%') AND receipt LIKE CONCAT('%', ?, '%') AND timestamp > ? ORDER BY timestamp DESC",
+            email.unwrap_or(""),
+            receipt.unwrap_or(""),
+            date_begin.unwrap_or(OffsetDateTime::UNIX_EPOCH),
+        ).fetch_all(db()).await?
+    };
     Ok(orders)
 }

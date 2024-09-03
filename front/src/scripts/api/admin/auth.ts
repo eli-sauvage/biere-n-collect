@@ -7,17 +7,14 @@ export type Auth = {
 }
 export async function get_current_auth(): Promise<Auth | null> {
     let url = `${base}/admin/auth/get_current`
-    // let error_title = "Erreur lors de la récupération du compte actuel"
     try {
         let res = await fetch(url, { credentials: "include" }).then(e => e.json());
         if (res.error) {
-            // new Error(error_title, res.error)
             return null
         } else {
             return res as Auth
         }
     } catch (e: any) {
-        // new Error(error_title, e.toString());
         return null
     }
 }

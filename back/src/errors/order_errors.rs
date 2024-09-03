@@ -29,13 +29,23 @@ impl IntoResponse for OrderProcessError {
 
 #[derive(Error, Debug)]
 pub enum OrderManagementError {
+    #[error("invalid date provided")]
+    InvalidDate,
+    #[error("order not found")]
+    OrderNotFound,
     #[error("server error")]
     ServerError(#[from] ServerError),
 }
 impl IntoResponse for OrderManagementError {
     fn into_response(self) -> axum::response::Response {
-        match self {
-            Self::ServerError(e) => e.into_response(),
+        if let Self::ServerError(e) = self {
+            e.into_response()
+        } else {
+            let status = match self {
+                Self::InvalidDate | Self::OrderNotFound => StatusCode::BAD_REQUEST,
+                Self::ServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            };
+            (status, ErrorResponse::json(self.to_string())).into_response()
         }
     }
 }

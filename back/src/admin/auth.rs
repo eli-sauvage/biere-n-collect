@@ -3,21 +3,15 @@ use crate::{db, errors::ServerError};
 use sqlx::types::time::OffsetDateTime;
 use std::time::Duration;
 
-use serde::{Serialize, Serializer};
 use uuid::Uuid;
 
 const SESSION_DURATION: Duration = Duration::from_secs(12 * 60 * 60);
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub struct Session {
     pub email: String,
-    #[serde(serialize_with = "serialize_time")]
     pub expires: OffsetDateTime,
     pub uuid: String,
-}
-fn serialize_time<S: Serializer>(dt: &OffsetDateTime, serializer: S) -> Result<S::Ok, S::Error> {
-    let time = dt.to_string();
-    serializer.serialize_str(&time)
 }
 impl Session {
     async fn delete_old_sessions() -> Result<(), ServerError> {
