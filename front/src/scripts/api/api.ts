@@ -2,7 +2,7 @@ import type { ToastServiceMethods } from "primevue/toastservice"
 
 export let base = import.meta.env.VITE_API_URL
 
-let toast: null | ToastServiceMethods = null;
+export let toast: null | ToastServiceMethods = null;
 export function set_toast(t: ToastServiceMethods){
     toast = t
 }

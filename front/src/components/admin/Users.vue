@@ -24,7 +24,8 @@ let existing_roles: Ref<{ role: "admin" | "waiter", translated: string }[]> = re
 ]);
 
 let user_to_add: Ref<{ email: string, role: "admin" | "waiter" } | null> = ref(null);
-async function addUser() {
+async function addUser(e:Event) {
+    e.preventDefault()
     if (user_to_add.value == null) return
     if (await add_user(user_to_add.value.email, user_to_add.value.role)) {
         user_to_add.value = null
@@ -80,6 +81,7 @@ const confirm_delete = (event: Event, email: string) => {
 
     <Dialog v-if="user_to_add != null" :visible="user_to_add != null" modal header="Edit Profile" :draggable="false"
         :closable="false">
+        <form>
         <div class="inputs">
             <label for="email">Email</label>
             <InputText id="email" v-model="user_to_add.email" />
@@ -89,8 +91,9 @@ const confirm_delete = (event: Event, email: string) => {
         </div>
         <div class="footer">
             <Button type="button" label="Annuler" severity="secondary" @click="user_to_add = null"></Button>
-            <Button type="button" label="Valider" @click="addUser"></Button>
+            <Button type="submit" label="Valider" @click="addUser"></Button>
         </div>
+        </form>
     </Dialog>
     <Accordion :value="selectedUser">
         <AccordionPanel v-for="(user, index) in users" :value="index.toString()">

@@ -4,6 +4,7 @@ import { f_price } from '@/scripts/utils';
 import Tag from 'primevue/tag';
 
 defineProps<{ selected_order: Order }>()
+defineEmits<{served_clicked: []}>()
 const fmtDate = (order: Order): string => {
     let timestamp = order.timestamp
     try {
@@ -22,7 +23,7 @@ const fmtDate = (order: Order): string => {
             <span>{{ selected_order.user_email }}</span>
             <span>{{ fmtDate(selected_order) }}</span>
             <span class="receipt">{{ selected_order.receipt }}</span>
-            <div class="served">
+            <div class="served" @click="$emit('served_clicked')">
                 <span>Servie:</span>
                 <i v-if="selected_order.served" class="pi pi-check" style="color: green"></i>
                 <i v-else class="pi pi-times" style="color: red"></i>
@@ -51,7 +52,7 @@ const fmtDate = (order: Order): string => {
 .data {
     display: flex;
     gap: 20px;
-    background-color: white;
+    background-color: transparent;
     padding: 10px;
     border-radius: 5px;
     align-items: center;

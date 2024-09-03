@@ -55,7 +55,7 @@ async function validate() {
 </script>
 
 <template>
-    <div class="container">
+    <form class="container">
         <div v-if="!challenge_created" class="email-container">
             <p>Entrez votre adresse mail :</p>
             <InputText id="email" aria-describedby="email-help" v-if="!challenge_created" type="email"
@@ -74,8 +74,8 @@ async function validate() {
                 </template>
             </InputOtp>
         </div>
-        <Button label="Valider" class="btn-valider" @click="validate" :loading="btn_loading"></Button>
-    </div>
+        <Button type="submit" label="Valider" class="btn-valider" @click="validate" :loading="btn_loading"></Button>
+    </form>
 </template>
 
 <style scoped>

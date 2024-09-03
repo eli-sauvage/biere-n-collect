@@ -11,29 +11,32 @@ let prod = ref({ ...props.product })
 
 let price = ref(prod.value.price / 100);
 
-function save() {
+function save(e:Event) {
+    e.preventDefault()
     prod.value.price = Math.round(price.value * 100);
     emit("save", prod.value)
 }
 </script>
 
 <template>
-    <div class="inputs">
-        <label for="name">Nom</label>
-        <InputText id="name" v-model="prod.name" />
-        <label for="price">Prix</label>
-        <InputNumber id="price" v-model="price" mode="currency" currency="EUR" />
-        <label for="stock">Stock</label>
-        <InputNumber locale="fr-FR" id="stock" v-model="prod.quantity" />
-        <div class="available">
-            <label for="available">Dispo à la commande</label>
-            <ToggleSwitch id="available" v-model="prod.available" />
+    <form>
+        <div class="inputs">
+            <label for="name">Nom</label>
+            <InputText id="name" v-model="prod.name" />
+            <label for="price">Prix</label>
+            <InputNumber id="price" v-model="price" mode="currency" currency="EUR" />
+            <label for="stock">Stock</label>
+            <InputNumber locale="fr-FR" id="stock" v-model="prod.quantity" />
+            <div class="available">
+                <label for="available">Dispo à la commande</label>
+                <ToggleSwitch id="available" v-model="prod.available" />
+            </div>
         </div>
-    </div>
-    <div class="footer">
-        <Button type="button" label="Annuler" severity="secondary" @click="$emit('close')"></Button>
-        <Button type="button" label="Valider" @click="save"></Button>
-    </div>
+        <div class="footer">
+            <Button type="button" label="Annuler" severity="secondary" @click="$emit('close')"></Button>
+            <Button type="submit" label="Valider" @click="save"></Button>
+        </div>
+    </form>
 </template>
 
 <style scoped>

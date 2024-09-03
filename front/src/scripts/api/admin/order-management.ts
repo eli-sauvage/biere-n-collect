@@ -1,4 +1,4 @@
-import { base, Error } from "../api";
+import { base, Error, toast } from "../api";
 
 export type Order = {
   id: number,
@@ -68,8 +68,8 @@ export async function get_order_by_receipt(receipt: string): Promise<Order | nul
   }
 }
 
-export async function set_served(order_id: number, new_served: boolean): Promise<boolean> {
-  let url = `${base}/admin/orders/set_served?order_id=${encodeURIComponent(order_id)}&new_served=${encodeURIComponent(new_served)}`;
+export async function set_served(order: Order, new_served: boolean): Promise<boolean> {
+  let url = `${base}/admin/orders/set_served?order_id=${encodeURIComponent(order.id)}&new_served=${encodeURIComponent(new_served)}`;
   let error_title = "Erreur lors de la maj de la commande"
   try {
     let res = await fetch(url, {
@@ -80,6 +80,8 @@ export async function set_served(order_id: number, new_served: boolean): Promise
       new Error(error_title, res.error)
       return false
     } else {
+      if (toast != null)
+        toast.add({ severity: 'success', detail: `la commande de ${order.user_email} a été marquée comme ${new_served?"":"non "}servie`, life: 1500 })
       return true
     }
   } catch (e: any) {

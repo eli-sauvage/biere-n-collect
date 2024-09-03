@@ -38,14 +38,18 @@ const select_order = (order: Order) => {
   selected_order.value = order;
 }
 const setServed = async (order: Order, served: boolean) => {
-  let res = await set_served(order.id, served);
+  let res = await set_served(order, served);
   if (!res) return
-  if (selected_order.value != null)
-    if (res && selected_order.value != null) {
-      let order = await get_order_by_id(selected_order.value.id)
-      if (order != null)
-        selected_order.value = order
-    }
+  selected_order.value = null
+}
+
+const toggle_served = async () => {
+  if (selected_order.value == null) return
+  let res = await set_served(selected_order.value, !selected_order.value?.served)
+  if (!res) return
+  let order = await get_order_by_id(selected_order.value.id)
+  if (order)
+    selected_order.value = order
 }
 
 let qrScanner: QrScanner;
@@ -137,25 +141,24 @@ const startSearch = async (e: Event) => {
   </div>
   <Dialog modal header="Commande séléctionnée" :visible="selected_order != null" @after-hide="console.log"
     :closable="false" v-if="selected_order != null">
-    <DisplayOrder :selected_order="selected_order" />
-      <DataTable :value="selected_order.detail">
-        <Column field="name" header="Article"></Column>
-        <Column field="quantity" header="Quantité"></Column>
-        <Column :field="(e: any) => f_price(e.subtotal)" header="Sous-total"></Column>
-        <ColumnGroup type="footer">
-          <Row>
-            <Column footer="Total:" :colspan="2" footerStyle="text-align:right" />
-            <Column :footer="f_price(selected_order.total_price)" />
-          </Row>
-        </ColumnGroup>
-      </DataTable>
-    <div class="servie-toggle">
-      <span>Marquer comme servie/non servie</span>
-      <ToggleSwitch :model-value="selected_order.served"
-        @update:model-value="(e: boolean) => setServed(selected_order as Order, e)" />
-    </div>
+    <DisplayOrder :selected_order="selected_order" @served_clicked="toggle_served" />
+    <DataTable :value="selected_order.detail">
+      <Column field="name" header="Article"></Column>
+      <Column field="quantity" header="Quantité"></Column>
+      <Column :field="(e: any) => f_price(e.subtotal)" header="Sous-total"></Column>
+      <ColumnGroup type="footer">
+        <Row>
+          <Column footer="Total:" :colspan="2" footerStyle="text-align:right" />
+          <Column v-if="selected_order != null" :footer="f_price(selected_order.total_price)" />
+        </Row>
+      </ColumnGroup>
+    </DataTable>
     <div class="close-selected-order-btn">
-      <Button icon="pi pi-times" @click="selected_order = null" severity="secondary"></Button>
+      <Button v-if="selected_order.served" icon="pi pi-times" label="Marquer comme non-servie"
+        @click="setServed(selected_order, false)" severity="secondary"></Button>
+      <Button label="fermer" @click="selected_order = null" severity="secondary"></Button>
+      <Button v-if="!selected_order.served" icon="pi pi-check" label="Commande servie"
+        @click="setServed(selected_order, true)" severity="secondary"></Button>
     </div>
   </Dialog>
   <Dialog modal header="Résultats de la recherche" v-model:visible="search_dialog_visible">
@@ -184,7 +187,7 @@ const startSearch = async (e: Event) => {
 .close-selected-order-btn {
   margin-top: 20px;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
 }
 
 video {
