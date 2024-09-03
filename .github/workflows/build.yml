@@ -30,6 +30,9 @@ jobs:
       - name: copy env template
         run: cp .env.template .env
 
+      - name: load dotenv file
+        uses: xom9ikk/dotenv@v2.3.0
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:

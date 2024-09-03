@@ -1,7 +1,6 @@
 # lhavrais-pay
 
 ## RoadMap
-- host static frontend on rocket ?
 - ajout de l'email (+autres infos) dans metadata du paymentintent
 - add product types
     - gestion des pintes/demies
