@@ -39,4 +39,7 @@ jobs:
           push: true
           tags: ghcr.io/eli-sauvage/lhavrais-pay:latest
           cache-from: type=gha
+          build-args: |
+            VITE_SITE_URL=${{ env.VITE_SITE_URL }}
+            VITE_API_URL=${{ env.VITE_API_URL }}
           cache-to: type=gha,mode=max
