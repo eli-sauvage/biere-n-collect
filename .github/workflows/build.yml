@@ -33,7 +33,6 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: back
           push: true
           tags: ghcr.io/eli-sauvage/lhavrais-pay:latest
           cache-from: type=gha
