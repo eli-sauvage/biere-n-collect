@@ -17,6 +17,9 @@ use tower_http::services::{ServeDir, ServeFile};
 async fn main() -> Result<(), ServerError> {
     dotenvy::dotenv().expect("could not load env from .env file");
     db::setup_db_and_migrate().await;
+    app::config::Config::init()
+        .await
+        .expect("could not initialize global config");
     let challenge_manager = ChallengeManager::new();
     let state = generate_app_state(challenge_manager);
 

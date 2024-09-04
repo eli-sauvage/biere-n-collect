@@ -6,15 +6,7 @@ use lettre::{
     AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
 };
 
-use crate::errors::ServerError;
-
-type SmtpUsername = String;
-type SmtpPassword = String;
-fn get_smtp_credentials() -> (SmtpUsername, SmtpPassword) {
-    let smtp_username = env::var("SMTP_USERNAME").expect("env var SMTP_USERNAME not found");
-    let smtp_password = env::var("SMTP_PASSWORD").expect("env var SMTP_PASSWORD not found");
-    (smtp_username, smtp_password)
-}
+use crate::{app::config::config, errors::ServerError};
 
 pub async fn send_code(to: &Mailbox, code: [u8; 6]) -> Result<(), ServerError> {
     let code = code
@@ -24,8 +16,10 @@ pub async fn send_code(to: &Mailbox, code: [u8; 6]) -> Result<(), ServerError> {
         .chunks(2)
         .map(|chunk| chunk.concat())
         .collect::<Vec<String>>();
-    let creds = get_smtp_credentials();
-    let from: Mailbox = creds.0.parse()?;
+    let conf = config().read().await;
+    let username = conf.smtp_username();
+    let password = conf.smtp_password();
+    let from: Mailbox = username.to_owned().parse()?;
     let login_link = env::var("VITE_SITE_URL")
         .map(|e| format!("{e}/login?email={to}&code={}", code.join("")))
         .unwrap_or("".to_string());
@@ -48,7 +42,7 @@ pub async fn send_code(to: &Mailbox, code: [u8; 6]) -> Result<(), ServerError> {
     let mailer: AsyncSmtpTransport<Tokio1Executor> =
         AsyncSmtpTransport::<Tokio1Executor>::starttls_relay("smtp.gmail.com")
             .unwrap()
-            .credentials(Credentials::new(creds.0, creds.1))
+            .credentials(Credentials::new(username.to_owned(), password.to_owned()))
             .build();
 
     // Send the email

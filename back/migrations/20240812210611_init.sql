@@ -1,3 +1,13 @@
+CREATE TABLE Config(
+    enforce_one_row enum("1") NOT NULL UNIQUE DEFAULT "1",
+    max_order_age INT UNSIGNED NOT NULL,
+    session_duration INT UNSIGNED NOT NULL,
+    stripe_publishable_key VARCHAR(255) NOT NULL,
+    stripe_secret_key VARCHAR(255) NOT NULL,
+    smtp_username VARCHAR(255) NOT NULL,
+    smtp_password VARCHAR(255) NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS Bar
 (
   enforce_one_row enum("1") NOT NULL UNIQUE DEFAULT "1",
@@ -20,10 +30,10 @@ CREATE TABLE IF NOT EXISTS Orders
 (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires TIMESTAMP,
+    expires TIMESTAMP NOT NULL,
+    canceled BOOLEAN NOT NULL DEFAULT FALSE,
     payment_intent_id VARCHAR(255) NOT NULL UNIQUE,
     client_secret VARCHAR(255) NOT NULL UNIQUE,
-    payment_status ENUM("canceled", "processing", "succeeded"),
     user_email VARCHAR(255),
     receipt VARCHAR(255) UNIQUE,
     served BOOLEAN NOT NULL DEFAULT FALSE

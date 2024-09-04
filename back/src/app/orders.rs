@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{types::time::OffsetDateTime, MySql, Transaction};
 use uuid::Uuid;
 
+use super::config::config;
 use super::stripe::api;
 use super::stripe::payment_intents::{PaymentIntent, PaymentIntentStatus};
 use super::{stock, stripe};
@@ -186,7 +187,8 @@ impl Order {
         }
 
         let payment_intent = stripe::api::create_payment_intent(total_price as i64).await?;
-        let expires = OffsetDateTime::now_utc() + Duration::from_secs(60 * ORDER_DURATION_MINUTES);
+        let conf = config().read().await;
+        let expires = OffsetDateTime::now_utc() + *conf.max_order_age();
         let order_id = sqlx::query!(
             "INSERT INTO Orders (expires, payment_intent_id, client_secret) VALUES (?, ?, ?)",
             expires,

@@ -1,5 +1,3 @@
-use std::env;
-
 use image::{codecs::png, ImageEncoder, Luma};
 use lettre::{
     message::{Attachment, Mailbox, MultiPart, SinglePart},
@@ -9,15 +7,8 @@ use lettre::{
 
 use crate::errors::{SendReceiptEmailError, ServerError};
 
-use super::orders::Order;
+use super::{config::config, orders::Order};
 
-type SmtpUsername = String;
-type SmtpPassword = String;
-fn get_smtp_credentials() -> (SmtpUsername, SmtpPassword) {
-    let smtp_username = env::var("SMTP_USERNAME").expect("env var SMTP_USERNAME not found");
-    let smtp_password = env::var("SMTP_PASSWORD").expect("env var SMTP_PASSWORD not found");
-    (smtp_username, smtp_password)
-}
 impl Order {
     pub async fn send_qr(&self) -> Result<(), SendReceiptEmailError> {
         let to: Mailbox = self
@@ -46,8 +37,10 @@ impl Order {
                 *receipt
             ),
         );
-        let creds = get_smtp_credentials();
-        let from: Mailbox = creds.0.parse()?;
+        let conf = config().read().await;
+        let username = conf.smtp_username();
+        let password = conf.smtp_password();
+        let from: Mailbox = username.to_owned().parse()?;
         let email = Message::builder()
             .from(from)
             .to(to.clone())
@@ -58,7 +51,7 @@ impl Order {
         let mailer: AsyncSmtpTransport<Tokio1Executor> =
             AsyncSmtpTransport::<Tokio1Executor>::starttls_relay("smtp.gmail.com")
                 .unwrap()
-                .credentials(Credentials::new(creds.0, creds.1))
+                .credentials(Credentials::new(username.to_owned(), password.to_owned()))
                 .build();
 
         // Send the email

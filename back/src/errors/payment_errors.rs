@@ -2,13 +2,13 @@ use axum::{http::StatusCode, response::IntoResponse, Json};
 use serde_json::json;
 use thiserror::Error;
 
-use crate::app::orders::OrderId;
+use crate::app::orders::{OrderId, ORDER_DURATION_MINUTES};
 
 use super::ServerError;
 
 #[derive(Error, Debug)]
 pub enum PaymentIntentError {
-    #[error("order with id {0} not found")]
+    #[error("order with id {0} not found, maybe it has expires please try again. Commands are valid for {} minutes.", ORDER_DURATION_MINUTES.to_string())]
     OrderNotFound(OrderId),
     #[error("order not found from the given secrets")]
     OrderNotFoundFromSecrets,

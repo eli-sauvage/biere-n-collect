@@ -19,15 +19,17 @@ use serde_json::{json, Value};
 
 use crate::{
     admin::challenge::ChallengeManager,
+    app::config::config,
     errors::{ErrorResponse, ServerError},
 };
 use std::{env, ops::Deref, sync::Arc};
 
 pub async fn get_config() -> Result<Json<Value>, ServerError> {
-    let pub_key = env::var("STRIPE_PUBLISHABLE_KEY")
-        .map_err(|e| ServerError::MissingEnv("STRIPE_PUBLISHABLE_KEY".into(), e))?;
+    let conf = config().read().await;
 
-    Ok(Json(json!({"publishable_key": pub_key})))
+    Ok(Json(
+        json!({"publishable_key": conf.stripe_publishable_key()}),
+    ))
 }
 
 pub async fn handler_404(request: Request) -> Response {

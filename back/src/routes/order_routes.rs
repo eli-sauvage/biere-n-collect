@@ -82,8 +82,6 @@ async fn set_email(params: Query<SetEmailParams>) -> Result<OkEmptyResponse, Pay
         .await?
         .ok_or_else(|| PaymentIntentError::OrderNotFoundFromSecrets)?;
     order.set_email(&params.email).await?;
-    println!("setting email");
-
     Ok(OkEmptyResponse::new())
 }
 

@@ -1,11 +1,8 @@
-use crate::{db, errors::ServerError};
+use crate::{app::config::config, db, errors::ServerError};
 
 use sqlx::types::time::OffsetDateTime;
-use std::time::Duration;
 
 use uuid::Uuid;
-
-const SESSION_DURATION: Duration = Duration::from_secs(12 * 60 * 60);
 
 #[derive(Clone, Debug)]
 pub struct Session {
@@ -31,10 +28,10 @@ impl Session {
 
     pub async fn new(email: String) -> Result<Session, ServerError> {
         Session::delete_old_sessions().await?;
-        // Session::delete_if_exists(pool, &email).await?;
+        let conf = config().read().await;
         let session = Session {
             uuid: Uuid::new_v4().to_string(),
-            expires: OffsetDateTime::now_utc() + SESSION_DURATION,
+            expires: OffsetDateTime::now_utc() + *conf.session_duration(),
             email,
         };
 
