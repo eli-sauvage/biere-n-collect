@@ -10,6 +10,7 @@ import DisconnectHeader from './components/DisconnectHeader.vue';
 import Stock from './components/admin/Stock.vue';
 import Users from './components/admin/Users.vue';
 import { get_current_auth } from './scripts/api/admin/auth';
+import Bar from './components/admin/Bar.vue';
 let router = useRouter();
 
 // let stock: Ref<Product[]> = ref([]);
@@ -35,15 +36,19 @@ let currentUserEmail: Ref<string> = ref("");
 <template>
     <Tabs value="0">
         <TabList>
-            <Tab value="0">Stock</Tab>
-            <Tab value="1">Comptes</Tab>
+            <Tab value="0">Bar</Tab>
+            <Tab value="1">Stock</Tab>
+            <Tab value="2">Comptes</Tab>
             <DisconnectHeader page="admin" />
         </TabList>
         <TabPanels>
             <TabPanel value="0">
-                <Stock />
+                <Bar />
             </TabPanel>
             <TabPanel value="1">
+                <Stock />
+            </TabPanel>
+            <TabPanel value="2">
                 <Users :current-user-email="currentUserEmail" />
             </TabPanel>
         </TabPanels>

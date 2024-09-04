@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE Orders SET canceled = TRUE WHERE payment_intent_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "21a98d80b49001c8fa35607eeda4d4d39419848bbf32cc527491e73e80a24e15"
+}

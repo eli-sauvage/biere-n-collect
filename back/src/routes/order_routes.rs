@@ -10,6 +10,7 @@ use reqwest::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    admin::bar_management::Bar,
     app::{
         orders::{Cart, Order, OrderDetailElement, OrderId},
         stock,
@@ -23,12 +24,32 @@ use super::{AppState, OkEmptyResponse};
 
 pub fn get_router() -> Router<AppState> {
     Router::new()
+        .route("/get_bar_status", get(get_bar_status))
         .route("/get_available_stock", get(get_available_stock))
         .route("/validate_cart", post(validate_cart))
         .route("/get_payment_infos", get(get_payment_infos))
         .route("/set_email", patch(set_email))
         .route("/get_payment_status", get(get_payment_status))
         .route("/get_qr_code", get(get_qr_code))
+}
+
+#[derive(Serialize)]
+struct BarStatusResponse {
+    is_open: bool,
+    closed_message: Option<String>,
+}
+async fn get_bar_status() -> Result<Json<BarStatusResponse>, ServerError> {
+    let bar = Bar::get().await?;
+    let res = BarStatusResponse {
+        is_open: bar.is_open,
+        closed_message: if bar.is_open {
+            None
+        } else {
+            Some(bar.closing_message)
+        },
+    };
+
+    Ok(Json(res))
 }
 
 async fn get_available_stock() -> Result<Json<Vec<stock::Stock>>, OrderProcessError> {
@@ -43,6 +64,9 @@ struct ValidateCartResponse {
 async fn validate_cart(
     JsonExtractor(Json(cart)): JsonExtractor<Cart>,
 ) -> Result<Json<ValidateCartResponse>, OrderProcessError> {
+    if !Bar::get().await?.is_open {
+        return Err(OrderProcessError::BarIsClosed);
+    }
     let order_id = Order::generate_from_cart(cart).await?;
     Ok(Json(ValidateCartResponse { order_id }))
 }
@@ -59,6 +83,9 @@ struct PaymentInfos {
 async fn get_payment_infos(
     params: Query<PaymentInfosParams>,
 ) -> Result<Json<PaymentInfos>, PaymentIntentError> {
+    if !Bar::get().await?.is_open {
+        return Err(PaymentIntentError::BarIsClosed);
+    }
     let mut order = Order::get(params.order_id)
         .await?
         .ok_or_else(|| PaymentIntentError::OrderNotFound(params.order_id))?;
@@ -78,6 +105,9 @@ struct SetEmailParams {
 }
 
 async fn set_email(params: Query<SetEmailParams>) -> Result<OkEmptyResponse, PaymentIntentError> {
+    if !Bar::get().await?.is_open {
+        return Err(PaymentIntentError::BarIsClosed);
+    }
     let mut order = Order::get_from_client_secret(&params.client_secret)
         .await?
         .ok_or_else(|| PaymentIntentError::OrderNotFoundFromSecrets)?;

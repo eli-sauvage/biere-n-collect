@@ -11,6 +11,8 @@ use crate::app::receipt::Receipt;
 use crate::db;
 use crate::errors::{OrderProcessError, ServerError};
 
+const ORDER_DURATION_MINUTES: u64 = 10 * 60;
+
 #[derive(Deserialize, Clone, Debug)]
 struct CartElement {
     product_id: u32,

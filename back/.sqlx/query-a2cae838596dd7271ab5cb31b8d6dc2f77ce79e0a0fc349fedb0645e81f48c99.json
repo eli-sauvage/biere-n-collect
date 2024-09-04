@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE Bar SET is_open = TRUE",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "a2cae838596dd7271ab5cb31b8d6dc2f77ce79e0a0fc349fedb0645e81f48c99"
+}

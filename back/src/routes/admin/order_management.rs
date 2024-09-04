@@ -5,12 +5,13 @@ use crate::{
     app::orders::{Order, OrderId},
     errors::ServerError,
     routes::{CustomQuery as Query, OkEmptyResponse},
+    utils::serialize_time,
 };
 use axum::{
     routing::{get, patch},
     Json, Router,
 };
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de, Deserialize, Deserializer, Serialize};
 use sqlx::types::time::OffsetDateTime;
 
 use crate::{
@@ -54,11 +55,6 @@ impl OrderResponse {
         };
         Ok(res)
     }
-}
-
-fn serialize_time<S: Serializer>(dt: &OffsetDateTime, serializer: S) -> Result<S::Ok, S::Error> {
-    let time = dt.unix_timestamp() * 1000;
-    serializer.serialize_i64(time)
 }
 
 #[derive(Deserialize)]

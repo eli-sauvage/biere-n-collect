@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE client_secret = ?",
+  "query": "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE receipt = ? AND expires > CURRENT_TIMESTAMP",
   "describe": {
     "columns": [
       {
@@ -70,5 +70,5 @@
       false
     ]
   },
-  "hash": "9cf90e5f9d0219038fcb389e303fb0eb23e32da7c3ed690a69fc4c7f1cb07522"
+  "hash": "924dc975503c04eefaa4129560f6e65764af6fbe577dc37c54c2bf546de52c38"
 }

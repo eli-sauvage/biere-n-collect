@@ -69,59 +69,51 @@ pub async fn fetch_payment_intent(
         Err(ServerError::StripeApi(status, body))
     }
 }
-// pub async fn fetch_status(
-//     &self,
-//     pool: &Pool<MySql>,
-//     stock_manager: &StockManager,
-//     order_id: OrderId,
-// ) -> Result<PaymentStatus, PaymentIntentError> {
-//     let payment = Payment::get(pool, order_id)
-//         .await?
-//         .ok_or_else(|| PaymentIntentError::IntentNotCreatedYet(order_id))?;
 
-//     if payment.status != PaymentStatus::Processing {
-//         return Ok(payment.status);
-//     }
-//     let url = format!(
-//         "https://api.stripe.com/v1/payment_intents/{}",
-//         payment.payment_intent_id
-//     );
-//     let client = Client::new();
+pub async fn push_metadata(
+    payment_intent_id: &PaymentIntentId,
+    key: &str,
+    value: &str,
+) -> Result<(), ServerError> {
+    let url = format!(
+        "https://api.stripe.com/v1/payment_intents/{}?metadata[{}]={}",
+        payment_intent_id, key, value
+    );
+    let client = Client::new();
 
-//     let response = client
-//         .post(url)
-//         .basic_auth(self.secret_key.clone(), Some("")) // Basic auth with the secret key
-//         .send()
-//         .await
-//         .map_err(ServerError::Reqwest)?;
+    let response = client
+        .post(url)
+        .basic_auth(get_secret_key()?, Some("")) // Basic auth with the secret key
+        .send()
+        .await?;
+    if response.status().is_success() {
+        Ok(())
+    } else {
+        // If the request failed, print the status and body
+        let status = response.status();
+        let body = response.text().await?;
+        Err(ServerError::StripeApi(status, body))
+    }
+}
 
-//     // Check if the request was successful
-//     if response.status().is_success() {
-//         // Deserialize the response into the PaymentIntent struct
-//         let payment_intent: PaymentIntent = response.json().await.map_err(ServerError::Reqwest)?;
-//         println!("GOT STATUS : {:?}", payment_intent.status);
-//         let status = match payment_intent.status.as_str() {
-//             "canceled" => PaymentStatus::Canceled,
-//             "succeeded" => PaymentStatus::Succeeded,
-//             _ => PaymentStatus::Processing,
-//         };
-//         if status != payment.status {
-//             Payment::update_status(pool, payment.payment_intent_id, &status).await?;
-//             if status == PaymentStatus::Succeeded {
-//                 if let Some(mut order) = Order::get(pool, order_id).await? {
-//                     order.mark_as_paid(pool, stock_manager).await?;
-//                 }
-//             }
-//         }
-//         Ok(status)
-//     } else {
-//         // If the request failed, print the status and body
-//         let status = response.status();
-//         let body = response.text().await.map_err(ServerError::Reqwest)?;
-//         println!(
-//             "Failed to create Payments Intent. Status: {}. Body: {}",
-//             status, body
-//         );
-//         Err(PaymentIntentError::CouldNotFetchIntent)
-//     }
-// }
+pub async fn mark_as_canceled(payment_intent_id: &PaymentIntentId) -> Result<(), ServerError> {
+    let url = format!(
+        "https://api.stripe.com/v1/payment_intents/{}/cancel?cancellation_reason=abandoned",
+        payment_intent_id
+    );
+    let client = Client::new();
+
+    let response = client
+        .post(url)
+        .basic_auth(get_secret_key()?, Some("")) // Basic auth with the secret key
+        .send()
+        .await?;
+    if response.status().is_success() {
+        Ok(())
+    } else {
+        // If the request failed, print the status and body
+        let status = response.status();
+        let body = response.text().await?;
+        Err(ServerError::StripeApi(status, body))
+    }
+}

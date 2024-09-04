@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT payment_intent_id from Orders WHERE expires < CURRENT_TIMESTAMP AND canceled = FALSE AND receipt IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "payment_intent_id",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | UNIQUE_KEY | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "504fc8735fba330f9b3ad566f6a57bb76e6254c7367283191a2182969e33ff29"
+}

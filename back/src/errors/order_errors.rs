@@ -5,6 +5,8 @@ use super::{ErrorResponse, ServerError};
 
 #[derive(Error, Debug)]
 pub enum OrderProcessError {
+    #[error("le bar est fermé! impossible de continuer")]
+    BarIsClosed,
     #[error("pas assez de stock pour l'item {0}<#{1}>")]
     NotEnoughStock(String, u32),
     #[error("prouct not found (id = {0})")]
@@ -19,7 +21,8 @@ impl IntoResponse for OrderProcessError {
         } else {
             let status = match self {
                 Self::NotEnoughStock(_, _) | Self::ProductNotFound(_) => StatusCode::BAD_REQUEST,
-                _ => StatusCode::INTERNAL_SERVER_ERROR,
+                Self::BarIsClosed => StatusCode::SERVICE_UNAVAILABLE,
+                Self::ServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             };
 
             (status, ErrorResponse::json(self.to_string())).into_response()

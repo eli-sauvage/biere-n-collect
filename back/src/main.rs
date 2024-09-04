@@ -1,9 +1,9 @@
 mod admin;
 mod app;
-mod db;
+mod utils;
 
 use admin::challenge::ChallengeManager;
-pub(crate) use db::db;
+pub(crate) use utils::db;
 mod errors;
 mod routes;
 
@@ -16,7 +16,7 @@ use tower_http::services::{ServeDir, ServeFile};
 #[tokio::main]
 async fn main() -> Result<(), ServerError> {
     dotenvy::dotenv().expect("could not load env from .env file");
-    db::setup_db_and_migrate().await;
+    utils::setup_db_and_migrate().await;
     let challenge_manager = ChallengeManager::new();
     let state = generate_app_state(challenge_manager);
 

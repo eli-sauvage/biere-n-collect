@@ -1,4 +1,5 @@
-use sqlx::{mysql::MySqlPoolOptions, MySql, Pool};
+use serde::Serializer;
+use sqlx::{mysql::MySqlPoolOptions, types::time::OffsetDateTime, MySql, Pool};
 use std::env;
 use tokio::sync::OnceCell;
 
@@ -31,4 +32,12 @@ pub async fn setup_db_and_migrate() {
     };
 
     DB.get_or_init(|| async move { pool }).await;
+}
+
+pub fn serialize_time<S: Serializer>(
+    dt: &OffsetDateTime,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    let time = dt.unix_timestamp() * 1000;
+    serializer.serialize_i64(time)
 }

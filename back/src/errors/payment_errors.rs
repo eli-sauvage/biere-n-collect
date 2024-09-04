@@ -8,6 +8,8 @@ use super::ServerError;
 
 #[derive(Error, Debug)]
 pub enum PaymentIntentError {
+    #[error("le bar est fermé! impossible de continuer")]
+    BarIsClosed,
     #[error("order with id {0} not found")]
     OrderNotFound(OrderId),
     #[error("order not found from the given secrets")]
@@ -26,6 +28,7 @@ impl IntoResponse for PaymentIntentError {
                 Self::OrderNotFound(_) | Self::OrderNotFoundFromSecrets | Self::NoReceipt => {
                     StatusCode::NOT_FOUND
                 }
+                Self::BarIsClosed => StatusCode::SERVICE_UNAVAILABLE,
                 Self::ServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             };
             (status, Json(json!({"error": self.to_string()}))).into_response()

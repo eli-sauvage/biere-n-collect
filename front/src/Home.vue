@@ -5,17 +5,21 @@ import { Cart, type ProductId } from './scripts/cart';
 import CartVue from './components/CartView.vue';
 import Button from "primevue/button"
 import Drawer from 'primevue/drawer';
-import { get_stock } from './scripts/api/order';
+import { get_bar_status, get_stock, type BarStatus } from './scripts/api/order';
 let cart: Ref<Cart> = ref(new Cart([]));
+let bar_status: Ref<BarStatus | null> = ref(null);
 let visible = ref(false);
 (async () => {
+    bar_status.value = await get_bar_status();
+    if (bar_status.value == null) return
+    if (bar_status.value.is_open == false) return
     cart.value = new Cart(await get_stock())
 })();
 
 </script>
 
 <template>
-    <div class="card flex justify-center">
+    <div v-if="bar_status?.is_open">
         <Drawer class="drawer-cart" v-model:visible="visible" header="Panier" position="bottom">
             <CartVue :cart="cart" @validate="cart.validate($router)" />
         </Drawer>
@@ -26,6 +30,9 @@ let visible = ref(false);
             <Button class="see-cart" icon="pi pi-shopping-cart" label="Voir le panier" :badge="cart.get_total()"
                 @click="visible = true" badgeSeverity="contrast"></Button>
         </div>
+    </div>
+    <div v-else>
+        <pre class="closed-message">{{ bar_status?.closed_message }}</pre>
     </div>
 </template>
 
@@ -48,6 +55,13 @@ let visible = ref(false);
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+}
+.closed-message{
+    text-align: center;
+    display: block;
+    margin-top: 20vh;
+    font-size: large;
+    font-family: unset;
 }
 </style>
 <style>

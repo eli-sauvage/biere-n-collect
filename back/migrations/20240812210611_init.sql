@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS Orders
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires TIMESTAMP,
     payment_intent_id VARCHAR(255) NOT NULL UNIQUE,
+    canceled BOOLEAN NOT NULL DEFAULT FALSE,
     client_secret VARCHAR(255) NOT NULL UNIQUE,
     payment_status ENUM("canceled", "processing", "succeeded"),
     user_email VARCHAR(255),
