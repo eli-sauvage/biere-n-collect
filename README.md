@@ -1,9 +1,12 @@
 # lhavrais-pay
 
 ## RoadMap
-- ajout de l'email (+autres infos) dans metadata du paymentintent
 - add product types
+    - tva
+    - retirer les images
     - gestion des pintes/demies
-    - gestion images de produits
 - max order amount
 - resume cart on return home from checkout page
+- ouverture / fermeture du bar
+    - recap pdf des ventes
+    - message fermeture pour le client (configurable)
