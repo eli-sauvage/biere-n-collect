@@ -10,7 +10,7 @@ mod routes;
 use axum::{middleware, routing::get, Router};
 use errors::ServerError;
 use routes::{generate_app_state, handler_404};
-use tower_http::services::ServeDir;
+use tower_http::services::{ServeDir, ServeFile};
 
 #[tokio::main]
 async fn main() -> Result<(), ServerError> {
@@ -24,6 +24,11 @@ async fn main() -> Result<(), ServerError> {
         .nest("/api/order", routes::order_routes::get_router())
         .nest("/api/admin", routes::admin::get_router())
         .nest_service("/", ServeDir::new("dist"))
+        .nest_service("/login", ServeFile::new("dist/index.html"))
+        .nest_service("/checkout", ServeFile::new("dist/index.html"))
+        .nest_service("/return", ServeFile::new("dist/index.html"))
+        .nest_service("/serveur", ServeFile::new("dist/index.html"))
+        .nest_service("/admin", ServeFile::new("dist/index.html"))
         .fallback(handler_404)
         .with_state(state)
         .layer(middleware::from_fn(routes::cors));
