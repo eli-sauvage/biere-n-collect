@@ -11,9 +11,6 @@ use crate::app::receipt::Receipt;
 use crate::db;
 use crate::errors::{OrderProcessError, ServerError};
 
-//time for an order before it gets deleted if unpaid
-const ORDER_DURATION_MINUTES: u64 = 10;
-
 #[derive(Deserialize, Clone, Debug)]
 struct CartElement {
     product_id: u32,
@@ -45,9 +42,10 @@ pub struct Order {
 
 impl Order {
     pub async fn get(id: OrderId) -> Result<Option<Order>, ServerError> {
+        cancel_expired_orders();
         let order_opt = sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE id = ?",
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE id = ? AND expires > CURRENT_TIMESTAMP",
             id
         )
         .fetch_optional(db())
@@ -58,8 +56,8 @@ impl Order {
 
     pub async fn get_from_client_secret(client_secret: &str) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
-            Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE client_secret = ?",
+           Order,
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE client_secret = ? AND expires > CURRENT_TIMESTAMP",
             client_secret
         )
         .fetch_optional(db())
@@ -70,7 +68,7 @@ impl Order {
     pub async fn get_by_receipt(receipt: &str) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE receipt = ?",
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE receipt = ? AND expires > CURRENT_TIMESTAMP",
             receipt
         )
         .fetch_optional(db())
@@ -87,6 +85,7 @@ impl Order {
         .execute(db())
         .await?;
         self.user_email = Some(email.to_owned());
+        api::push_metadata(&self.payment_intent_id, "email", email).await?;
         Ok(())
     }
 
@@ -95,6 +94,12 @@ impl Order {
             .execute(db())
             .await?;
         self.served = served;
+        api::push_metadata(
+            &self.payment_intent_id,
+            "commande_servie",
+            &served.to_string(),
+        )
+        .await?;
         Ok(())
     }
 
@@ -124,6 +129,7 @@ impl Order {
         )
         .execute(db())
         .await?;
+        api::push_metadata(&self.payment_intent_id, "reçu", &receipt).await?;
         self.receipt = Some(Receipt(receipt));
         let self_thread = self.clone();
         tokio::spawn(async move {
@@ -191,6 +197,7 @@ impl Order {
         .await
         .map_err(ServerError::Sqlx)?
         .last_insert_id();
+        api::push_metadata(&payment_intent.id, "order_id", &order_id.to_string()).await?;
         for cart_element in &cart.elements {
             sqlx::query!(
                 "INSERT INTO OrderDetails (order_id, product_id, quantity) VALUES (?, ?, ?)",
@@ -202,7 +209,26 @@ impl Order {
             .await
             .map_err(ServerError::Sqlx)?;
         }
-
+        tokio::spawn(async move {
+            let order = Order::get(order_id)
+                .await
+                .expect("could not fetch order while setting details metadatas");
+            if let Some(order) = order {
+                let details = order
+                    .get_details()
+                    .await
+                    .expect("could not fetch details while setting details metadatas");
+                for detail in details {
+                    api::push_metadata(
+                        &order.payment_intent_id,
+                        &format!("produit: {}", detail.name),
+                        &format!("quantité : {}", detail.quantity),
+                    )
+                    .await
+                    .expect("could not set metadata");
+                }
+            }
+        });
         Ok(order_id)
     }
     pub async fn get_payment_intent(&mut self) -> Result<PaymentIntent, ServerError> {
@@ -258,4 +284,27 @@ pub async fn search_orders(
         ).fetch_all(db()).await?
     };
     Ok(orders)
+}
+
+pub fn cancel_expired_orders() {
+    tokio::spawn(async move {
+        let expired_payment_intents =
+            sqlx::query!("SELECT payment_intent_id from Orders WHERE expires < CURRENT_TIMESTAMP AND canceled = FALSE AND receipt IS NULL")
+                .fetch_all(db())
+                .await
+                .unwrap();
+
+        for payment_intent in expired_payment_intents {
+            api::mark_as_canceled(&payment_intent.payment_intent_id)
+                .await
+                .unwrap();
+            sqlx::query!(
+                "UPDATE Orders SET canceled = TRUE WHERE payment_intent_id = ?",
+                payment_intent.payment_intent_id
+            )
+            .execute(db())
+            .await
+            .unwrap();
+        }
+    });
 }

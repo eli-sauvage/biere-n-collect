@@ -31,7 +31,7 @@ pub fn get_router() -> Router<AppState> {
         .route("/get_qr_code", get(get_qr_code))
 }
 
-async fn get_available_stock() -> Result<Json<Vec<stock::Stock>>, ServerError> {
+async fn get_available_stock() -> Result<Json<Vec<stock::Stock>>, OrderProcessError> {
     let stock = stock::get_all_stocks().await?;
     Ok(Json(stock))
 }

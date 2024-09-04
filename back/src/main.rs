@@ -10,6 +10,7 @@ mod routes;
 use axum::{middleware, routing::get, Router};
 use errors::ServerError;
 use routes::{generate_app_state, handler_404};
+use tokio::signal;
 use tower_http::services::{ServeDir, ServeFile};
 
 #[tokio::main]
@@ -34,6 +35,31 @@ async fn main() -> Result<(), ServerError> {
         .layer(middleware::from_fn(routes::cors));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .unwrap();
     Ok(())
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+    tokio::select! {
+        () = ctrl_c => {},
+        () = terminate => {},
+    }
+    println!("Terminate signal received");
 }

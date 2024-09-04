@@ -44,7 +44,6 @@ onMounted(async () => {
         const linkAuthenticationElement = elements.create("linkAuthentication", { defaultValues: { email: localStorage.getItem("email") || "" } });
         linkAuthenticationElement.mount("#link-authentication-element");
         linkAuthenticationElement.on("change", (e) => {
-            console.log(e.value.email)
             email.value = e.value.email
         });
         isLoading.value = false;
