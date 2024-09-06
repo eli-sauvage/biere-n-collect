@@ -1,7 +1,11 @@
+:root{
+    --background: #57b5b3;
+}
+
 #app {
     min-width: 100vw;
     min-height: 100vh;
-    background-color: #57b5b3;
+    background-color: var(--background);
     padding-top: 0px;
     overflow: scroll;
 }
@@ -9,7 +13,6 @@
 main {
     min-width: 100vw;
     min-height: 100vh;
-    padding-top: 1px;
     overflow: scroll;
 }
 

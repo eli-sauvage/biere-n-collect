@@ -4,15 +4,15 @@ import Tag from 'primevue/tag';
 import ConfirmPopup from 'primevue/confirmpopup';
 import ToggleSwitch from 'primevue/toggleswitch';
 import { useConfirm } from 'primevue/useconfirm';
-import type { Product } from '@/scripts/api/order';
 import { f_price } from '@/scripts/utils';
-let props = defineProps<{ product: Product, first?: boolean, last?:boolean }>();
+import type { Product } from '@/scripts/api/products';
+import { delete_product, edit_product, move_product } from '@/scripts/api/admin/stock/product-management';
+let props = defineProps<{ product: Product, first?: boolean, last?: boolean }>();
 let emit = defineEmits<{
+    refresh_stock: []
     requestEdit: [product: Product],
-    requestDelete: [product_id: number],
-    requestMove: [product_id: number, direction: "up" | "down"],
-    directEdit: [new_product: Product]
 }>()
+
 const confirm = useConfirm();
 const confirm_delete = (event: Event) => {
     confirm.require({
@@ -28,36 +28,50 @@ const confirm_delete = (event: Event) => {
             label: 'Supprimer',
             severity: 'danger'
         },
-        accept: () => {
-            emit("requestDelete", props.product.product_id)
+        accept: async () => {
+            if (await delete_product(props.product.id)) {
+                emit('refresh_stock')
+            }
+
         },
         reject: () => { }
     });
 };
+async function moveProduct(direction: "up" | "down") {
+    if (await move_product(props.product.id, direction)) {
+        emit('refresh_stock')
+    }
+}
 
+async function toggleAvailable(){
+    if(await edit_product(props.product.id, {new_available_to_order: !props.product.available_to_order})){
+        emit('refresh_stock')
+    }
+}
 </script>
+
 
 <template>
 
     <div class="prod">
         <div class="left">
-            <Button icon="pi pi-arrow-up" severity="secondary" v-if="!first"
-                @click="$emit('requestMove', product.product_id, 'up')" size="small"></Button>
+            <Button icon="pi pi-arrow-up" severity="secondary" v-if="!first" @click="moveProduct('up')"
+                size="small"></Button>
             <img src="https://placehold.co/100/png" />
             <Button icon="pi pi-arrow-down" severity="secondary" size="small" v-if="!last"
-                @click="$emit('requestMove', product.product_id, 'down')"></Button>
+                @click="moveProduct('down')"></Button>
         </div>
         <div class="right">
             <div class="titre-price">
                 <p class="titre">{{ product.name }}</p>
-                <Tag :value="f_price(product.price)"></Tag>
+                <Tag :value="'TODO'"></Tag>
             </div>
-            <p class="stock">stock: {{ product.quantity }}</p>
+            <p class="stock">stock: {{ product.stock_quantity }}</p>
             <div class="footer">
                 <div class="available">
                     <label for="available">Dispo</label>
-                    <ToggleSwitch id="available" :modelValue="product.available"
-                        @click="$emit('directEdit', { ...product, available: !product.available })" />
+                    <ToggleSwitch id="available" :modelValue="product.available_to_order"
+                        @click="toggleAvailable" />
                 </div>
                 <div class="btns">
                     <ConfirmPopup></ConfirmPopup>
@@ -70,7 +84,6 @@ const confirm_delete = (event: Event) => {
 </template>
 
 <style scoped>
-
 .prod {
     /* margin: 20px auto; */
     display: flex;
@@ -91,6 +104,7 @@ const confirm_delete = (event: Event) => {
     gap: 5px;
     margin-right: 10px;
 }
+
 .right {
     margin-left: 20px;
     display: flex;
@@ -116,7 +130,8 @@ const confirm_delete = (event: Event) => {
     gap: 10px;
     margin: 10px 0;
 }
-.footer > div {
+
+.footer>div {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -124,10 +139,11 @@ const confirm_delete = (event: Event) => {
     gap: 10px;
 }
 
-.footer > .available{
+.footer>.available {
     justify-content: start;
 }
-.footer > .btns {
+
+.footer>.btns {
     justify-content: end;
 }
 
@@ -140,5 +156,4 @@ const confirm_delete = (event: Event) => {
 .ajout {
     margin-top: 10px;
 }
-
 </style>

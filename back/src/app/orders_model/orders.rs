@@ -4,19 +4,27 @@ use serde::{Deserialize, Serialize};
 use sqlx::{types::time::OffsetDateTime, MySql, Transaction};
 use uuid::Uuid;
 
-use super::stripe::api;
-use super::stripe::payment_intents::{PaymentIntent, PaymentIntentStatus};
-use super::{stock, stripe};
-use crate::app::receipt::Receipt;
-use crate::db;
-use crate::errors::{OrderProcessError, ServerError};
+use crate::{
+    app::{
+        orders_model::mail,
+        product_variations::Variation,
+        products,
+        receipt::Receipt,
+        stripe::{
+            self,
+            payment_intents::{PaymentIntent, PaymentIntentStatus},
+        },
+    },
+    db,
+    errors::{OrderProcessError, ServerError},
+};
 
 const ORDER_DURATION_MINUTES: u64 = 10 * 60;
 
 #[derive(Deserialize, Clone, Debug)]
 struct CartElement {
-    product_id: u32,
-    quantity: u8,
+    variation_id: u32,
+    quantity: u32,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -27,9 +35,11 @@ pub struct Cart {
 pub type OrderId = u64;
 #[derive(Serialize)]
 pub struct OrderDetailElement {
-    pub name: String,
+    pub product_name: String,
+    pub variation_name: String,
     pub quantity: u8,
-    pub subtotal: i32,
+    pub subtotal_ht: i32,
+    pub subtotal_ttc: i32,
 }
 
 #[derive(Clone, Debug)]
@@ -87,7 +97,7 @@ impl Order {
         .execute(db())
         .await?;
         self.user_email = Some(email.to_owned());
-        api::push_metadata(&self.payment_intent_id, "email", email).await?;
+        stripe::api::push_metadata(&self.payment_intent_id, "email", email).await?;
         Ok(())
     }
 
@@ -96,7 +106,7 @@ impl Order {
             .execute(db())
             .await?;
         self.served = served;
-        api::push_metadata(
+        stripe::api::push_metadata(
             &self.payment_intent_id,
             "commande_servie",
             &served.to_string(),
@@ -107,15 +117,29 @@ impl Order {
 
     pub async fn get_details(&self) -> Result<Vec<OrderDetailElement>, ServerError> {
         let detail = sqlx::query!(
-            "SELECT Stock.name, OrderDetails.quantity, (Stock.price * OrderDetails.quantity) as subtotal FROM OrderDetails INNER JOIN Stock ON OrderDetails.product_id = Stock.product_id WHERE order_id = ? AND OrderDetails.quantity != 0",
+            "SELECT
+                Products.name as product_name,
+                ProductVariations.name as variation_name,
+                OrderDetails.quantity,
+                (ProductVariations.price_ht * OrderDetails.quantity) as subtotal_ht,
+                (ProductVariations.price_ht * OrderDetails.quantity * (1 + ProductVariations.tva)) as subtotal_ttc
+            FROM OrderDetails
+                INNER JOIN ProductVariations ON OrderDetails.variation_id = ProductVariations.id
+                INNER JOIN Products ON ProductVariations.id = Products.id
+            WHERE order_id = ?
+                AND OrderDetails.quantity != 0",
             self.id
-        ).fetch_all(db()).await?;
+        )
+        .fetch_all(db())
+        .await?;
         let detail: Vec<OrderDetailElement> = detail
             .into_iter()
             .map(|r| OrderDetailElement {
-                name: r.name,
+                product_name: r.product_name,
+                variation_name: r.variation_name,
                 quantity: r.quantity as u8,
-                subtotal: r.subtotal as i32,
+                subtotal_ht: r.subtotal_ht as i32,
+                subtotal_ttc: r.subtotal_ttc as i32,
             })
             .collect();
 
@@ -131,16 +155,21 @@ impl Order {
         )
         .execute(db())
         .await?;
-        api::push_metadata(&self.payment_intent_id, "reçu", &receipt).await?;
+        stripe::api::push_metadata(&self.payment_intent_id, "reçu", &receipt).await?;
         self.receipt = Some(Receipt(receipt));
         let self_thread = self.clone();
         tokio::spawn(async move {
-            if let Err(e) = self_thread.send_qr().await {
+            if let Err(e) = mail::send_qr(&self_thread).await {
                 eprintln!("error while sending receipt mail : {e:?}")
             }
         });
-        let detail: Vec<(u32, u32)> = sqlx::query!(
-            "SELECT product_id, quantity FROM OrderDetails WHERE order_id = ?",
+        type ProductId = u32;
+        type Quantity = u32;
+        let detail: Vec<(ProductId, Quantity)> = sqlx::query!(
+            "SELECT ProductVariations.product_id, quantity
+            FROM OrderDetails
+                INNER JOIN ProductVariations ON OrderDetails.variation_id = ProductVariations.id
+            WHERE order_id = ?",
             self.id
         )
         .fetch_all(db())
@@ -153,7 +182,7 @@ impl Order {
 
         for (product_id, quantity) in detail {
             sqlx::query!(
-                "UPDATE Stock SET quantity = quantity - ? WHERE product_id = ?",
+                "UPDATE Products SET stock_quantity = stock_quantity - ? WHERE id = ?",
                 quantity,
                 product_id
             )
@@ -167,23 +196,33 @@ impl Order {
     }
 
     pub async fn generate_from_cart(cart: Cart) -> Result<OrderId, OrderProcessError> {
-        let stock = stock::get_all_stocks().await?;
+        let products = products::get_all().await?;
+        //let stock = stock::get_all_stocks().await?;
         let mut total_price: i32 = 0;
         for cart_element in &cart.elements {
-            if let Some(stock_for_item) = stock
+            let variation = match Variation::get(cart_element.variation_id).await? {
+                Some(v) => v,
+                None => {
+                    return Err(OrderProcessError::VariationNotFound(
+                        cart_element.variation_id,
+                    ))
+                }
+            };
+            if let Some(stock_for_item) = products
                 .iter()
-                .find(|stock_item| stock_item.product_id == cart_element.product_id)
+                .find(|stock_item| stock_item.id == variation.product_id)
             {
-                if stock_for_item.quantity >= cart_element.quantity as i32 {
-                    total_price += stock_for_item.price * cart_element.quantity as i32;
+                if stock_for_item.stock_quantity >= cart_element.quantity as i32 {
+                    total_price += (variation.price_ht as f32 * (1f32 + variation.tva)) as i32
+                        * cart_element.quantity as i32;
                 } else {
                     return Err(OrderProcessError::NotEnoughStock(
                         stock_for_item.name.clone(),
-                        stock_for_item.product_id,
+                        stock_for_item.id,
                     ));
                 }
             } else {
-                return Err(OrderProcessError::ProductNotFound(cart_element.product_id));
+                return Err(OrderProcessError::ProductNotFound(variation.product_id));
             }
         }
 
@@ -199,12 +238,12 @@ impl Order {
         .await
         .map_err(ServerError::Sqlx)?
         .last_insert_id();
-        api::push_metadata(&payment_intent.id, "order_id", &order_id.to_string()).await?;
+        stripe::api::push_metadata(&payment_intent.id, "order_id", &order_id.to_string()).await?;
         for cart_element in &cart.elements {
             sqlx::query!(
-                "INSERT INTO OrderDetails (order_id, product_id, quantity) VALUES (?, ?, ?)",
+                "INSERT INTO OrderDetails (order_id, variation_id, quantity) VALUES (?, ?, ?)",
                 order_id,
-                cart_element.product_id,
+                cart_element.variation_id,
                 cart_element.quantity
             )
             .execute(db())
@@ -221,9 +260,9 @@ impl Order {
                     .await
                     .expect("could not fetch details while setting details metadatas");
                 for detail in details {
-                    api::push_metadata(
+                    stripe::api::push_metadata(
                         &order.payment_intent_id,
-                        &format!("produit: {}", detail.name),
+                        &format!("produit: {}", detail.product_name),
                         &format!("quantité : {}", detail.quantity),
                     )
                     .await
@@ -234,7 +273,7 @@ impl Order {
         Ok(order_id)
     }
     pub async fn get_payment_intent(&mut self) -> Result<PaymentIntent, ServerError> {
-        let intent = api::fetch_payment_intent(&self.payment_intent_id).await?;
+        let intent = stripe::api::fetch_payment_intent(&self.payment_intent_id).await?;
         if intent.status == PaymentIntentStatus::Succeeded {
             let receipt = sqlx::query!("SELECT receipt FROM Orders WHERE id = ?", self.id)
                 .fetch_one(db())
@@ -246,11 +285,34 @@ impl Order {
         }
         Ok(intent)
     }
-    pub async fn get_full_price(&self) -> Result<i32, ServerError> {
+    pub async fn get_full_price_ht(&self) -> Result<i32, ServerError> {
         let total = sqlx::query!(
-            "SELECT cast(SUM(Stock.price * OrderDetails.quantity) as int) as result from OrderDetails INNER JOIN Stock ON OrderDetails.product_id = Stock.product_id WHERE order_id = ? ;",
+            "SELECT cast(SUM(ProductVariations.price_ht * OrderDetails.quantity) as int) as result
+            FROM OrderDetails
+                INNER JOIN ProductVariations ON OrderDetails.variation_id = ProductVariations.id
+            WHERE order_id = ?;",
             self.id
-        ).fetch_one(db()).await.map_err(ServerError::Sqlx)?;
+        )
+        .fetch_one(db())
+        .await
+        .map_err(ServerError::Sqlx)?;
+
+        let res = total
+            .result
+            .ok_or(ServerError::Sqlx(sqlx::Error::RowNotFound))?;
+        Ok(res as i32)
+    }
+    pub async fn get_full_price_ttc(&self) -> Result<i32, ServerError> {
+        let total = sqlx::query!(
+            "SELECT cast(SUM(ProductVariations.price_ht * (1 + ProductVariations.tva) * OrderDetails.quantity) as int) as result
+            FROM OrderDetails
+                INNER JOIN ProductVariations ON OrderDetails.variation_id = ProductVariations.id
+            WHERE order_id = ?;",
+            self.id
+        )
+        .fetch_one(db())
+        .await
+        .map_err(ServerError::Sqlx)?;
 
         let res = total
             .result
@@ -297,7 +359,7 @@ pub fn cancel_expired_orders() {
                 .unwrap();
 
         for payment_intent in expired_payment_intents {
-            api::mark_as_canceled(&payment_intent.payment_intent_id)
+            stripe::api::mark_as_canceled(&payment_intent.payment_intent_id)
                 .await
                 .unwrap();
             sqlx::query!(

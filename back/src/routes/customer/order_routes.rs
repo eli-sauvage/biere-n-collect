@@ -8,24 +8,25 @@ use axum::{
 use qrcode::render::svg;
 use reqwest::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
+use std::env;
 
 use crate::{
     admin::bar_management::Bar,
     app::{
         orders::{Cart, Order, OrderDetailElement, OrderId},
-        stock,
         stripe::payment_intents::PaymentIntentStatus,
     },
     errors::{OrderProcessError, PaymentIntentError, ServerError},
-    routes::{CustomJsonExtractor as JsonExtractor, CustomQuery as Query},
+    routes::{
+        extractors::{CustomJsonExtractor as JsonExtractor, CustomQuery as Query},
+        reponders::OkEmptyResponse,
+        AppState,
+    },
 };
-
-use super::{AppState, OkEmptyResponse};
 
 pub fn get_router() -> Router<AppState> {
     Router::new()
-        .route("/get_bar_status", get(get_bar_status))
-        .route("/get_available_stock", get(get_available_stock))
+        .route("/get_stripe_pub_key", get(get_stripe_pub_key))
         .route("/validate_cart", post(validate_cart))
         .route("/get_payment_infos", get(get_payment_infos))
         .route("/set_email", patch(set_email))
@@ -34,27 +35,14 @@ pub fn get_router() -> Router<AppState> {
 }
 
 #[derive(Serialize)]
-struct BarStatusResponse {
-    is_open: bool,
-    closed_message: Option<String>,
+struct StripePubKeyResponse {
+    publishable_key: String,
 }
-async fn get_bar_status() -> Result<Json<BarStatusResponse>, ServerError> {
-    let bar = Bar::get().await?;
-    let res = BarStatusResponse {
-        is_open: bar.is_open,
-        closed_message: if bar.is_open {
-            None
-        } else {
-            Some(bar.closing_message)
-        },
-    };
+async fn get_stripe_pub_key() -> Result<Json<StripePubKeyResponse>, ServerError> {
+    let publishable_key = env::var("STRIPE_PUBLISHABLE_KEY")
+        .map_err(|e| ServerError::MissingEnv("STRIPE_PUBLISHABLE_KEY".into(), e))?;
 
-    Ok(Json(res))
-}
-
-async fn get_available_stock() -> Result<Json<Vec<stock::Stock>>, OrderProcessError> {
-    let stock = stock::get_all_stocks().await?;
-    Ok(Json(stock))
+    Ok(Json(StripePubKeyResponse { publishable_key }))
 }
 
 #[derive(Serialize)]

@@ -13,7 +13,7 @@ use crate::{
         user::{AdminUser, Role, User},
     },
     errors::UserManagementError,
-    routes::{AppState, CustomQuery as Query, OkEmptyResponse},
+    routes::{extractors::CustomQuery as Query, reponders::OkEmptyResponse, AppState},
 };
 
 pub fn get_router() -> Router<AppState> {

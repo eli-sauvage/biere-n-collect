@@ -7,7 +7,8 @@ import { useRoute, useRouter } from "vue-router";
 import { f_price } from "@/scripts/utils";
 import Button from "primevue/button";
 import { get_payment_infos, set_email } from "@/scripts/api/order";
-import { Error, get_stripe_pub_key } from "@/scripts/api/api";
+import { Error } from "@/scripts/api/api";
+import { get_stripe_pub_key } from "@/scripts/api/order";
 // let props = defineProps<{ order_id: number }>();
 let order_id = useRoute().query.order_id
 

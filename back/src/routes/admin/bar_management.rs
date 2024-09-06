@@ -9,7 +9,7 @@ use crate::{
     admin::bar_management::Bar,
     admin::user::AdminUser,
     errors::ServerError,
-    routes::{AppState, CustomQuery as Query, OkEmptyResponse},
+    routes::{extractors::CustomQuery as Query, reponders::OkEmptyResponse, AppState},
 };
 
 const REPORTS_DIR_PATH: &str = "./reports";

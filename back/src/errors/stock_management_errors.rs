@@ -5,12 +5,10 @@ use super::{ErrorResponse, ServerError};
 
 #[derive(Error, Debug)]
 pub enum ManageStockError {
-    #[error("le stock avec l'id {0} n'existe pas")]
-    StockNotFound(u32),
-    #[error("stock with id {0} cannot move up")]
-    CannotMoveUp(u32),
-    #[error("stock with id {0} cannot move down")]
-    CannotMoveDown(u32),
+    #[error("la variation de produit avec l'id {0} n'existe pas")]
+    VariationNotFound(u32),
+    #[error("le produit avec l'id {0} n'existe pas")]
+    ProductNotFound(u32),
     #[error("server error")]
     ServerError(#[from] ServerError),
 }
@@ -20,8 +18,8 @@ impl IntoResponse for ManageStockError {
             e.into_response()
         } else {
             let status = match self {
-                Self::StockNotFound(_) => StatusCode::NOT_FOUND,
-                Self::CannotMoveUp(_) | Self::CannotMoveDown(_) => StatusCode::BAD_REQUEST,
+                Self::ProductNotFound(_)
+                | Self::VariationNotFound(_) => StatusCode::NOT_FOUND,
                 Self::ServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             };
             (status, ErrorResponse::json(self.to_string())).into_response()

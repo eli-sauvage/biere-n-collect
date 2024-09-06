@@ -1,17 +1,14 @@
-use core::fmt;
-use std::str::FromStr;
-
 use crate::{
     app::orders::{Order, OrderId},
     errors::ServerError,
-    routes::{CustomQuery as Query, OkEmptyResponse},
-    utils::serialize_time,
+    routes::{extractors::CustomQuery as Query, reponders::OkEmptyResponse},
+    utils::{deserialize_empty_as_none, serialize_time},
 };
 use axum::{
     routing::{get, patch},
     Json, Router,
 };
-use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
 
 use crate::{
@@ -38,12 +35,14 @@ struct OrderResponse {
     timestamp: OffsetDateTime,
     user_email: Option<String>,
     detail: Vec<OrderDetailElement>,
-    total_price: i32,
+    total_price_ht: i32,
+    total_price_ttc: i32,
 }
 impl OrderResponse {
     pub async fn from_order(order: Order) -> Result<Self, ServerError> {
         let details = order.get_details().await?;
-        let total_price = order.get_full_price().await?;
+        let total_price_ht = order.get_full_price_ht().await?;
+        let total_price_ttc = order.get_full_price_ttc().await?;
         let res = OrderResponse {
             id: order.id,
             receipt: order.receipt.as_deref().cloned(),
@@ -51,7 +50,8 @@ impl OrderResponse {
             timestamp: order.timestamp,
             user_email: order.user_email,
             detail: details,
-            total_price,
+            total_price_ht,
+            total_price_ttc,
         };
         Ok(res)
     }
@@ -59,26 +59,14 @@ impl OrderResponse {
 
 #[derive(Deserialize)]
 struct GetOrderParams {
-    #[serde(default, deserialize_with = "empty_string_as_none")]
+    #[serde(default, deserialize_with = "deserialize_empty_as_none")]
     email: Option<String>,
-    #[serde(default, deserialize_with = "empty_string_as_none")]
+    #[serde(default, deserialize_with = "deserialize_empty_as_none")]
     date_begin: Option<i64>,
-    #[serde(default, deserialize_with = "empty_string_as_none")]
+    #[serde(default, deserialize_with = "deserialize_empty_as_none")]
     date_end: Option<i64>,
-    #[serde(default, deserialize_with = "empty_string_as_none")]
+    #[serde(default, deserialize_with = "deserialize_empty_as_none")]
     receipt: Option<String>,
-}
-fn empty_string_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: FromStr,
-    T::Err: fmt::Display,
-{
-    let opt = Option::<String>::deserialize(de)?;
-    match opt.as_deref() {
-        None | Some("") => Ok(None),
-        Some(s) => FromStr::from_str(s).map_err(de::Error::custom).map(Some),
-    }
 }
 
 async fn search_orders(

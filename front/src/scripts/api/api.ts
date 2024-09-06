@@ -21,19 +21,3 @@ export class Error{
 }
 
 
-export async function get_stripe_pub_key(): Promise<string | null> {
-    let url = `${base}/config`
-    let error_title = "Erreur lors de la récupération de la clé d'API stripe"
-    try {
-        let res = await fetch(url).then(e => e.json());
-        if (res.error) {
-            new Error(error_title, res.error)
-            return null
-        } else {
-            return res.publishable_key as string
-        }
-    } catch (e: any) {
-        new Error(error_title, e.toString());
-        return null
-    }
-}

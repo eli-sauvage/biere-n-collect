@@ -9,8 +9,10 @@ pub enum OrderProcessError {
     BarIsClosed,
     #[error("pas assez de stock pour l'item {0}<#{1}>")]
     NotEnoughStock(String, u32),
-    #[error("prouct not found (id = {0})")]
+    #[error("product not found (id = {0})")]
     ProductNotFound(u32),
+    #[error("variation not found (id = {0})")]
+    VariationNotFound(u32),
     #[error("server error")]
     ServerError(#[from] ServerError),
 }
@@ -20,7 +22,9 @@ impl IntoResponse for OrderProcessError {
             e.into_response()
         } else {
             let status = match self {
-                Self::NotEnoughStock(_, _) | Self::ProductNotFound(_) => StatusCode::BAD_REQUEST,
+                Self::NotEnoughStock(_, _)
+                | Self::ProductNotFound(_)
+                | Self::VariationNotFound(_) => StatusCode::BAD_REQUEST,
                 Self::BarIsClosed => StatusCode::SERVICE_UNAVAILABLE,
                 Self::ServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             };

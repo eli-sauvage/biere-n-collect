@@ -1,5 +1,6 @@
 import { type Router } from "vue-router";
-import { validate_cart, type Product } from "./api/order";
+import { type Product, type Variation } from "./api/products";
+import { validate_cart } from "./api/order";
 import { f_price } from "./utils";
 
 export type ProductId = number;
@@ -8,9 +9,11 @@ export type ProductId = number;
 
 export class CartElement {
     product: Product
+    variation: Variation
     quantity: number
-    constructor(product: Product) {
+    constructor(product: Product, variation: Variation) {
         this.product = product;
+        this.variation = variation;
         this.quantity = 0
     }
     add(quantity: number) {
@@ -24,13 +27,13 @@ export class CartElement {
 export class Cart {
     elements: CartElement[] = []
     constructor(products: Product[]) {
-        this.elements = products.map(e => new CartElement(e))
+        this.elements = products.map(prod=>prod.variations.map(variation=>new CartElement(prod, variation))).flat()
     }
     elems_with_subtotal(): { cart_element: CartElement, subtotal: number }[] {
-        return this.elements.filter(e => e.quantity != 0).map((e) => { return { cart_element: e, subtotal: e.product.price * e.quantity } })
+        return this.elements.filter(e => e.quantity != 0).map((e) => { return { cart_element: e, subtotal: e.variation.price_ttc * e.quantity } })
     }
     get_total(): string {
-        return f_price(this.elements.reduce((acc, e) => acc + e.product.price * e.quantity, 0));
+        return f_price(this.elements.reduce((acc, e) => acc + e.variation.price_ttc * e.quantity, 0));
     }
     async validate(router: Router) {
         if (this.elements.length == 0) return

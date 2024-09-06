@@ -1,6 +1,7 @@
-use serde::Serializer;
+use core::fmt;
+use serde::{de, Deserialize, Deserializer, Serializer};
 use sqlx::{mysql::MySqlPoolOptions, types::time::OffsetDateTime, MySql, Pool};
-use std::env;
+use std::{env, str::FromStr};
 use tokio::sync::OnceCell;
 
 static DB: OnceCell<Pool<MySql>> = OnceCell::const_new();
@@ -40,4 +41,17 @@ pub fn serialize_time<S: Serializer>(
 ) -> Result<S::Ok, S::Error> {
     let time = dt.unix_timestamp() * 1000;
     serializer.serialize_i64(time)
+}
+
+pub fn deserialize_empty_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: FromStr,
+    T::Err: fmt::Display,
+{
+    let opt = Option::<String>::deserialize(de)?;
+    match opt.as_deref() {
+        None | Some("") => Ok(None),
+        Some(s) => FromStr::from_str(s).map_err(de::Error::custom).map(Some),
+    }
 }

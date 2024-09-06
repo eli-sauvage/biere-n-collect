@@ -12,7 +12,7 @@ use crate::{
         user::{Role, User},
     },
     errors::SessionError,
-    routes::{AppState, OkEmptyResponse},
+    routes::{reponders::OkEmptyResponse, AppState},
 };
 
 pub fn get_router() -> Router<AppState> {

@@ -3,30 +3,48 @@ import Button from "primevue/button"
 import Tag from 'primevue/tag';
 import type { Cart } from "@/scripts/cart";
 import { f_price } from "@/scripts/utils";
+import DataTable from "primevue/datatable"
+import Column from "primevue/column"
+import ColumnGroup from "primevue/columngroup"
+import Row from "primevue/row"
 defineProps<{ cart: Cart }>();
 const emit = defineEmits<{ validate: [] }>()
 
 </script>
 <template>
-    <div class="cart">
-        <div v-for="(elem, index) in cart.elems_with_subtotal()" class="item">
-            <p class="product-name">{{ elem.cart_element.product.name }}</p>
-            <div class="name-quantity">
-                <Tag :value="'x' + elem.cart_element.quantity"></Tag>
-                <p class="subtotal">{{ f_price(cart.elems_with_subtotal()[index].subtotal) }}</p>
+    <div class="container">
+        <div class="cart">
+            <DataTable
+                :value="cart.elems_with_subtotal()">
+                <Column :field="(e: any) => `${e.cart_element.product.name}: ${e.cart_element.variation.name}`"
+                    header="Article"></Column>
+                <Column :field="(e: any) => e.cart_element.quantity" header="Quantité"></Column>
+                <Column :field="(e: any) => f_price(e.subtotal)" header="Sous-total"></Column>
+                <ColumnGroup type="footer">
+                    <Row>
+                        <Column footer="Total:" :colspan="2" footerStyle="text-align:right" />
+                        <Column :footer="cart.get_total()" />
+                    </Row>
+                </ColumnGroup>
+            </DataTable>
+            <div class="button">
+                <Button class="valider" @click="$emit('validate')" :badge="cart.get_total()" badge-severity="contrast"
+                    label="Valider" icon="pi pi-credit-card"></Button>
             </div>
-        </div>
-        <div class="button">
-            <Button class="valider" @click="$emit('validate')" :badge="'Total: ' + cart.get_total()"
-                badge-severity="contrast" label="Valider"></Button>
         </div>
     </div>
 </template>
 <style scoped>
+.container {
+    width: 100%;
+}
+
 .cart {
     display: flex;
     flex-direction: column;
     padding: 20px;
+    max-width: 500px;
+    margin: 0 auto;
 }
 
 .item {

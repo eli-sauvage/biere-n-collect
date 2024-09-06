@@ -7,8 +7,9 @@ export type Order = {
   receipt?: string,
   payment_intent_id: string,
   served: boolean
-  total_price: number
-  detail: { name: string, quantity: number, subtotal: number }[]
+  total_price_ht: number
+  total_price_ttc: number
+  detail: { name: string, quantity: number, subtotal_ht: number, subtotal_ttc: number}[]
 }
 
 export async function get_orders(email: string | null, date: [Date, Date] | null, receipt: string | null): Promise<Order[]> {

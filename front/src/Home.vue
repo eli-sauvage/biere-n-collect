@@ -5,15 +5,18 @@ import { Cart, type ProductId } from './scripts/cart';
 import CartVue from './components/CartView.vue';
 import Button from "primevue/button"
 import Drawer from 'primevue/drawer';
-import { get_bar_status, get_stock, type BarStatus } from './scripts/api/order';
+
+
 let cart: Ref<Cart> = ref(new Cart([]));
 let bar_status: Ref<BarStatus | null> = ref(null);
 let visible = ref(false);
+let products: Ref<Product[]> = ref([]);
 (async () => {
     bar_status.value = await get_bar_status();
     if (bar_status.value == null) return
     if (bar_status.value.is_open == false) return
-    cart.value = new Cart(await get_stock())
+    products.value = await get_stock()
+    cart.value = new Cart(products.value)
 })();
 
 </script>
@@ -24,7 +27,7 @@ let visible = ref(false);
             <CartVue :cart="cart" @validate="cart.validate($router)" />
         </Drawer>
         <div class="product-list">
-            <ProductVue v-for="element in cart.elements" :cardElement="element" />
+            <ProductVue v-for="product in products" :cart="cart" :product="product"/>
         </div>
         <div class="see-cart-back">
             <Button class="see-cart" icon="pi pi-shopping-cart" label="Voir le panier" :badge="cart.get_total()"
@@ -56,7 +59,8 @@ let visible = ref(false);
     left: 50%;
     transform: translate(-50%, -50%);
 }
-.closed-message{
+
+.closed-message {
     text-align: center;
     display: block;
     margin-top: 20vh;
@@ -67,6 +71,7 @@ let visible = ref(false);
 <style>
 .drawer-cart {
     height: fit-content !important;
+    max-height: 100vh;
 }
 
 .p-drawer-header {
