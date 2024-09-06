@@ -148,8 +148,12 @@ const startSearch = async (e: Event) => {
       <Column :field="(e: any) => f_price(e.subtotal)" header="Sous-total"></Column>
       <ColumnGroup type="footer">
         <Row>
-          <Column footer="Total:" :colspan="2" footerStyle="text-align:right" />
-          <Column v-if="selected_order != null" :footer="f_price(selected_order.total_price)" />
+          <Column footer="Total HT:" :colspan="2" footerStyle="text-align:right" />
+          <Column v-if="selected_order != null" :footer="f_price(selected_order.total_price_ht)" />
+        </Row>
+        <Row>
+          <Column footer="Total TTC:" :colspan="2" footerStyle="text-align:right" />
+          <Column v-if="selected_order != null" :footer="f_price(selected_order.total_price_ttc)" />
         </Row>
       </ColumnGroup>
     </DataTable>

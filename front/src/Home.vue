@@ -5,6 +5,7 @@ import { Cart, type ProductId } from './scripts/cart';
 import CartVue from './components/CartView.vue';
 import Button from "primevue/button"
 import Drawer from 'primevue/drawer';
+import { get_bar_status, get_stock, type BarStatus, type Product } from './scripts/api/products';
 
 
 let cart: Ref<Cart> = ref(new Cart([]));

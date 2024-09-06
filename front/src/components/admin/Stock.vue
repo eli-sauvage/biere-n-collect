@@ -5,6 +5,7 @@ import Dialog from 'primevue/dialog';
 import ProductViewAdmin from './ProductViewAdmin.vue';
 import EditProduct from './EditProduct.vue';
 import { delete_product, insert_product, move_product, edit_product } from '@/scripts/api/admin/stock/product-management';
+import { get_stock, type Product } from '@/scripts/api/products';
 
 let products: Ref<Product[]> = ref([]);
 

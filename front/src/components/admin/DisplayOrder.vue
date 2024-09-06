@@ -29,7 +29,7 @@ const fmtDate = (order: Order): string => {
                 <i v-else class="pi pi-times" style="color: red"></i>
             </div>
         </div>
-        <Tag :value="f_price(selected_order.total_price)"></Tag>
+        <Tag :value="f_price(selected_order.total_price_ttc) + 'TTC'"></Tag>
     </div>
 </template>
 
