@@ -1,7 +1,7 @@
 use crate::{db, errors::ServerError};
 use serde::{Deserialize, Serialize};
 
-use crate::app::{product_categories::Category, product_variations::Variation};
+use crate::app::product_variations::Variation;
 
 #[derive(Debug, Serialize)]
 pub struct Product {
@@ -25,9 +25,18 @@ impl Product {
             .execute(db())
             .await?;
 
-        let id = sqlx::query!("
-            VALUES (?, ?, ?, ?, ?, 0)", name, description, stock_quantity, available_to_order, category.as_ref().map(|c|c.id)
-        ).execute(db()).await?.last_insert_id() as u32;
+        let id = sqlx::query!(
+            "
+            INSERT INTO Products (name, description, stock_quantity, available_to_order, position)
+            VALUES (?, ?, ?, ?, 0)",
+            name,
+            description,
+            stock_quantity,
+            available_to_order
+        )
+        .execute(db())
+        .await?
+        .last_insert_id() as u32;
 
         Ok(Product {
             id,
@@ -40,8 +49,7 @@ impl Product {
     }
     pub async fn get(id: u32) -> Result<Option<Product>, ServerError> {
         let res_prod = sqlx::query!(
-            "SELECT id, name, description, stock_quantity,
-        FROM Products WHERE id = ?",
+            "SELECT id, name, description, stock_quantity, available_to_order as \"available_to_order: bool\" FROM Products WHERE id = ?",
             id
         )
         .fetch_optional(db())
@@ -186,13 +194,11 @@ pub enum MoveDirection {
 
 impl Product {
     pub async fn move_product(&mut self, direction: MoveDirection) -> Result<(), ServerError> {
-        let max_pos = sqlx::query!(
-            "SELECT MAX(position) as max_pos FROM Products",
-        )
-        .fetch_one(db())
-        .await?
-        .max_pos
-        .unwrap_or(0);
+        let max_pos = sqlx::query!("SELECT MAX(position) as max_pos FROM Products",)
+            .fetch_one(db())
+            .await?
+            .max_pos
+            .unwrap_or(0);
         let current_position = self.get_position().await?;
         let new_pos = match (current_position, direction) {
             (0, MoveDirection::Up) => current_position,
@@ -246,4 +252,4 @@ pub async fn get_all() -> Result<Vec<Product>, ServerError> {
         });
     }
     Ok(res)
-    }
+}

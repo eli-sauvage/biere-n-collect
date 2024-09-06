@@ -13,11 +13,7 @@ CREATE TABLE IF NOT EXISTS Products
   description TEXT NOT NULL,
   stock_quantity INT NOT NULL,
   position SMALLINT UNSIGNED NOT NULL,
-  available_to_order BOOLEAN NOT NULL,
-  CONSTRAINT `fk_category_id`
-    FOREIGN KEY (category_id) REFERENCES Categories (id)
-    ON DELETE RESTRICT
-    ON UPDATE RESTRICT
+  available_to_order BOOLEAN NOT NULL
 );
 
 
