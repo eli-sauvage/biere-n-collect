@@ -57,8 +57,9 @@ impl Product {
         if let Some(prod) = res_prod {
             let variations = sqlx::query_as!(
                 Variation,
-                "SELECT id, name, price_ht, tva, volume, product_id FROM ProductVariations
-                WHERE product_id = ?",
+                "SELECT id, name, price_ht, tva, volume, product_id,
+                available_to_order as \"available_to_order: bool\"
+                FROM ProductVariations WHERE product_id = ?",
                 prod.id
             )
             .fetch_all(db())
@@ -147,15 +148,17 @@ impl Product {
         price_ht: i32,
         tva: f32,
         volume: f32,
+        available_to_order: bool
     ) -> Result<(), ServerError> {
         let variation_id = sqlx::query!(
-            "INSERT INTO ProductVariations (name, product_id, price_ht, tva, volume)
-            VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO ProductVariations (name, product_id, price_ht, tva, volume, available_to_order)
+            VALUES (?, ?, ?, ?, ?, ?)",
             name,
             self.id,
             price_ht,
             tva,
-            volume
+            volume,
+            available_to_order
         )
         .execute(db())
         .await?
@@ -168,6 +171,7 @@ impl Product {
             tva,
             product_id: self.id,
             volume,
+            available_to_order
         });
 
         Ok(())
@@ -236,8 +240,9 @@ pub async fn get_all() -> Result<Vec<Product>, ServerError> {
     for prod in prods {
         let variations = sqlx::query_as!(
             Variation,
-            "SELECT id, name, price_ht, tva, volume, product_id FROM ProductVariations
-            WHERE product_id = ?",
+            "SELECT id, name, price_ht, tva, volume, product_id, 
+            available_to_order as \"available_to_order: bool\"
+            FROM ProductVariations WHERE product_id = ?",
             prod.id
         )
         .fetch_all(db())

@@ -1,14 +1,11 @@
 import type { Cart } from "../cart";
 import { base, Error } from "./api"
 
-
-
 export type Product = {
   id: number,
   name: string,
   description: string,
   stock_quantity: number,
-  available_to_order: boolean,
   variations: Variation[]
 }
 export type Variation = {
@@ -19,6 +16,7 @@ export type Variation = {
     price_ttc: number,
     tva: number,
     volume: number
+    available_to_order: boolean
 }
 export type BarStatus = {
   is_open: boolean,

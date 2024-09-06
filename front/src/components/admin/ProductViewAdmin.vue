@@ -5,8 +5,9 @@ import ConfirmPopup from 'primevue/confirmpopup';
 import ToggleSwitch from 'primevue/toggleswitch';
 import { useConfirm } from 'primevue/useconfirm';
 import { f_price } from '@/scripts/utils';
-import type { Product } from '@/scripts/api/products';
+import type { Product, Variation } from '@/scripts/api/products';
 import { delete_product, edit_product, move_product } from '@/scripts/api/admin/stock/product-management';
+import { edit_variation } from '@/scripts/api/admin/stock/variations-management';
 let props = defineProps<{ product: Product, first?: boolean, last?: boolean }>();
 let emit = defineEmits<{
     refresh_stock: []
@@ -43,8 +44,8 @@ async function moveProduct(direction: "up" | "down") {
     }
 }
 
-async function toggleAvailable(){
-    if(await edit_product(props.product.id, {new_available_to_order: !props.product.available_to_order})){
+async function toggleAvailable(variation: Variation){
+    if(await edit_variation(variation.id, {new_available_to_order: !variation.available_to_order})){
         emit('refresh_stock')
     }
 }
@@ -70,8 +71,8 @@ async function toggleAvailable(){
             <div class="footer">
                 <div class="available">
                     <label for="available">Dispo</label>
-                    <ToggleSwitch id="available" :modelValue="product.available_to_order"
-                        @click="toggleAvailable" />
+                    <!-- <ToggleSwitch id="available" :modelValue="product.available_to_order"
+                        @click="toggleAvailable" /> -->
                 </div>
                 <div class="btns">
                     <ConfirmPopup></ConfirmPopup>

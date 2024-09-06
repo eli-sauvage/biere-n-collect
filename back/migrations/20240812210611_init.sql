@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS ProductVariations
     price_ht INT NOT NULL,
     tva FLOAT NOT NULL DEFAULT 0.2,
     volume FLOAT NOT NULL,
+    available_to_order BOOLEAN NOT NULL,
     CONSTRAINT `fk_product_id`
         FOREIGN KEY (product_id) REFERENCES Products (id)
         ON DELETE RESTRICT

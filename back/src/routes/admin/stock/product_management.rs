@@ -6,9 +6,7 @@ use serde::Deserialize;
 
 use crate::{
     admin::user::AdminUser,
-    app::{
-        products::{self, MoveDirection, Product},
-    },
+    app::products::{self, MoveDirection, Product},
     errors::ManageStockError,
     routes::{extractors::CustomQuery as Query, reponders::OkEmptyResponse, AppState},
     utils::deserialize_empty_as_none,
@@ -132,6 +130,7 @@ struct AddVariationParams {
     price_ht: i32,
     tva: f32,
     volume: f32,
+    available_to_order: bool,
 }
 async fn add_variation(
     _user: AdminUser,
@@ -148,6 +147,7 @@ async fn add_variation(
             params.price_ht,
             params.tva,
             params.volume,
+            params.available_to_order,
         )
         .await?;
 

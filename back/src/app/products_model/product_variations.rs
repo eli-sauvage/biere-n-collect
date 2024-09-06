@@ -9,25 +9,20 @@ pub struct Variation {
     pub price_ht: i32,
     pub tva: f32,
     pub volume: f32,
+    pub available_to_order: bool,
 }
 
 impl Variation {
     pub async fn get(id: u32) -> Result<Option<Variation>, ServerError> {
         let res = sqlx::query_as!(
             Variation,
-            "SELECT id, name, price_ht, tva, product_id, volume FROM ProductVariations WHERE id = ?",
+            "SELECT id, name, price_ht, tva, product_id, volume, available_to_order as \"available_to_order: bool\" FROM ProductVariations WHERE id = ?",
             id
         )
         .fetch_optional(db())
         .await?;
         Ok(res)
     }
-
-    //pub async fn get_product(&self) -> Result<Product, ServerError> {
-    //    Product::get(self.product_id)
-    //        .await
-    //        .map(|p| p.expect("product not found from one of its variations"))
-    //}
 
     pub async fn delete(self) -> Result<(), ServerError> {
         sqlx::query!("DELETE FROM ProductVariations WHERE id = ?", self.id)
@@ -67,6 +62,20 @@ impl Variation {
         .execute(db())
         .await?;
         self.volume = new_volume;
+        Ok(())
+    }
+    pub async fn set_available_to_order(
+        &mut self,
+        new_available_to_order: bool,
+    ) -> Result<(), ServerError> {
+        sqlx::query!(
+            "UPDATE ProductVariations SET available_to_order = ? WHERE id = ?",
+            new_available_to_order,
+            self.id
+        )
+        .execute(db())
+        .await?;
+        self.available_to_order = new_available_to_order;
         Ok(())
     }
 }

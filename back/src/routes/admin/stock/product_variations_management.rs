@@ -22,6 +22,8 @@ struct EditVariationsParams {
     new_price: Option<i32>,
     #[serde(default, deserialize_with = "deserialize_empty_as_none")]
     new_volume: Option<f32>,
+    #[serde(default, deserialize_with = "deserialize_empty_as_none")]
+    new_available_to_order: Option<bool>,
 }
 
 async fn edit_variation(
@@ -43,6 +45,12 @@ async fn edit_variation(
 
     if let Some(new_volume) = params.new_volume {
         variation.set_volume(new_volume).await?;
+    }
+
+    if let Some(new_available_to_order) = params.new_available_to_order {
+        variation
+            .set_available_to_order(new_available_to_order)
+            .await?;
     }
 
     Ok(OkEmptyResponse::new())
