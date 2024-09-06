@@ -7,8 +7,15 @@ import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import ColumnGroup from "primevue/columngroup"
 import Row from "primevue/row"
+import { ref } from "vue";
 defineProps<{ cart: Cart }>();
 const emit = defineEmits<{ validate: [] }>()
+let loading = ref(false)
+
+function validate(){
+    loading.value = true;
+    emit('validate')
+}
 
 </script>
 <template>
@@ -28,8 +35,8 @@ const emit = defineEmits<{ validate: [] }>()
                 </ColumnGroup>
             </DataTable>
             <div class="button">
-                <Button class="valider" @click="$emit('validate')" :badge="cart.get_total()" badge-severity="contrast"
-                    label="Valider" icon="pi pi-credit-card"></Button>
+                <Button class="valider" @click="validate" :badge="cart.get_total()" badge-severity="contrast"
+                    label="Valider" icon="pi pi-credit-card" :loading="loading"></Button>
             </div>
         </div>
     </div>
