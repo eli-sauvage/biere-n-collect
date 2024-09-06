@@ -7,6 +7,8 @@ use super::{ErrorResponse, ServerError};
 pub enum ManageStockError {
     #[error("la variation de produit avec l'id {0} n'existe pas")]
     VariationNotFound(u32),
+    #[error("la catégorie avec l'id {0} n'existe pas")]
+    CategoryNotFound(u32),
     #[error("le produit avec l'id {0} n'existe pas")]
     ProductNotFound(u32),
     #[error("server error")]
@@ -19,6 +21,7 @@ impl IntoResponse for ManageStockError {
         } else {
             let status = match self {
                 Self::ProductNotFound(_)
+                | Self::CategoryNotFound(_)
                 | Self::VariationNotFound(_) => StatusCode::NOT_FOUND,
                 Self::ServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             };

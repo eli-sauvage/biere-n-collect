@@ -10,6 +10,7 @@ pub struct Product {
     pub description: String,
     pub stock_quantity: i32,
     pub available_to_order: bool,
+    pub category: Option<Category>,
     pub variations: Vec<Variation>,
 }
 
@@ -19,6 +20,7 @@ impl Product {
         description: String,
         stock_quantity: i32,
         available_to_order: bool,
+        category: Option<Category>,
     ) -> Result<Product, ServerError> {
         //shift every product down
         sqlx::query!("UPDATE Products set position = position + 1")
@@ -26,6 +28,7 @@ impl Product {
             .await?;
 
         let id = sqlx::query!("
+            INSERT INTO Products (name, description, stock_quantity, available_to_order, category_id, position)
             VALUES (?, ?, ?, ?, ?, 0)", name, description, stock_quantity, available_to_order, category.as_ref().map(|c|c.id)
         ).execute(db()).await?.last_insert_id() as u32;
 
@@ -35,12 +38,14 @@ impl Product {
             description,
             stock_quantity,
             available_to_order,
+            category,
             variations: vec![],
         })
     }
     pub async fn get(id: u32) -> Result<Option<Product>, ServerError> {
         let res_prod = sqlx::query!(
             "SELECT id, name, description, stock_quantity,
+        available_to_order as \"available_to_order: bool\", category_id
         FROM Products WHERE id = ?",
             id
         )
@@ -55,12 +60,26 @@ impl Product {
             )
             .fetch_all(db())
             .await?;
+            let category = if let Some(category_id) = prod.category_id {
+                Some(
+                    sqlx::query_as!(
+                        Category,
+                        "SELECT id, name FROM Categories WHERE id = ?",
+                        category_id
+                    )
+                    .fetch_one(db())
+                    .await?,
+                )
+            } else {
+                None
+            };
             Ok(Some(Product {
                 id: prod.id,
                 name: prod.name,
                 description: prod.description,
                 stock_quantity: prod.stock_quantity,
                 available_to_order: prod.available_to_order,
+                category,
                 variations,
             }))
         } else {
@@ -132,6 +151,17 @@ impl Product {
         self.available_to_order = new_available_to_order;
         Ok(())
     }
+    pub async fn set_category(&mut self, new_category: Category) -> Result<(), ServerError> {
+        sqlx::query!(
+            "UPDATE Products SET category_id = ? WHERE id = ?",
+            new_category.id,
+            self.id
+        )
+        .execute(db())
+        .await?;
+        self.category = Some(new_category);
+        Ok(())
+    }
 
     pub async fn add_variation(
         &mut self,
@@ -186,8 +216,13 @@ pub enum MoveDirection {
 
 impl Product {
     pub async fn move_product(&mut self, direction: MoveDirection) -> Result<(), ServerError> {
+        let category = match &self.category {
+            Some(c) => c,
+            None => return Ok(()),
+        };
         let max_pos = sqlx::query!(
-            "SELECT MAX(position) as max_pos FROM Products",
+            "SELECT MAX(position) as max_pos FROM Products WHERE category_id = ?",
+            category.id
         )
         .fetch_one(db())
         .await?
@@ -201,9 +236,10 @@ impl Product {
             (_, MoveDirection::Down) => current_position + 1,
         };
         sqlx::query!(
-            "UPDATE Products SET position = ? WHERE position = ?",
+            "UPDATE Products SET position = ? WHERE position = ? AND category_id = ?",
             current_position,
             new_pos,
+            category.id
         )
         .execute(db())
         .await?;
@@ -221,7 +257,7 @@ impl Product {
 pub async fn get_all() -> Result<Vec<Product>, ServerError> {
     let prods = sqlx::query!(
         "SELECT id, name, description, stock_quantity,
-        available_to_order as \"available_to_order: bool\"
+        available_to_order as \"available_to_order: bool\", category_id
         FROM Products ORDER BY position"
     )
     .fetch_all(db())
@@ -236,14 +272,28 @@ pub async fn get_all() -> Result<Vec<Product>, ServerError> {
         )
         .fetch_all(db())
         .await?;
+        let category = if let Some(category_id) = prod.category_id {
+            Some(
+                sqlx::query_as!(
+                    Category,
+                    "SELECT id, name FROM Categories WHERE id = ?",
+                    category_id
+                )
+                .fetch_one(db())
+                .await?,
+            )
+        } else {
+            None
+        };
         res.push(Product {
             id: prod.id,
             name: prod.name,
             description: prod.description,
             stock_quantity: prod.stock_quantity,
             available_to_order: prod.available_to_order,
+            category,
             variations,
         });
     }
     Ok(res)
-    }
+}

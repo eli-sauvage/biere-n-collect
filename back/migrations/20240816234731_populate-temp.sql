@@ -1,15 +1,19 @@
-INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (1, "ipa", "...ipa description", 100, 1, TRUE);
-INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (2, "blonde", "...blonde description", 50, 2, TRUE);
-INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (3, "cidre", "...cidre description", 0, 3, TRUE);
-INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (4, "vin rouge", "..vin description", 10, 1, TRUE);
-INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (5, "saucission", "..desc", 25, 1, TRUE);
-INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (6, "test to cat", "..desc", 1, 1, TRUE);
+INSERT INTO Categories (id, name) VALUES (1, "biere");
+INSERT INTO Categories (id, name) VALUES (2, "vin");
+INSERT INTO Categories (id, name) VALUES (3, "nourriture");
+
+INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order, category_id)
+VALUES (1, "ipa", "...ipa description", 100, 1, TRUE, 1);
+INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order, category_id)
+VALUES (2, "blonde", "...blonde description", 50, 2, TRUE, 1);
+INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order, category_id)
+VALUES (3, "cidre", "...cidre description", 0, 3, TRUE, 1);
+INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order, category_id)
+VALUES (4, "vin rouge", "..vin description", 10, 1, TRUE, 2);
+INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order, category_id)
+VALUES (5, "saucission", "..desc", 25, 1, TRUE, 3);
+INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order, category_id)
+VALUES (6, "test to cat", "..desc", 1, 1, TRUE, NULL);
 INSERT INTO ProductVariations (name, product_id, price_ht, volume)
 VALUES ("pinte", 1, 820, 0.5);
 INSERT INTO ProductVariations (name, product_id, price_ht, volume)

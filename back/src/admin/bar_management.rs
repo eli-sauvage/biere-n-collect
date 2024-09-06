@@ -51,7 +51,7 @@ impl Bar {
     }
 }
 
-pub struct PdfReport {}
-pub async fn generate_report() -> Result<PdfReport, ServerError> {
-    todo!()
-}
+//pub struct PdfReport {}
+//pub async fn generate_report() -> Result<PdfReport, ServerError> {
+//    todo!()
+//}

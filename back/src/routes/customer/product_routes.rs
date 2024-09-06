@@ -4,6 +4,7 @@ use serde::Serialize;
 use crate::{
     admin::bar_management::Bar,
     app::{
+        product_categories::{self, Category},
         products,
     },
     errors::ServerError,
@@ -14,6 +15,7 @@ pub fn get_router() -> Router<AppState> {
     Router::new()
         .route("/get_bar_status", get(get_bar_status))
         .route("/get_available_stock", get(get_available_stock))
+        .route("/get_categories", get(get_categories))
 }
 
 #[derive(Serialize)]
@@ -38,4 +40,9 @@ async fn get_bar_status() -> Result<Json<BarStatusResponse>, ServerError> {
 async fn get_available_stock() -> Result<Json<Vec<products::Product>>, ServerError> {
     let products = products::get_all().await?;
     Ok(Json(products))
+}
+
+async fn get_categories() -> Result<Json<Vec<Category>>, ServerError> {
+    let categories = product_categories::get_all().await?;
+    Ok(Json(categories))
 }

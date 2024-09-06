@@ -7,6 +7,7 @@ use serde::Deserialize;
 use crate::{
     admin::user::AdminUser,
     app::{
+        product_categories::Category,
         products::{self, MoveDirection, Product},
     },
     errors::ManageStockError,
@@ -33,17 +34,28 @@ struct InsertProductParams {
     description: String,
     stock_quantity: i32,
     available_to_order: bool,
+    category_id: Option<u32>,
 }
 async fn insert_product(
     _user: AdminUser,
     params: Query<InsertProductParams>,
 ) -> Result<OkEmptyResponse, ManageStockError> {
+    let category = if let Some(category_id) = params.category_id {
+        Some(
+            Category::get(category_id)
+                .await?
+                .ok_or_else(|| ManageStockError::CategoryNotFound(category_id))?,
+        )
+    } else {
+        None
+    };
 
     products::Product::create(
         params.name.clone(),
         params.description.clone(),
         params.stock_quantity,
         params.available_to_order,
+        category,
     )
     .await?;
 
@@ -61,6 +73,8 @@ struct EditProductParams {
     new_stock_quantity: Option<i32>,
     #[serde(default, deserialize_with = "deserialize_empty_as_none")]
     new_available_to_order: Option<bool>,
+    #[serde(default, deserialize_with = "deserialize_empty_as_none")]
+    new_category_id: Option<u32>,
 }
 
 async fn edit_product(
@@ -85,6 +99,13 @@ async fn edit_product(
         product
             .set_available_to_order(new_available_to_order)
             .await?;
+    }
+    if let Some(new_category_id) = params.new_category_id {
+        let category = match Category::get(new_category_id).await? {
+            Some(c) => c,
+            None => return Err(ManageStockError::CategoryNotFound(new_category_id)),
+        };
+        product.set_category(category).await?;
     }
 
     Ok(OkEmptyResponse::new())
@@ -170,4 +191,4 @@ async fn remove_variation(
     product.delete_variation(params.variation_id).await?;
 
     Ok(OkEmptyResponse::new())
-    }
+}

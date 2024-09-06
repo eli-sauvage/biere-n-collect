@@ -6,6 +6,12 @@ CREATE TABLE IF NOT EXISTS Bar
   closing_message TEXT NOT NULL DEFAULT "le bar est fermé"
 );
 
+CREATE TABLE IF NOT EXISTS Categories
+(
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
+  name VARCHAR(255) NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS Products
 (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
@@ -14,6 +20,7 @@ CREATE TABLE IF NOT EXISTS Products
   stock_quantity INT NOT NULL,
   position SMALLINT UNSIGNED NOT NULL,
   available_to_order BOOLEAN NOT NULL,
+  category_id INT UNSIGNED,
   CONSTRAINT `fk_category_id`
     FOREIGN KEY (category_id) REFERENCES Categories (id)
     ON DELETE RESTRICT

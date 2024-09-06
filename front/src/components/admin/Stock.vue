@@ -4,13 +4,21 @@ import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import ProductViewAdmin from './ProductViewAdmin.vue';
 import EditProduct from './EditProduct.vue';
+import Tabs from 'primevue/tabs';
+import Tab from 'primevue/tab';
+import TabList from 'primevue/tablist';
+import TabPanel from 'primevue/tabpanel';
+import TabPanels from 'primevue/tabpanels';
+import { get_categories, get_stock, type Category, type Product } from '@/scripts/api/products';
 import { delete_product, insert_product, move_product, edit_product } from '@/scripts/api/admin/stock/product-management';
 import { get_stock, type Product } from '@/scripts/api/products';
 
+let categories: Ref<Category[]> = ref([]);
 let products: Ref<Product[]> = ref([]);
 
 let refresh_stock = async () => {
     products.value = await get_stock()
+    categories.value = await get_categories()
 };
 refresh_stock()
 
@@ -55,9 +63,18 @@ async function createProduct(new_prod: Product) {
         <Button label="Ajouter un produit" icon="pi pi-plus" class="btn-add-product"
             @click="requestCreateProduct"></Button>
     </div>
-    <ProductViewAdmin v-for="(product, index) in products" :product="product"
-        class="product" :first="index == 0" :last="index == products.length - 1"
-        @request-edit="(prod) => editing_product = prod" @refresh_stock="refresh_stock" />
+    <Tabs :value="categories[0]?.id.toString()" scrollable>
+        <TabList class="home-tab-list">
+            <Tab v-for="category in categories" :value="category.id.toString()">{{ category.name }}</Tab>
+        </TabList>
+        <TabPanels class="home-tab-panel">
+            <TabPanel v-for="category in categories" :value="category.id.toString()">
+                <ProductViewAdmin v-for="(product, index) in products.filter(p => p.category?.id == category.id)"
+                    :product="product" class="product" :first="index == 0" :last="index == products.length - 1"
+                    @request-edit="(prod) => editing_product = prod" @refresh_stock="refresh_stock" />
+            </TabPanel>
+        </TabPanels>
+    </Tabs>
 </template>
 
 

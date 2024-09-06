@@ -2,6 +2,11 @@ import type { Cart } from "../cart";
 import { base, Error } from "./api"
 
 
+export type Category = {
+    id: number,
+    name: string
+}
+
 
 export type Product = {
   id: number,
@@ -9,6 +14,7 @@ export type Product = {
   description: string,
   stock_quantity: number,
   available_to_order: boolean,
+  category?: Category
   variations: Variation[]
 }
 export type Variation = {
@@ -66,3 +72,21 @@ export async function get_stock(): Promise<Product[]> {
   }
 }
 
+
+
+export async function get_categories(): Promise<Category[]> {
+  let url = `${base}/get_categories`;
+  let error_title = "Erreur lors de la recupération des catégories";
+  try {
+    let res = await fetch(url).then(async e => await e.json())
+    if (res.error) {
+      new Error(error_title, res.error)
+      return []
+    } else {
+      return res as Category[]
+    }
+  } catch (e: any) {
+    new Error(error_title, e.toString());
+    return []
+  }
+}

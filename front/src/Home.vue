@@ -5,18 +5,26 @@ import { Cart, type ProductId } from './scripts/cart';
 import CartVue from './components/CartView.vue';
 import Button from "primevue/button"
 import Drawer from 'primevue/drawer';
-import { get_bar_status, get_stock, type BarStatus, type Product } from './scripts/api/products';
+import Tabs from 'primevue/tabs';
+import Tab from 'primevue/tab';
+import TabList from 'primevue/tablist';
+import TabPanel from 'primevue/tabpanel';
+import TabPanels from 'primevue/tabpanels';
 
+import { get_bar_status, get_categories, get_stock, type BarStatus, type Category, type Product } from './scripts/api/products';
 
 let cart: Ref<Cart> = ref(new Cart([]));
 let bar_status: Ref<BarStatus | null> = ref(null);
 let visible = ref(false);
 let products: Ref<Product[]> = ref([]);
+let categories: Ref<Category[]> = ref([]);
+
 (async () => {
     bar_status.value = await get_bar_status();
     if (bar_status.value == null) return
     if (bar_status.value.is_open == false) return
     products.value = await get_stock()
+    categories.value = await get_categories()
     cart.value = new Cart(products.value)
 })();
 
@@ -29,6 +37,17 @@ let products: Ref<Product[]> = ref([]);
         </Drawer>
         <div class="product-list">
             <ProductVue v-for="product in products" :cart="cart" :product="product"/>
+            <Tabs :value="categories[0]?.id.toString()" scrollable>
+                <TabList class="home-tab-list">
+                    <Tab v-for="category in categories" :value="category.id.toString()">{{ category.name }}</Tab>
+                </TabList>
+                <TabPanels class="home-tab-panel">
+                    <TabPanel v-for="category in categories" :value="category.id.toString()">
+                        <ProductVue v-for="product in products.filter(prod=>prod.category?.id == category.id)"
+                            :product="product" :cart="cart"/>
+                    </TabPanel>
+                </TabPanels>
+            </Tabs>
         </div>
         <div class="see-cart-back">
             <Button class="see-cart" icon="pi pi-shopping-cart" label="Voir le panier" :badge="cart.get_total()"
@@ -77,5 +96,16 @@ let products: Ref<Product[]> = ref([]);
 
 .p-drawer-header {
     padding-bottom: 0 !important;
+}
+
+.home-tab-panel{
+    padding: 0 !important;
+    background-color: var(--background) !important;
+}
+/* .home-tab-panel p {
+    color: black !important;
+} */
+.home-tab-list .p-tablist-tab-list{
+    justify-content: center;
 }
 </style>
