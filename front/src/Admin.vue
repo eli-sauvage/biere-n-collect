@@ -60,6 +60,7 @@ let currentUserEmail: Ref<string> = ref("");
 <style>
 .p-tabpanels {
     background: unset !important;
+  padding: 0 !important;
 }
 
 .p-tablist-tab-list {

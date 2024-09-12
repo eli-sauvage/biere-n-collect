@@ -1,4 +1,3 @@
-import type { Cart } from "../cart";
 import { base, Error } from "./api"
 
 export type Product = {
@@ -7,6 +6,7 @@ export type Product = {
   description: string,
   stock_quantity: number,
   variations: Variation[]
+  available_to_order: boolean
 }
 export type Variation = {
     id: number,
