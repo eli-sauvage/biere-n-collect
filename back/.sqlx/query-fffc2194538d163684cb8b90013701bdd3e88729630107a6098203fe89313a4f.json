@@ -1,15 +1,15 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT Max(position) as max_pos from Stock",
+  "query": "SELECT MAX(position) as max_pos FROM Products",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
         "name": "max_pos",
         "type_info": {
-          "type": "Long",
+          "type": "Short",
           "flags": "UNSIGNED | BINARY",
-          "max_size": 10
+          "max_size": 5
         }
       }
     ],
@@ -20,5 +20,5 @@
       true
     ]
   },
-  "hash": "eeb601cc846233c08a7f1ef04758f79f2013c589ae9de231c627995427b5735d"
+  "hash": "fffc2194538d163684cb8b90013701bdd3e88729630107a6098203fe89313a4f"
 }

@@ -1,15 +1,15 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT position from Stock WHERE product_id = ?",
+  "query": "SELECT position FROM Products WHERE id = ?",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
         "name": "position",
         "type_info": {
-          "type": "Long",
+          "type": "Short",
           "flags": "NOT_NULL | UNSIGNED | NO_DEFAULT_VALUE",
-          "max_size": 10
+          "max_size": 5
         }
       }
     ],
@@ -20,5 +20,5 @@
       false
     ]
   },
-  "hash": "3be70bf8fb600f9ec1c4b64f6174b710add57a4ed71dc2315eaf1222f7b9eda2"
+  "hash": "43599573c3ff166d6439fe72aeb23b02e6fd77eea0b071c61a62c33a2bd111a8"
 }

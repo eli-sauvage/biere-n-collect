@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE Products SET position = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "2042917dfaf7bb2f9f4693a1f2b0ee20d51f71951fabb8d8c1e25c1c27e126c7"
+}

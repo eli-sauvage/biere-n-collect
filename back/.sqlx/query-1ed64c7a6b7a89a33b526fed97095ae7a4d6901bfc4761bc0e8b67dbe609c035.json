@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT product_id, quantity FROM OrderDetails WHERE order_id = ?",
+  "query": "SELECT ProductVariations.product_id, quantity\n            FROM OrderDetails\n                INNER JOIN ProductVariations ON OrderDetails.variation_id = ProductVariations.id\n            WHERE order_id = ?",
   "describe": {
     "columns": [
       {
@@ -30,5 +30,5 @@
       false
     ]
   },
-  "hash": "6373cd4fc842eb161f6e48188bf39340be94c5c59a622e8d3e60a8930cc84562"
+  "hash": "1ed64c7a6b7a89a33b526fed97095ae7a4d6901bfc4761bc0e8b67dbe609c035"
 }

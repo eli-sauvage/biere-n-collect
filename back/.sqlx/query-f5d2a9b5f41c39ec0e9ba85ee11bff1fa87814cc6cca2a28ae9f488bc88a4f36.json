@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE ProductVariations SET price_ht = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "f5d2a9b5f41c39ec0e9ba85ee11bff1fa87814cc6cca2a28ae9f488bc88a4f36"
+}

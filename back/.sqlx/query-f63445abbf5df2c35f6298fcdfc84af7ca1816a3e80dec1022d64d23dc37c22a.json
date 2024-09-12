@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "INSERT INTO OrderDetails (order_id, variation_id, quantity) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "f63445abbf5df2c35f6298fcdfc84af7ca1816a3e80dec1022d64d23dc37c22a"
+}

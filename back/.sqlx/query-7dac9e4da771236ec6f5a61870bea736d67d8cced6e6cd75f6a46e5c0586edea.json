@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE ProductVariations SET tva = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "7dac9e4da771236ec6f5a61870bea736d67d8cced6e6cd75f6a46e5c0586edea"
+}

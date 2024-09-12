@@ -5,11 +5,11 @@ VALUES (2, "blonde", "...blonde description", 50, 2, TRUE);
 INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
 VALUES (3, "cidre", "...cidre description", 0, 3, TRUE);
 INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (4, "vin rouge", "..vin description", 10, 1, TRUE);
+VALUES (4, "vin rouge", "..vin description", 10, 4, TRUE);
 INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (5, "saucission", "..desc", 25, 1, TRUE);
+VALUES (5, "saucission", "..desc", 25, 5, TRUE);
 INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (6, "test to cat", "..desc", 1, 1, TRUE);
+VALUES (6, "test to cat", "..desc", 1, 6, TRUE);
 
 
 INSERT INTO ProductVariations (name, product_id, price_ht, volume, available_to_order)

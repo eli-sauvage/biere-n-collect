@@ -1,0 +1,64 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT\n                Products.name as product_name,\n                ProductVariations.name as variation_name,\n                OrderDetails.quantity,\n                (ProductVariations.price_ht * OrderDetails.quantity) as subtotal_ht,\n                (ProductVariations.price_ht * OrderDetails.quantity * (1 + ProductVariations.tva)) as subtotal_ttc\n            FROM OrderDetails\n                INNER JOIN ProductVariations ON OrderDetails.variation_id = ProductVariations.id\n                INNER JOIN Products ON ProductVariations.id = Products.id\n            WHERE order_id = ?\n                AND OrderDetails.quantity != 0",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "product_name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "variation_name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "quantity",
+        "type_info": {
+          "type": "Long",
+          "flags": "NOT_NULL | UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 10
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "subtotal_ht",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | UNSIGNED | BINARY",
+          "max_size": 20
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "subtotal_ttc",
+        "type_info": {
+          "type": "Double",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 23
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4b9873c0c8c3635474f5d0028ceb060e3b53b4f9e66db4abf48ff242a038c29a"
+}

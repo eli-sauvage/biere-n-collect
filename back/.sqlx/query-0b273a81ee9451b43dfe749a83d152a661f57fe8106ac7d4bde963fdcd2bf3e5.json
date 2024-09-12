@@ -1,10 +1,19 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT name, quantity, product_id, price, available as \"available!: bool\" FROM Stock ORDER BY position",
+  "query": "SELECT id, name, description, stock_quantity,\n        available_to_order as \"available_to_order: bool\"\n        FROM Products ORDER BY position",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Long",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 10
+        }
+      },
+      {
+        "ordinal": 1,
         "name": "name",
         "type_info": {
           "type": "VarString",
@@ -13,26 +22,17 @@
         }
       },
       {
-        "ordinal": 1,
-        "name": "quantity",
-        "type_info": {
-          "type": "Long",
-          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
-          "max_size": 11
-        }
-      },
-      {
         "ordinal": 2,
-        "name": "product_id",
+        "name": "description",
         "type_info": {
-          "type": "Long",
-          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
-          "max_size": 10
+          "type": "Blob",
+          "flags": "NOT_NULL | BLOB | NO_DEFAULT_VALUE",
+          "max_size": 262140
         }
       },
       {
         "ordinal": 3,
-        "name": "price",
+        "name": "stock_quantity",
         "type_info": {
           "type": "Long",
           "flags": "NOT_NULL | NO_DEFAULT_VALUE",
@@ -41,7 +41,7 @@
       },
       {
         "ordinal": 4,
-        "name": "available!: bool",
+        "name": "available_to_order: bool",
         "type_info": {
           "type": "Tiny",
           "flags": "NOT_NULL | NO_DEFAULT_VALUE",
@@ -60,5 +60,5 @@
       false
     ]
   },
-  "hash": "eb065edc9d090694767547410cd8d71b6014c2077c8a113636a32d005b08f201"
+  "hash": "0b273a81ee9451b43dfe749a83d152a661f57fe8106ac7d4bde963fdcd2bf3e5"
 }

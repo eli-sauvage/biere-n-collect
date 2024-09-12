@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE ProductVariations SET volume = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "178c5a90fe143976d4ecf4b63a36ca2159cb42bbd8a0d015eecafd74c84929ec"
+}
