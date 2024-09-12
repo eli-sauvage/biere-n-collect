@@ -38,8 +38,10 @@ impl Bar {
         sqlx::query!("UPDATE Bar SET is_open = FALSE")
             .execute(db())
             .await?;
+        sqlx::query!("INSERT INTO BarOpenings (begin, end) VALUES (?, CURRENT_TIMESTAMP)",
+            self.open_since)
+            .execute(db()).await?;
         self.is_open = false;
-        //#TODO: genete report
         Ok(())
     }
 
@@ -51,7 +53,15 @@ impl Bar {
     }
 }
 
-pub struct PdfReport {}
-pub async fn generate_report() -> Result<PdfReport, ServerError> {
-    todo!()
+#[derive(Serialize)]
+pub struct BarOpening{
+    #[serde(serialize_with = "serialize_time")]
+    begin: OffsetDateTime,
+    #[serde(serialize_with = "serialize_time")]
+    end: OffsetDateTime
+}
+pub async fn get_bar_openings() -> Result<Vec<BarOpening>, ServerError>{
+    let res = sqlx::query!("SELECT begin, end FROM BarOpenings")
+        .fetch_all(db()).await?;
+    Ok(res.into_iter().map(|r|BarOpening{begin: r.begin, end: r.end}).collect())
 }

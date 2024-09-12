@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { close_bar, get_bar, list_reports, open_bar, set_closing_message, type Bar } from '@/scripts/api/admin/bar-management';
+import { close_bar, get_bar, open_bar, set_closing_message, type Bar } from '@/scripts/api/admin/bar-management';
+import {get_bar_openings, type BarOpening} from "../../scripts/api/admin/reports";
 import Button from 'primevue/button';
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useConfirm } from 'primevue/useconfirm';
@@ -10,12 +11,12 @@ import { base } from '@/scripts/api/api';
 
 let bar: Ref<Bar | null> = ref(null);
 let new_closing_message = ref("");
-let reports: Ref<string[]> = ref([])
+let openings: Ref<BarOpening[]> = ref([])
 const refresh = async () => {
     bar.value = await get_bar();
     if (bar.value)
         new_closing_message.value = bar.value?.closing_message
-    reports.value = await list_reports()
+  openings.value = await get_bar_openings()
 }
 refresh()
 
@@ -88,7 +89,7 @@ const update_closing_msg = async () => {
         </div>
     </Panel>
     <Panel header="Historique des comptes-rendus d'ouverture" style="margin-top: 10px;">
-        <a v-for="report in reports" :href="`${base}/admin/bar/reports/${report}`">{{ report }}</a>
+        <a v-for="report in openings" :href="`${base}/admin/bar/reports/${report}`">{{ report }}</a>
     </Panel>
 </template>
 <style scoped>

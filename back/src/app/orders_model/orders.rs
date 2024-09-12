@@ -48,7 +48,7 @@ pub struct Order {
     pub timestamp: OffsetDateTime,
     pub user_email: Option<String>,
     pub receipt: Option<Receipt>,
-    payment_intent_id: String,
+    pub payment_intent_id: String,
     pub served: bool,
 }
 

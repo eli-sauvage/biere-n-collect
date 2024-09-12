@@ -5,6 +5,7 @@ use super::AppState;
 mod auth;
 mod bar_management;
 mod order_management;
+mod reports;
 mod stock;
 mod user_management;
 
@@ -15,4 +16,5 @@ pub fn get_router() -> Router<AppState> {
         .nest("/stock", stock::get_router())
         .nest("/orders", order_management::get_router())
         .nest("/bar", bar_management::get_router())
+        .nest("/reports", reports::get_router())
 }

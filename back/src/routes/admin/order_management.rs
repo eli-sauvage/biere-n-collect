@@ -27,7 +27,7 @@ pub fn get_router() -> Router<AppState> {
 }
 
 #[derive(Serialize)]
-struct OrderResponse {
+pub struct OrderResponse {
     id: OrderId,
     receipt: Option<String>,
     served: bool,
