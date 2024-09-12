@@ -14,7 +14,7 @@ import Bar from './components/admin/Bar.vue';
 let router = useRouter();
 
 // let stock: Ref<Product[]> = ref([]);
-let currentUserEmail: Ref<string> = ref("");
+let currentUserEmail: Ref<string | null> = ref(null);
 
 (async () => {
     let auth = await get_current_auth();
@@ -34,7 +34,7 @@ let currentUserEmail: Ref<string> = ref("");
 </script>
 
 <template>
-    <Tabs value="0">
+    <Tabs v-if="currentUserEmail" value="0">
         <TabList>
             <Tab value="0">Bar</Tab>
             <Tab value="1">Stock</Tab>
