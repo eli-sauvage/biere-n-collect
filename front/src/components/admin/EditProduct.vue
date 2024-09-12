@@ -9,8 +9,6 @@ let props = defineProps<{ product: Product }>()
 let emit = defineEmits<{ close: [], save: [newProduct: Product] }>()
 let prod = ref({ ...props.product })
 
-let price = ref(0);
-
 function save(e:Event) {
     e.preventDefault()
     // prod.value.price = Math.round(price.value * 100);
@@ -23,8 +21,8 @@ function save(e:Event) {
         <div class="inputs">
             <label for="name">Nom</label>
             <InputText id="name" v-model="prod.name" />
-            <label for="price">Prix</label>
-            <InputNumber id="price" v-model="price" mode="currency" currency="EUR" />
+            <label for="name">Description</label>
+            <InputText id="name" v-model="prod.description" />
             <label for="stock">Stock</label>
             <InputNumber locale="fr-FR" id="stock" v-model="prod.stock_quantity" />
             <div class="available">

@@ -42,6 +42,19 @@ impl Variation {
         self.price_ht = new_price_ht;
         Ok(())
     }
+
+    pub async fn set_tva(&mut self, new_tva: f32) -> Result<(), ServerError> {
+        sqlx::query!(
+            "UPDATE ProductVariations SET tva = ? WHERE id = ?",
+            new_tva,
+            self.id
+        )
+        .execute(db())
+        .await?;
+        self.tva = new_tva;
+        Ok(())
+    }
+
     pub async fn set_name(&mut self, new_name: String) -> Result<(), ServerError> {
         sqlx::query!(
             "UPDATE ProductVariations SET name = ? WHERE id = ?",

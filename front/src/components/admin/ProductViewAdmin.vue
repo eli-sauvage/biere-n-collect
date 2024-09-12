@@ -6,18 +6,20 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import { useConfirm } from 'primevue/useconfirm';
 import { f_price } from '@/scripts/utils';
 import type { Product, Variation } from '@/scripts/api/products';
-import { delete_product, edit_product, move_product } from '@/scripts/api/admin/stock/product-management';
+import { delete_product, edit_product, move_product, remove_variation } from '@/scripts/api/admin/stock/product-management';
 import { edit_variation } from '@/scripts/api/admin/stock/variations-management';
 import Divider from 'primevue/divider';
 
 let props = defineProps<{ product: Product, first?: boolean, last?: boolean }>();
 let emit = defineEmits<{
-    refresh_stock: []
-    requestEdit: [product: Product],
+  refresh_stock: []
+  requestEditProduct: [product: Product],
+  requestAddVariation: [product: Product],
+  requestEditVariation: [variation: Variation]
 }>()
 
 const confirm = useConfirm();
-const confirm_delete = (event: Event) => {
+const comfirmDeleteProduct = (event: Event) => {
     confirm.require({
         target: event.currentTarget as HTMLInputElement,
         message: 'Etes-vous sûr ?',
@@ -33,6 +35,29 @@ const confirm_delete = (event: Event) => {
         },
         accept: async () => {
             if (await delete_product(props.product.id)) {
+                emit('refresh_stock')
+            }
+
+        },
+        reject: () => { }
+    });
+};
+function confirmDeleteVariation(event: Event, variation: Variation){
+    confirm.require({
+        target: event.currentTarget as HTMLInputElement,
+        message: 'Etes-vous sûr ?',
+        icon: 'pi pi-info-circle',
+        rejectProps: {
+            label: 'Annuler',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'Supprimer',
+            severity: 'danger'
+        },
+        accept: async () => {
+            if (await remove_variation(props.product.id, variation.id)) {
                 emit('refresh_stock')
             }
 
@@ -95,15 +120,15 @@ async function toogleProductAvailable(){
             @click="toogleVariationAvailable(variation)" />
         </div>
         <div class="edit-variation">
-          <Button icon="pi pi-pencil" severity="primary" @click="$emit('requestEdit', product)" :badge="f_price(variation.price_ttc)"></Button>
-          <Button icon="pi pi-trash" severity="danger" @click="confirm_delete"></Button>
+          <Button icon="pi pi-pencil" severity="primary" @click="$emit('requestEditVariation', variation)" :badge="f_price(variation.price_ttc)"></Button>
+          <Button icon="pi pi-trash" severity="danger" @click="(e)=>confirmDeleteVariation(e, variation)" ></Button>
         </div>
       </div>
-      <Button label="ajouter une variation" icon="pi pi-plus"></Button>
+    <Button label="ajouter une variation" icon="pi pi-plus" @click="$emit('requestAddVariation', product)"></Button>
       <Divider/>
       <div class="edit-product">
-        <Button icon="pi pi-pencil" severity="primary" @click="$emit('requestEdit', product)"></Button>
-        <Button icon="pi pi-trash" severity="danger" @click="confirm_delete"></Button>
+        <Button icon="pi pi-pencil" severity="primary" @click="$emit('requestEditProduct', product)"></Button>
+        <Button icon="pi pi-trash" severity="danger" @click="comfirmDeleteProduct"></Button>
       </div>
     </div>
   </div>

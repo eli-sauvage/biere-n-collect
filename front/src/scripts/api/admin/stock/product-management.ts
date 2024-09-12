@@ -6,7 +6,7 @@ export async function insert_product(new_prod: Product): Promise<boolean> {
         `?name=${encodeURIComponent(new_prod.name)}` +
         `&description=${encodeURIComponent(new_prod.description)}` +
         `&stock_quantity=${encodeURIComponent(new_prod.stock_quantity)}` +
-        `&available=${encodeURIComponent(new_prod.available_to_order)}`;
+        `&available_to_order=${encodeURIComponent(new_prod.available_to_order)}`;
     let error_title = "Erreur lors de la création d'un nouveau produit"
     try {
         let res = await fetch(url, {
@@ -100,11 +100,12 @@ export async function move_product(product_id: number, direction: "up" | "down")
 }
 
 
-export async function add_variation(product_id: number, name: string, price_ht: number, tva: number, volume: number): Promise<boolean> {
+export async function add_variation(product_id: number, name: string, price_ht: number, tva: number, volume: number, available_to_order: boolean): Promise<boolean> {
     let url = `${base}/admin/stock/products/add_variation?product_id=${encodeURIComponent(product_id)}` +
         `&name=${encodeURIComponent(name)}` +
         `&price_ht=${encodeURIComponent(price_ht)}` +
         `&tva=${encodeURIComponent(tva)}` +
+        `&available_to_order=${encodeURIComponent(available_to_order)}` +
         `&volume=${encodeURIComponent(volume)}`;
     let error_title = "Erreur lors de l'ajout d'une variation"
     try {
@@ -125,7 +126,7 @@ export async function add_variation(product_id: number, name: string, price_ht: 
 }
 
 export async function remove_variation(product_id: number, variation_id: number): Promise<boolean> {
-    let url = `${base}/admin/stock/products/add_variation?product_id=${encodeURIComponent(product_id)}` +
+    let url = `${base}/admin/stock/products/remove_variation?product_id=${encodeURIComponent(product_id)}` +
         `&variation_id=${encodeURIComponent(variation_id)}`;
     let error_title = "Erreur lors du retrait d'une variation"
     try {

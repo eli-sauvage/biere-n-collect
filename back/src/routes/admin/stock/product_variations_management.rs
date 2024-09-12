@@ -19,7 +19,9 @@ struct EditVariationsParams {
     #[serde(default, deserialize_with = "deserialize_empty_as_none")]
     new_name: Option<String>,
     #[serde(default, deserialize_with = "deserialize_empty_as_none")]
-    new_price: Option<i32>,
+    new_price_ht: Option<i32>,
+    #[serde(default, deserialize_with = "deserialize_empty_as_none")]
+    new_tva: Option<f32>,
     #[serde(default, deserialize_with = "deserialize_empty_as_none")]
     new_volume: Option<f32>,
     #[serde(default, deserialize_with = "deserialize_empty_as_none")]
@@ -39,8 +41,12 @@ async fn edit_variation(
         variation.set_name(new_name.to_owned()).await?;
     }
 
-    if let Some(new_price) = params.new_price {
+    if let Some(new_price) = params.new_price_ht {
         variation.set_price_ht(new_price).await?;
+    }
+
+    if let Some(new_tva) = params.new_tva {
+        variation.set_tva(new_tva).await?;
     }
 
     if let Some(new_volume) = params.new_volume {
