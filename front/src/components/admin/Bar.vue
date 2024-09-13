@@ -81,7 +81,6 @@ const update_closing_msg = async () => {
 }
 
 let customReportDates: Ref<[Date, Date] | null> = ref(null)
-let show_customDates = ref(false)
 function showReport(begin: Date, end: Date){
   router.push({ path: "/admin/report", query: { begin: begin.getTime(), end: end.getTime() } })
   
