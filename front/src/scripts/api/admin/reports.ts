@@ -24,8 +24,8 @@ export async function get_bar_openings(): Promise<BarOpening[]> {
             new Error(error_title, res.error)
             return []
         } else {
-            res.open_since = new Date(res.open_since)
-            return res as BarOpening[]
+            res = (res as any[]).map(e=> {return {begin: new Date(e.begin), end: new Date(e.end)}})
+            return res
         }
     } catch (e: any) {
         new Error(error_title, e.toString());
@@ -39,7 +39,6 @@ export async function get_report(begin: Date, end: Date): Promise<Order[]> {
     let error_title = "Erreur lors de l'envoi de la récupération du rapport"
     try {
         let res = await fetch(url, {
-            method: "POST",
             credentials: "include",
         }).then(e => e.json());
         if (res.error) {

@@ -37,6 +37,7 @@ pub type OrderId = u64;
 pub struct OrderDetailElement {
     pub product_name: String,
     pub variation_name: String,
+    pub variation_id: u32,
     pub quantity: u8,
     pub subtotal_ht: i32,
     pub subtotal_ttc: i32,
@@ -120,6 +121,7 @@ impl Order {
             "SELECT
                 Products.name as product_name,
                 ProductVariations.name as variation_name,
+                ProductVariations.id as variation_id,
                 OrderDetails.quantity,
                 (ProductVariations.price_ht * OrderDetails.quantity) as subtotal_ht,
                 (ProductVariations.price_ht * OrderDetails.quantity * (1 + ProductVariations.tva)) as subtotal_ttc
@@ -137,6 +139,7 @@ impl Order {
             .map(|r| OrderDetailElement {
                 product_name: r.product_name,
                 variation_name: r.variation_name,
+                variation_id: r.variation_id,
                 quantity: r.quantity as u8,
                 subtotal_ht: r.subtotal_ht as i32,
                 subtotal_ttc: r.subtotal_ttc as i32,

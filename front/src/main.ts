@@ -10,7 +10,6 @@ import Aura from "@primevue/themes/aura";
 import ToastService from "primevue/toastservice";
 import ConfirmationService from 'primevue/confirmationservice';
 import { definePreset } from '@primevue/themes';
-import Buy from './Home.vue';
 
 if (import.meta.env.VITE_SITE_URL == undefined) {
     throw Error(`no SITE URL specified in env`)
@@ -32,6 +31,7 @@ const routes = [
     { path: '/', component: () => import('./Home.vue') },
     { path: '/serveur', component: () => import("./Serveur.vue") },
     { path: '/admin', component: () => import("./Admin.vue") },
+    { path: '/admin/report', component: () => import("./AdminReport.vue") },
     { path: '/login', component: () => import("./components/Login.vue") },
     { path: '/checkout', component: () => import("./components/pay/SrCheckoutForm.vue") },
     { path: '/return', component: () => import("./components/pay/SrReturn.vue") }

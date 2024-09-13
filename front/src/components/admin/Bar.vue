@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { close_bar, get_bar, open_bar, set_closing_message, type Bar } from '@/scripts/api/admin/bar-management';
 import {get_bar_openings, type BarOpening} from "../../scripts/api/admin/reports";
+import {useRouter} from "vue-router"
 import Button from 'primevue/button';
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useConfirm } from 'primevue/useconfirm';
 import Textarea from 'primevue/textarea';
 import Panel from 'primevue/panel';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import DatePicker from 'primevue/datepicker';
 import { ref, type Ref } from 'vue';
 import { base } from '@/scripts/api/api';
+
+const router = useRouter();
 
 let bar: Ref<Bar | null> = ref(null);
 let new_closing_message = ref("");
@@ -17,6 +23,7 @@ const refresh = async () => {
     if (bar.value)
         new_closing_message.value = bar.value?.closing_message
   openings.value = await get_bar_openings()
+  console.log(openings.value)
 }
 refresh()
 
@@ -36,8 +43,8 @@ const confirm_close = (event: Event) => {
             severity: 'danger'
         },
         accept: async () => {
-            await close_bar()
-            bar.value = await get_bar()
+          await close_bar()
+          refresh()
         },
         reject: () => { }
     });
@@ -57,8 +64,8 @@ const confirm_open = (event: Event) => {
             severity: 'success'
         },
         accept: async () => {
-            await open_bar()
-            bar.value = await get_bar()
+          await open_bar()
+          refresh()
         },
         reject: () => { }
     });
@@ -73,8 +80,16 @@ const update_closing_msg = async () => {
     refresh()
 }
 
+let customReportDates: Ref<[Date, Date] | null> = ref(null)
+let show_customDates = ref(false)
+function showReport(begin: Date, end: Date){
+  router.push({ path: "/admin/report", query: { begin: begin.getTime(), end: end.getTime() } })
+  
+}
+
 </script>
 <template>
+  <div class="container">
     <ConfirmPopup></ConfirmPopup>
     <Button v-if="bar?.is_open" icon="pi pi-lock" label="Fermer les commandes" severity="danger" @click="confirm_close"
         class="open-close-btn" size="large"></Button>
@@ -89,11 +104,31 @@ const update_closing_msg = async () => {
         </div>
     </Panel>
     <Panel header="Historique des comptes-rendus d'ouverture" style="margin-top: 10px;">
-        <a v-for="report in openings" :href="`${base}/admin/bar/reports/${report}`">{{ report }}</a>
+        <DatePicker v-model="customReportDates" id="date-search-order" :manualInput="false" :maxDate="new Date()"
+          selection-mode="range" showButtonBar />
+    <DataTable :value="openings">
+      <Column :field="(e: BarOpening) => e.begin.toLocaleString('FR-fr')" header="Début"></Column>
+      <Column :field="(e: BarOpening) => e.end.toLocaleString('FR-fr')" header="Fin"></Column>
+      <Column header="Compte rendu">
+        <template #body="slotProps">
+            <Button as="router-link" icon="pi pi-file-export"
+              :to="`/admin/report?begin=${slotProps.data.begin.getTime()}&end=${slotProps.data.end.getTime()}`"
+              class="open-report"
+            ></Button>
+        </template>
+      </Column>
+    </DataTable>
     </Panel>
+  </div>
 </template>
 <style scoped>
+.container{
+  padding: 20px; 
+}
 .open-close-btn {
     width: 100%;
+}
+.open-report{
+text-decoration: none; 
 }
 </style>
