@@ -104,7 +104,8 @@ function exportToPDF(report: Report){
       <h1> Rapport d'ouverture</h1>
       <p> Début: {{ report?.begin.toLocaleString('FR-fr') }}</p>
       <p> Fin: {{ report?.end.toLocaleString('FR-fr') }}</p>
-      <DataTable v-if="report" :value="Array.from(report.unique_variation.values())" class="report-table">
+      <DataTable v-if="report && report.unique_variation.values.length"
+        :value="Array.from(report.unique_variation.values())" class="report-table">
         <Column :field="(e: ReportVariation)=>`${e.product_name}: ${e.variation_name}`" header="Article"></Column>
         <Column :field="(e: ReportVariation) => e.order_quantity" header="Qtt"></Column>
         <Column :field="(e: ReportVariation) => `${e.tva*100}%`" header="TVA"></Column>
@@ -119,14 +120,20 @@ function exportToPDF(report: Report){
           </Row>
         </ColumnGroup>
       </DataTable>
+      <p v-else class="no-order">Aucune commande trouvée durant cette période !</p>
     </div>
-    <Button label="Télécharger en PDF" :disabled="!report" @click="report?exportToPDF(report):{}" class="download-pdf" size="large" icon="pi pi-file-pdf"></Button>
+    <Button label="Télécharger en PDF" :disabled="!(report && report.unique_variation.values.length)" 
+      @click="report?exportToPDF(report):{}" class="download-pdf" size="large" icon="pi pi-file-pdf"></Button>
   </div>
 </template>
 
 <style scoped>
 .container{
   padding: 10px;
+}
+.no-order{
+  text-align: center;
+  margin: 20px 0;
 }
 .download-pdf{
   margin-top: 30px;

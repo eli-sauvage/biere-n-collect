@@ -10,8 +10,10 @@ import Panel from 'primevue/panel';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import DatePicker from 'primevue/datepicker';
+import FloatLabel from 'primevue/floatlabel';
 import { ref, type Ref } from 'vue';
 import { base } from '@/scripts/api/api';
+import { watch } from 'vue';
 
 const router = useRouter();
 
@@ -81,10 +83,18 @@ const update_closing_msg = async () => {
 }
 
 let customReportDates: Ref<[Date, Date] | null> = ref(null)
-function showReport(begin: Date, end: Date){
-  router.push({ path: "/admin/report", query: { begin: begin.getTime(), end: end.getTime() } })
-  
-}
+let customReportLink: Ref<string | null> = ref(null)
+watch(customReportDates, async (new_dates)=>{
+  console.log("here")
+  if(new_dates == null || new_dates[0] == null || new_dates[1] == null){
+    console.log("ret")
+    console.log(new_dates)
+    return
+  }
+    new_dates[0].setHours(0, 0, 0, 0);
+    new_dates[1].setHours(23, 59, 59, 999);
+   customReportLink.value = `/admin/report?begin=${new_dates[0].getTime()}&end=${new_dates[1].getTime()}`
+});
 
 </script>
 <template>
@@ -103,8 +113,16 @@ function showReport(begin: Date, end: Date){
         </div>
     </Panel>
     <Panel header="Historique des comptes-rendus d'ouverture" style="margin-top: 10px;">
-        <DatePicker v-model="customReportDates" id="date-search-order" :manualInput="false" :maxDate="new Date()"
+      <div class="custom-range">
+      <FloatLabel class="custom-range-flabel">
+        <label for="date-search-order">Période Customisée</label>
+        <DatePicker v-model="customReportDates" id="date-search-order" :manualInput="false" :maxDate="new Date()" 
           selection-mode="range" showButtonBar />
+      </FloatLabel>
+            <Button v-if="customReportLink" as="router-link" icon="pi pi-file-export" :to="customReportLink"
+              class="open-report"
+            ></Button>
+      </div>
     <DataTable :value="openings">
       <Column :field="(e: BarOpening) => e.begin.toLocaleString('FR-fr')" header="Début"></Column>
       <Column :field="(e: BarOpening) => e.end.toLocaleString('FR-fr')" header="Fin"></Column>
@@ -125,7 +143,12 @@ function showReport(begin: Date, end: Date){
   padding: 20px; 
 }
 .open-close-btn {
-    width: 100%;
+  width: 100%;
+}
+.custom-range{
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-evenly;
 }
 .open-report{
 text-decoration: none; 
