@@ -34,6 +34,7 @@ async fn main() -> Result<(), ServerError> {
         .layer(middleware::from_fn(routes::cors::cors));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
+    println!("listening on port 8000");
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
