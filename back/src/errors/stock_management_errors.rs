@@ -18,8 +18,7 @@ impl IntoResponse for ManageStockError {
             e.into_response()
         } else {
             let status = match self {
-                Self::ProductNotFound(_)
-                | Self::VariationNotFound(_) => StatusCode::NOT_FOUND,
+                Self::ProductNotFound(_) | Self::VariationNotFound(_) => StatusCode::NOT_FOUND,
                 Self::ServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             };
             (status, ErrorResponse::json(self.to_string())).into_response()

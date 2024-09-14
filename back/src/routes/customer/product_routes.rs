@@ -1,14 +1,7 @@
 use axum::{routing::get, Json, Router};
 use serde::Serialize;
 
-use crate::{
-    admin::bar_management::Bar,
-    app::{
-        products,
-    },
-    errors::ServerError,
-    routes::AppState,
-};
+use crate::{admin::bar_management::Bar, app::products, errors::ServerError, routes::AppState};
 
 pub fn get_router() -> Router<AppState> {
     Router::new()

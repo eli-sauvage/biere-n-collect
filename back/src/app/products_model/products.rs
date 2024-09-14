@@ -148,7 +148,7 @@ impl Product {
         price_ht: i32,
         tva: f32,
         volume: f32,
-        available_to_order: bool
+        available_to_order: bool,
     ) -> Result<(), ServerError> {
         let variation_id = sqlx::query!(
             "INSERT INTO ProductVariations (name, product_id, price_ht, tva, volume, available_to_order)
@@ -171,7 +171,7 @@ impl Product {
             tva,
             product_id: self.id,
             volume,
-            available_to_order
+            available_to_order,
         });
 
         Ok(())

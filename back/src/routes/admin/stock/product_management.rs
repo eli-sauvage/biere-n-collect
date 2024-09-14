@@ -36,7 +36,6 @@ async fn insert_product(
     _user: AdminUser,
     params: Query<InsertProductParams>,
 ) -> Result<OkEmptyResponse, ManageStockError> {
-
     products::Product::create(
         params.name.clone(),
         params.description.clone(),
@@ -170,4 +169,4 @@ async fn remove_variation(
     product.delete_variation(params.variation_id).await?;
 
     Ok(OkEmptyResponse::new())
-    }
+}
