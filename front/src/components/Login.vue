@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import InputOtp from 'primevue/inputotp';
 import InputText from 'primevue/inputtext';
+import InputMask from 'primevue/inputmask';
 import Button from 'primevue/button';
 import { ref, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -45,7 +46,8 @@ async function validate() {
     if (challenge_created.value) {
         if (code.value.length == 0) return
         btn_loading.value = true
-        let verify = await verify_challenge(email.value, code.value);
+        let code_fmt = code.value.replace(/ - /g, "");
+        let verify = await verify_challenge(email.value, code_fmt);
         btn_loading.value = false;
         if (verify) {
             router.push("/serveur")
@@ -65,14 +67,15 @@ async function validate() {
 
         <div v-if="challenge_created" class="otp-container">
             <p>Entrez le code reçu par mail :</p>
-            <InputOtp v-model="code" :length="6">
+      <InputMask v-model="code" mask="99 - 99 - 99" placeholder="xx - xx - xx" class="otp"/>
+            <!-- <InputOtp v-model="code" :length="6">
                 <template #default="{ attrs, events, index }">
                     <input type="number" v-bind="attrs" v-on="events" class="custom-otp-input" />
                     <div v-if="index == 2 || index == 4" class="px-4">
                         <i class="pi pi-minus separator"></i>
                     </div>
                 </template>
-            </InputOtp>
+</InputOtp> -->
         </div>
         <Button type="submit" label="Valider" class="btn-valider" @click="validate" :loading="btn_loading"></Button>
     </form>
@@ -100,70 +103,11 @@ async function validate() {
     color: #e2b42c;
 }
 
-.otp-container p {
+.otp-container * {
     text-align: center;
 }
 
 .btn-valider {
     margin-top: 5%;
-}
-
-.custom-otp-input {
-    width: 10%;
-    height: 48px;
-    font-size: 24px;
-    appearance: none;
-    text-align: center;
-    transition: all 0.2s;
-    border-radius: 0;
-    border: 1px solid black;
-    background: white;
-    outline-offset: -2px;
-    outline-color: transparent;
-    border-right: 0 none;
-    transition: outline-color 0.3s;
-    color: black;
-}
-
-.custom-otp-input:focus {
-    outline: 2px solid var(--p-focus-ring-color);
-}
-
-.custom-otp-input:first-child,
-.custom-otp-input:nth-child(4),
-.custom-otp-input:nth-child(7) {
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
-}
-
-.custom-otp-input:nth-child(2),
-.custom-otp-input:nth-child(5),
-.custom-otp-input:last-child {
-    border-top-right-radius: 12px;
-    border-bottom-right-radius: 12px;
-    border-right-width: 1px;
-    border-right-style: solid;
-}
-
-.separator {
-    margin: 0 5px;
-    color: black;
-}
-
-/* Chrome, Safari, Edge, Opera */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-/* Firefox */
-input[type=number] {
-    -moz-appearance: textfield;
-}
-
-.container .p-inputotp {
-    gap: 0;
-    justify-content: center !important;
 }
 </style>
