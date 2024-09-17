@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import Button from 'primevue/button';
-import { ref, type Ref, onMounted } from 'vue';
+import { ref, type Ref, onMounted, onUnmounted } from 'vue';
 import DisconnectHeader from './components/DisconnectHeader.vue';
 import { get_current_auth } from './scripts/api/admin/auth';
 import { get_orders as get_all_orders, get_order_by_id, get_order_by_receipt, set_served, type Order } from "./scripts/api/admin/order-management";
 import QrScanner from "qr-scanner"
-import ToggleSwitch from 'primevue/toggleswitch';
 import DatePicker from 'primevue/datepicker';
 import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
@@ -87,6 +86,12 @@ onMounted(async () => {
 
   qrScanner.start()
 })
+onUnmounted(async ()=>{
+  console.log("unmounted")
+  if(isScanning.value){
+    await toggleScanning()
+  }
+});
 
 
 
