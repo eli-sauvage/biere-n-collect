@@ -38,9 +38,8 @@ pub async fn send_qr(order: &Order) -> Result<(), SendReceiptEmailError> {
         image::ExtendedColorType::L8,
     )?;
     let attachment = Attachment::new("recu.png".to_owned()).body(res, "image/png".parse().unwrap());
-    let body = SinglePart::plain(
-        format!(
-"Merci pour votre commande.
+    let body = SinglePart::plain(format!(
+        "Merci pour votre commande.
 Vous trouverez en pièce jointe le qr-code à montrer au bar.
 
 Résumé de votre commande :
@@ -50,23 +49,22 @@ Total: {}€
 
 
 Reçu: {}",
-            order
-                .get_details()
-                .await?
-                .iter()
-                .map(|d|
-                    format!("{} x {} ({}) = {}€", 
-                        d.quantity,
-                        d.product_name,
-                        d.variation_name,
-                        d.subtotal_ttc/100)
-                )
-                .collect::<Vec<String>>()
-                .join("\n"),
-            order.get_full_price_ttc().await? / 100,
-            *receipt
-        ),
-    );
+        order
+            .get_details()
+            .await?
+            .iter()
+            .map(|d| format!(
+                "{} x {} ({}) = {}€",
+                d.quantity,
+                d.product_name,
+                d.variation_name,
+                d.subtotal_ttc / 100
+            ))
+            .collect::<Vec<String>>()
+            .join("\n"),
+        order.get_full_price_ttc().await? / 100,
+        *receipt
+    ));
     let creds = get_smtp_credentials();
     let from: Mailbox = creds.0.parse()?;
     let email = Message::builder()
