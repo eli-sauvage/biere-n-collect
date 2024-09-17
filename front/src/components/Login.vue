@@ -16,7 +16,6 @@ let btn_loading = ref(false);
 let email = ref(localStorage.getItem("email") || "");
 
 
-let message = ref("");
 
 (async () => {
     let auth = await get_current_auth()
@@ -62,20 +61,11 @@ async function validate() {
             <p>Entrez votre adresse mail :</p>
             <InputText id="email" aria-describedby="email-help" v-if="!challenge_created" type="email"
                 v-model="email" />
-            <small id="email-help">{{ message || "\xa0" }}</small>
         </div>
 
         <div v-if="challenge_created" class="otp-container">
             <p>Entrez le code reçu par mail :</p>
       <InputMask v-model="code" mask="99 - 99 - 99" placeholder="xx - xx - xx" class="otp"/>
-            <!-- <InputOtp v-model="code" :length="6">
-                <template #default="{ attrs, events, index }">
-                    <input type="number" v-bind="attrs" v-on="events" class="custom-otp-input" />
-                    <div v-if="index == 2 || index == 4" class="px-4">
-                        <i class="pi pi-minus separator"></i>
-                    </div>
-                </template>
-</InputOtp> -->
         </div>
         <Button type="submit" label="Valider" class="btn-valider" @click="validate" :loading="btn_loading"></Button>
     </form>
