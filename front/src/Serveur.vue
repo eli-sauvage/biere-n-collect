@@ -87,7 +87,6 @@ onMounted(async () => {
   qrScanner.start()
 })
 onUnmounted(async ()=>{
-  console.log("unmounted")
   if(isScanning.value){
     await toggleScanning()
   }
@@ -148,9 +147,9 @@ const startSearch = async (e: Event) => {
     :closable="false" v-if="selected_order != null">
     <DisplayOrder :selected_order="selected_order" @served_clicked="toggle_served" />
     <DataTable :value="selected_order.detail">
-      <Column field="name" header="Article"></Column>
+      <Column :field="(e:any)=> `${e.product_name}: ${e.variation_name}`" header="Article"></Column>
       <Column field="quantity" header="Quantité"></Column>
-      <Column :field="(e: any) => f_price(e.subtotal)" header="Sous-total"></Column>
+      <Column :field="(e: any) => f_price(e.subtotal_ttc)" header="Sous-total TTC"></Column>
       <ColumnGroup type="footer">
         <Row>
           <Column footer="Total HT:" :colspan="2" footerStyle="text-align:right" />
