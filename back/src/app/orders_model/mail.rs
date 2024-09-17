@@ -39,17 +39,40 @@ pub async fn send_qr(order: &Order) -> Result<(), SendReceiptEmailError> {
     )?;
     let attachment = Attachment::new("recu.png".to_owned()).body(res, "image/png".parse().unwrap());
     let body = SinglePart::plain(
-            format!("Merci pour votre commande.\nVous trouverez en pièce jointe le qr-code à montrer au bar.\n\nRésumé de votre commande :\n{}\n\n\nReçu: {}",
-                order.get_details().await?.iter().map(|d|format!("{}x{} = {}€", d.product_name, d.quantity, d.subtotal_ttc/100)).collect::<Vec<String>>().join("\n"),
-                *receipt
-            ),
-        );
+        format!(
+"Merci pour votre commande.
+Vous trouverez en pièce jointe le qr-code à montrer au bar.
+
+Résumé de votre commande :
+{}
+
+Total: {}€
+
+
+Reçu: {}",
+            order
+                .get_details()
+                .await?
+                .iter()
+                .map(|d|
+                    format!("{} x {} ({}) = {}€", 
+                        d.quantity,
+                        d.product_name,
+                        d.variation_name,
+                        d.subtotal_ttc/100)
+                )
+                .collect::<Vec<String>>()
+                .join("\n"),
+            order.get_full_price_ttc().await? / 100,
+            *receipt
+        ),
+    );
     let creds = get_smtp_credentials();
     let from: Mailbox = creds.0.parse()?;
     let email = Message::builder()
         .from(from)
         .to(to.clone())
-        .subject("connexion à lhavrais-pay")
+        .subject("Merci pour votre commande")
         .multipart(MultiPart::mixed().singlepart(body).singlepart(attachment))
         .map_err(ServerError::EmailBuild)?;
     // Open a remote connection to gmail using STARTTLS
