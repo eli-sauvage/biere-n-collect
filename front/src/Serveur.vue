@@ -152,10 +152,6 @@ const startSearch = async (e: Event) => {
       <Column :field="(e: any) => f_price(e.subtotal_ttc)" header="Sous-total TTC"></Column>
       <ColumnGroup type="footer">
         <Row>
-          <Column footer="Total HT:" :colspan="2" footerStyle="text-align:right" />
-          <Column v-if="selected_order != null" :footer="f_price(selected_order.total_price_ht)" />
-        </Row>
-        <Row>
           <Column footer="Total TTC:" :colspan="2" footerStyle="text-align:right" />
           <Column v-if="selected_order != null" :footer="f_price(selected_order.total_price_ttc)" />
         </Row>
