@@ -51,7 +51,5 @@ RUN apt-get -y update &&  \
 COPY --from=builder-back /usr/local/cargo/bin/lhavrais-pay /usr/local/bin/lhavrais-pay
 COPY --from=builder-front /app/dist/ dist/
 
-COPY back/Rocket.toml Rocket.toml
-
 CMD ["lhavrais-pay"]
 
