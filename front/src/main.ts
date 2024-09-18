@@ -11,21 +11,6 @@ import ToastService from "primevue/toastservice";
 import ConfirmationService from 'primevue/confirmationservice';
 import { definePreset } from '@primevue/themes';
 
-if (import.meta.env.VITE_SITE_URL == undefined) {
-    throw Error(`no SITE URL specified in env`)
-}
-if (import.meta.env.VITE_API_URL == undefined) {
-    throw Error(`no API URL specified in env`)
-} else {
-    let api_url = import.meta.env.VITE_API_URL as string;
-    if (api_url.endsWith("/")) {
-        throw Error(`API URL must not end with '/' : ${api_url}`)
-    }
-    if (!api_url.match(/^https?:\/\//)) {
-        throw Error(`API URL must start with http:// or https:// : ${api_url}`)
-    }
-}
-
 
 const routes = [
     { path: '/', component: () => import('./Home.vue') },

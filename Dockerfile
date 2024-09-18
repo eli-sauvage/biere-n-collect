@@ -6,12 +6,6 @@ COPY front/package*.json .
 
 RUN npm i 
 
-ARG VITE_SITE_URL
-ENV VITE_SITE_URL=${VITE_SITE_URL}
-
-ARG VITE_API_URL
-ENV VITE_API_URL=${VITE_API_URL}
-
 COPY front/ .
 
 RUN npm run build
@@ -34,8 +28,6 @@ COPY back/migrations migrations
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/lhavrais-pay/target \
     cargo install --path .
-
-
 
 
 

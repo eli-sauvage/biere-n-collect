@@ -1,6 +1,6 @@
 import type { ToastServiceMethods } from "primevue/toastservice"
 
-export let base = import.meta.env.VITE_API_URL
+export let base = window.location.origin + "/api"
 
 export let toast: null | ToastServiceMethods = null;
 export function set_toast(t: ToastServiceMethods){

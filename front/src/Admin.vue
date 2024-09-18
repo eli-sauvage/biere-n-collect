@@ -25,10 +25,6 @@ let currentUserEmail: Ref<string | null> = ref(null);
     }
 })();
 
-// (async () => {
-//     let res_stock = await fetch(`${import.meta.env.VITE_API_URL}/stock/get`).then(e => e.json());
-//     stock.value = res_stock
-// })();
 
 
 </script>

@@ -17,9 +17,6 @@ services:
   server:
     build:
       context: .
-      args:
-        - VITE_SITE_URL=${VITE_SITE_URL}
-        - VITE_API_URL=${VITE_API_URL}
     volumes:
       - ${PWD}/.env:/app/.env
     image: ${DOCKER_IMAGE_URL_BASE}lhavrais-pay:latest
