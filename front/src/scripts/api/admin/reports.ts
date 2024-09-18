@@ -33,7 +33,15 @@ export async function get_bar_openings(): Promise<BarOpening[]> {
     }
 }
 
-export async function get_report(begin: Date, end: Date): Promise<Order[]> {
+export type ReportItem = {
+  item_name: string,
+  quantity: number,
+  tva: number,
+  subtotal_ht: number,
+  subtotal_ttc: number
+}
+
+export async function get_report(begin: Date, end: Date): Promise<ReportItem[]> {
     let url = `${base}/admin/reports?begin=${encodeURIComponent(begin.getTime())}` + 
       `&end=${encodeURIComponent(end.getTime())}`;
     let error_title = "Erreur lors de l'envoi de la récupération du rapport"
@@ -45,7 +53,7 @@ export async function get_report(begin: Date, end: Date): Promise<Order[]> {
             new Error(error_title, res.error)
             return []
         } else {
-            return res as Order[]
+            return res as ReportItem[]
         }
     } catch (e: any) {
         new Error(error_title, e.toString());

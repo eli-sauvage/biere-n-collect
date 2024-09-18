@@ -39,6 +39,7 @@ pub struct OrderDetailElement {
     pub variation_name: String,
     pub variation_id: u32,
     pub quantity: u8,
+    pub tva: f32,
     pub subtotal_ht: i32,
     pub subtotal_ttc: i32,
 }
@@ -122,6 +123,7 @@ impl Order {
                 Products.name as product_name,
                 ProductVariations.name as variation_name,
                 ProductVariations.id as variation_id,
+                ProductVariations.tva as tva,
                 OrderDetails.quantity,
                 (ProductVariations.price_ht * OrderDetails.quantity) as subtotal_ht,
                 (ProductVariations.price_ht * OrderDetails.quantity * (1 + ProductVariations.tva)) as subtotal_ttc
@@ -141,6 +143,7 @@ impl Order {
                 variation_name: r.variation_name,
                 variation_id: r.variation_id,
                 quantity: r.quantity as u8,
+                tva: r.tva,
                 subtotal_ht: r.subtotal_ht as i32,
                 subtotal_ttc: r.subtotal_ttc as i32,
             })

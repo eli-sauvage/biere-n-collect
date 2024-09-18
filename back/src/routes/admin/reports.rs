@@ -3,12 +3,10 @@ use serde::Deserialize;
 use sqlx::types::time::OffsetDateTime;
 
 use crate::{
-    admin::bar_management,
-    admin::user::AdminUser,
+    admin::{bar_management, report::{process_orders_to_report, Report}, user::AdminUser},
     app::orders,
     errors::{OrderManagementError, ServerError},
-    routes::extractors::CustomQuery as Query,
-    routes::{admin::order_management::OrderResponse, AppState},
+    routes::{admin::order_management::OrderResponse, extractors::CustomQuery as Query, AppState},
 };
 
 pub fn get_router() -> Router<AppState> {
@@ -32,22 +30,13 @@ struct GetReportQuery {
 async fn get_report(
     _user: AdminUser,
     params: Query<GetReportQuery>,
-) -> Result<Json<Vec<OrderResponse>>, OrderManagementError> {
+) -> Result<Json<Report>, OrderManagementError> {
     let begin = OffsetDateTime::from_unix_timestamp(params.begin / 1000)
         .map_err(|_| OrderManagementError::InvalidDate)?;
     let end = OffsetDateTime::from_unix_timestamp(params.end / 1000)
         .map_err(|_| OrderManagementError::InvalidDate)?;
-    let mut joins = tokio::task::JoinSet::new();
-    orders::search_orders(None, Some(begin), Some(end), None)
-        .await?
-        .into_iter()
-        .for_each(|order| {
-            joins.spawn(OrderResponse::from_order(order));
-        });
-    let orders = joins
-        .join_all()
-        .await
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(Json(orders))
+    let orders = orders::search_orders(None, Some(begin), Some(end), None)
+        .await?;
+    let report = process_orders_to_report(orders).await?;
+    Ok(Json(report))
 }
