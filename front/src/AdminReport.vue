@@ -42,7 +42,6 @@ let report: Ref<Report|null> = ref(null);
     let end = new Date(end_raw);
 
     let orders = await get_report(begin, end);
-    console.log(orders)
     let all_variations = (await get_stock()).map(e=>e.variations).flat()
     let unique_variation: UniqueVariation = new Map();
 
@@ -52,11 +51,8 @@ let report: Ref<Report|null> = ref(null);
         if(u_var){
           u_var.order_quantity += 1;
         }else{
-          console.log(all_variations)
-          console.log(order_variation)
           let variation = all_variations.find(e=>e.id == order_variation.variation_id)
           if(!variation) {
-            console.log("not found")
             continue
           }
 
@@ -73,7 +69,6 @@ let report: Ref<Report|null> = ref(null);
       };
     };
     report.value = {unique_variation:unique_variation, begin: begin, end: end}
-    console.log(report.value)
   }
 })();
 function exportToPDF(report: Report){
@@ -104,7 +99,7 @@ function exportToPDF(report: Report){
       <h1> Rapport d'ouverture</h1>
       <p> Début: {{ report?.begin.toLocaleString('FR-fr') }}</p>
       <p> Fin: {{ report?.end.toLocaleString('FR-fr') }}</p>
-      <DataTable v-if="report && report.unique_variation.values.length"
+      <DataTable v-if="report && [...report.unique_variation].length"
         :value="Array.from(report.unique_variation.values())" class="report-table">
         <Column :field="(e: ReportVariation)=>`${e.product_name}: ${e.variation_name}`" header="Article"></Column>
         <Column :field="(e: ReportVariation) => e.order_quantity" header="Qtt"></Column>
@@ -122,7 +117,7 @@ function exportToPDF(report: Report){
       </DataTable>
       <p v-else class="no-order">Aucune commande trouvée durant cette période !</p>
     </div>
-    <Button label="Télécharger en PDF" :disabled="!(report && report.unique_variation.values.length)" 
+    <Button label="Télécharger en PDF" :disabled="!(report && [...report.unique_variation].length)" 
       @click="report?exportToPDF(report):{}" class="download-pdf" size="large" icon="pi pi-file-pdf"></Button>
   </div>
 </template>
