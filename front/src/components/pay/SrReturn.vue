@@ -3,8 +3,7 @@ import { ref, onMounted, type Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import Button from "primevue/button";
-import { base, Error} from "@/scripts/api/api";
-import { get_stripe_pub_key, type PaymentStatusDetails } from "@/scripts/api/order";
+import { Error} from "@/scripts/api/api";
 import { get_payment_status, get_qr_code_url, type PaymentStatus } from "@/scripts/api/order";
 import { f_price } from "@/scripts/utils"
 import DataTable from "primevue/datatable"
@@ -12,6 +11,7 @@ import Column from "primevue/column"
 import ColumnGroup from "primevue/columngroup"
 import Row from "primevue/row"
 import ProgressSpinner from "primevue/progressspinner"
+import { type OrderDetailElement } from "@/scripts/api/admin/order-management";
 
 const clientSecret: Ref<string | null> = ref(null);
 const payment_intent_id: Ref<string | null> = ref(null)
@@ -65,9 +65,9 @@ function return_home() {
     <div v-if="payment_status.detail.length != 0" class="recap">
       <p>Récapitulatif de la commande :</p>
       <DataTable :value="payment_status.detail">
-        <Column :field="(e:PaymentStatusDetails) => `${e.product_name}: ${e.variation_name}`" header="Article"></Column>
+        <Column :field="(e:OrderDetailElement) => e.item_name" header="Article"></Column>
         <Column field="quantity" header="Quantité"></Column>
-        <Column :field="(e: PaymentStatusDetails) => f_price(e.subtotal_ttc)" header="Sous-total"></Column>
+        <Column :field="(e: OrderDetailElement) => f_price(e.subtotal_ttc)" header="Sous-total"></Column>
         <ColumnGroup type="footer">
           <Row>
             <Column footer="Total:" :colspan="2" footerStyle="text-align:right" />

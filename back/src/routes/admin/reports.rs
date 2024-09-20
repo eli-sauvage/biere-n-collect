@@ -3,7 +3,11 @@ use serde::Deserialize;
 use sqlx::types::time::OffsetDateTime;
 
 use crate::{
-    admin::{bar_management, report::{process_orders_to_report, Report}, user::AdminUser},
+    admin::{
+        bar_management,
+        report::{process_orders_to_report, Report},
+        user::AdminUser,
+    },
     app::orders,
     errors::{OrderManagementError, ServerError},
     routes::{admin::order_management::OrderResponse, extractors::CustomQuery as Query, AppState},
@@ -35,8 +39,7 @@ async fn get_report(
         .map_err(|_| OrderManagementError::InvalidDate)?;
     let end = OffsetDateTime::from_unix_timestamp(params.end / 1000)
         .map_err(|_| OrderManagementError::InvalidDate)?;
-    let orders = orders::search_orders(None, Some(begin), Some(end), None)
-        .await?;
+    let orders = orders::search_orders(None, Some(begin), Some(end), None).await?;
     let report = process_orders_to_report(orders).await?;
     Ok(Json(report))
 }

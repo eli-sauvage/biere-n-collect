@@ -55,7 +55,8 @@ function exportToPDF(){
 
 <template>
   <div v-if="dates != null" class="container">
-    <div id="report-container">
+    <Button as="router-link" to="/admin" icon="pi pi-home" label="retour à la page admin" class="return"/>
+      <div id="report-container">
       <h1> Rapport d'ouverture</h1>
       <p> Début: {{ dates[0].toLocaleString('FR-fr') }}</p>
       <p> Fin: {{ dates[1].toLocaleString('FR-fr') }}</p>
@@ -78,13 +79,17 @@ function exportToPDF(){
       </DataTable>
       <p v-if="report && report.length == 0" class="no-order">Aucune commande trouvée durant cette période !</p>
     </div>
-    <Button label="Télécharger en PDF" :disabled="report" 
+    <Button label="Télécharger en PDF" :disabled="!report" 
       @click="report?exportToPDF():{}" class="download-pdf" size="large" icon="pi pi-file-pdf"></Button>
   </div>
   <p v-else>Dates invalides</p>
 </template>
 
 <style scoped>
+.return {
+ text-decoration: none; 
+}
+
 .container{
   padding: 10px;
 }

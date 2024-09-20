@@ -4,7 +4,7 @@ import Button from 'primevue/button';
 import { ref, type Ref, onMounted, onUnmounted } from 'vue';
 import DisconnectHeader from './components/DisconnectHeader.vue';
 import { get_current_auth } from './scripts/api/admin/auth';
-import { get_orders as get_all_orders, get_order_by_id, get_order_by_receipt, set_served, type Order } from "./scripts/api/admin/order-management";
+import { type OrderDetailElement, get_orders as get_all_orders, get_order_by_id, get_order_by_receipt, set_served, type Order } from "./scripts/api/admin/order-management";
 import QrScanner from "qr-scanner"
 import DatePicker from 'primevue/datepicker';
 import InputText from 'primevue/inputtext';
@@ -147,9 +147,9 @@ const startSearch = async (e: Event) => {
     :closable="false" v-if="selected_order != null">
     <DisplayOrder :selected_order="selected_order" @served_clicked="toggle_served" />
     <DataTable :value="selected_order.detail">
-      <Column :field="(e:any)=> `${e.product_name}: ${e.variation_name}`" header="Article"></Column>
+      <Column :field="(e:OrderDetailElement)=>e.item_name" header="Article"></Column>
       <Column field="quantity" header="Quantité"></Column>
-      <Column :field="(e: any) => f_price(e.subtotal_ttc)" header="Sous-total TTC"></Column>
+      <Column :field="(e: OrderDetailElement) => f_price(e.subtotal_ttc)" header="Sous-total TTC"></Column>
       <ColumnGroup type="footer">
         <Row>
           <Column footer="Total TTC:" :colspan="2" footerStyle="text-align:right" />

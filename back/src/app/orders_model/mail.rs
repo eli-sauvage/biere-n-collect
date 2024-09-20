@@ -54,10 +54,9 @@ Reçu: {}",
             .await?
             .iter()
             .map(|d| format!(
-                "{} x {} ({}) = {}€",
+                "{} x {} = {}€",
                 d.quantity,
-                d.product_name,
-                d.variation_name,
+                d.item_name,
                 d.subtotal_ttc / 100
             ))
             .collect::<Vec<String>>()

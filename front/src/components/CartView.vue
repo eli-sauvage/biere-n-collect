@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import Button from "primevue/button"
-import Tag from 'primevue/tag';
-import type { Cart } from "@/scripts/cart";
+import { type CartElemWithSubtotal, type Cart } from "@/scripts/cart";
 import { f_price } from "@/scripts/utils";
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
@@ -23,10 +22,10 @@ function validate(){
         <div class="cart">
             <DataTable
                 :value="cart.elems_with_subtotal()">
-                <Column :field="(e: any) => `${e.cart_element.product.name}: ${e.cart_element.variation.name}`"
+        <Column :field="(e: CartElemWithSubtotal) => e.cart_element.product.name + e.cart_element.variation.name ? ` (${e.cart_element.variation.name})` : ''"
                     header="Article"></Column>
-                <Column :field="(e: any) => e.cart_element.quantity" header="Quantité"></Column>
-                <Column :field="(e: any) => f_price(e.subtotal)" header="Sous-total"></Column>
+                <Column :field="(e: CartElemWithSubtotal) => e.cart_element.quantity" header="Quantité"></Column>
+                <Column :field="(e: CartElemWithSubtotal) => f_price(e.subtotal)" header="Sous-total"></Column>
                 <ColumnGroup type="footer">
                     <Row>
                         <Column footer="Total:" :colspan="2" footerStyle="text-align:right" />

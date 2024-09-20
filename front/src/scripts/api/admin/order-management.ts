@@ -1,5 +1,12 @@
 import { base, Error, toast } from "../api";
 
+export type OrderDetailElement = {
+    item_name: string,
+    variation_id: number,
+    quantity: number,
+    subtotal_ht: number,
+    subtotal_ttc: number
+};
 export type Order = {
   id: number,
   timestamp: number,
@@ -9,14 +16,7 @@ export type Order = {
   served: boolean
   total_price_ht: number
   total_price_ttc: number
-  detail: {
-    product_name: string,
-    variation_name: string,
-    variation_id: number,
-    quantity: number,
-    subtotal_ht: number,
-    subtotal_ttc: number
-  }[]
+  detail: OrderDetailElement[]
 }
 
 export async function get_orders(email: string | null, date: [Date, Date] | null, receipt: string | null): Promise<Order[]> {

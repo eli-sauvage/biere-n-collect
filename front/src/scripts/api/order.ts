@@ -1,4 +1,5 @@
 import type { Cart } from "../cart";
+import type { OrderDetailElement } from "./admin/order-management";
 import { base, Error } from "./api"
 
 
@@ -89,15 +90,11 @@ export async function set_email(client_secret: string, email: string): Promise<b
   }
 }
 
-export type PaymentStatusDetails = {
-  variation_name: string, product_name: string, quantity: number, subtotal_ht: number, subtotal_ttc: number
-}
-
 export type PaymentStatus = {
   status: "canceled" | "processing" | "requiresAction" | "requiresCapture" | "requiresConfirmation" | "requiresPaymentMethod" | "succeeded"
   receipt?: string,
   email?: string,
-  detail: PaymentStatusDetails[],
+  detail: OrderDetailElement[],
   total_price: number
 }
 

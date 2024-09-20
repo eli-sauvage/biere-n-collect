@@ -35,9 +35,10 @@ pub struct Cart {
 pub type OrderId = u64;
 #[derive(Serialize)]
 pub struct OrderDetailElement {
-    pub product_name: String,
-    pub variation_name: String,
-    pub variation_id: u32,
+    pub item_name: String,
+    // pub product_name: String,
+    // pub variation_name: String,
+    // pub variation_id: u32,
     pub quantity: u8,
     pub tva: f32,
     pub subtotal_ht: i32,
@@ -138,14 +139,19 @@ impl Order {
         .await?;
         let detail: Vec<OrderDetailElement> = detail
             .into_iter()
-            .map(|r| OrderDetailElement {
-                product_name: r.product_name,
-                variation_name: r.variation_name,
-                variation_id: r.variation_id,
-                quantity: r.quantity as u8,
-                tva: r.tva,
-                subtotal_ht: r.subtotal_ht as i32,
-                subtotal_ttc: r.subtotal_ttc as i32,
+            .map(|r| {
+                let item_name = if r.variation_name.is_empty() {
+                    r.product_name
+                } else {
+                    format!("{} ({})", r.product_name, r.variation_name)
+                };
+                OrderDetailElement {
+                    item_name,
+                    quantity: r.quantity as u8,
+                    tva: r.tva,
+                    subtotal_ht: r.subtotal_ht as i32,
+                    subtotal_ttc: r.subtotal_ttc as i32,
+                }
             })
             .collect();
 
@@ -268,7 +274,7 @@ impl Order {
                 for detail in details {
                     stripe::api::push_metadata(
                         &order.payment_intent_id,
-                        &format!("produit: {}", detail.product_name),
+                        &format!("produit: {}", detail.item_name),
                         &format!("quantité : {}", detail.quantity),
                     )
                     .await

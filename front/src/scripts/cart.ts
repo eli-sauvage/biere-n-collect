@@ -24,12 +24,17 @@ export class CartElement {
     }
 };
 
+
+export type CartElemWithSubtotal = {
+  cart_element: CartElement,
+  subtotal: number
+};
 export class Cart {
     elements: CartElement[] = []
     constructor(products: Product[]) {
         this.elements = products.map(prod=>prod.variations.map(variation=>new CartElement(prod, variation))).flat()
     }
-    elems_with_subtotal(): { cart_element: CartElement, subtotal: number }[] {
+    elems_with_subtotal(): CartElemWithSubtotal[] {
         return this.elements.filter(e => e.quantity != 0).map((e) => { return { cart_element: e, subtotal: e.variation.price_ttc * e.quantity } })
     }
     get_total(): string {
