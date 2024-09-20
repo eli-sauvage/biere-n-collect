@@ -9,21 +9,21 @@
 
   outputs = { self, nixpkgs, flake-utils, rust-overlay, ... }:
     flake-utils.lib.eachDefaultSystem (system:
-        let
+      let
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs { inherit system overlays; };
         rustVersion = pkgs.rust-bin.stable.latest.default;
-        in {
+      in {
         devShell = pkgs.mkShell {
-        buildInputs =
-        with pkgs;[
-            (rustVersion.override { extensions = [ "rust-src" ]; }) 
-            #rust-analyzer
-	    openssl
-	    pkg-config
-	    sqlx-cli
-	    lld
-        ];
+          buildInputs =
+            with pkgs;[
+              (rustVersion.override { extensions = [ "rust-src" ]; }) 
+              #rust-analyzer
+              openssl
+              pkg-config
+              sqlx-cli
+              lld
+            ];
         };
-        });
+      });
 }

@@ -5,7 +5,7 @@ services:
       MARIADB_USER: app
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
       MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: true
-      MARIADB_DATABASE: lhavrais-pay
+      MARIADB_DATABASE: biere-n-collect
     volumes:
       - sql-data:/var/lib/mysql
     healthcheck:
@@ -13,13 +13,13 @@ services:
       retries: 10
       interval: 5s
     networks:
-      - lhavrais-pay
+      - biere-n-collect
   server:
     build:
       context: .
     volumes:
       - ${PWD}/.env:/app/.env
-    image: ${DOCKER_IMAGE_URL_BASE}lhavrais-pay:latest
+    image: ${DOCKER_IMAGE_URL_BASE}biere-n-collect:latest
     ports:
       - 8000:8000
     environment:
@@ -28,10 +28,10 @@ services:
       db:
         condition: service_healthy
     networks:
-      - lhavrais-pay
+      - biere-n-collect
 
 volumes:
   sql-data:
 
 networks:
-  lhavrais-pay:
+  biere-n-collect:

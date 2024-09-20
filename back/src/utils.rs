@@ -14,9 +14,13 @@ pub async fn setup_db_and_migrate() {
     let db_password = env::var("MARIADB_PASSWORD").expect("db password is not set in environment");
     let db_host = env::var("MARIADB_HOST").expect("mariadb host is not set in environment");
 
+    env::var("SMTP_USERNAME").expect("env var SMTP_USERNAME not found");
+    env::var("SMTP_PASSWORD").expect("env var SMTP_PASSWORD not found");
+    env::var("VITE_BAR_NAME").expect("env var VITE_BAR_NAME not found");
+
     let pool = match MySqlPoolOptions::new()
         .max_connections(20)
-        .connect(format!("mysql://app:{db_password}@{db_host}:3306/lhavrais-pay").as_str())
+        .connect(format!("mysql://app:{db_password}@{db_host}:3306/beer-n-collect").as_str())
         .await
     {
         Ok(pool) => pool,

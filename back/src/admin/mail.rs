@@ -11,8 +11,8 @@ use crate::errors::ServerError;
 type SmtpUsername = String;
 type SmtpPassword = String;
 fn get_smtp_credentials() -> (SmtpUsername, SmtpPassword) {
-    let smtp_username = env::var("SMTP_USERNAME").expect("env var SMTP_USERNAME not found");
-    let smtp_password = env::var("SMTP_PASSWORD").expect("env var SMTP_PASSWORD not found");
+    let smtp_username = env::var("SMTP_USERNAME").unwrap_or("".into());
+    let smtp_password = env::var("SMTP_PASSWORD").unwrap_or("".into());
     (smtp_username, smtp_password)
 }
 
@@ -32,7 +32,7 @@ pub async fn send_code(to: &Mailbox, code: [u8; 6]) -> Result<(), ServerError> {
     let email = Message::builder()
         .from(from)
         .to(to.clone())
-        .subject("connexion à lhavrais-pay")
+        .subject(format!("connexion à biere n collect pour le bar {}", env::var("VITE_BAR_NAME").unwrap_or("".into())))
         .header(ContentType::TEXT_PLAIN)
         .body(format!(
             "Une tentative de connexion pour le compte
@@ -46,8 +46,7 @@ pub async fn send_code(to: &Mailbox, code: [u8; 6]) -> Result<(), ServerError> {
         ))?;
     // Open a remote connection to gmail using STARTTLS
     let mailer: AsyncSmtpTransport<Tokio1Executor> =
-        AsyncSmtpTransport::<Tokio1Executor>::starttls_relay("smtp.gmail.com")
-            .unwrap()
+        AsyncSmtpTransport::<Tokio1Executor>::starttls_relay("smtp.gmail.com")?
             .credentials(Credentials::new(creds.0, creds.1))
             .build();
 

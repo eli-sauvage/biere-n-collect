@@ -16,7 +16,7 @@ FROM rust:1-bookworm AS builder-back
 
 ENV SQLX_OFFLINE true
 
-WORKDIR /app/lhavrais-pay/
+WORKDIR /app/biere-n-collect/
 
 COPY back/Cargo.toml Cargo.toml
 COPY back/src/ src/
@@ -26,7 +26,7 @@ COPY back/.sqlx .sqlx
 COPY back/migrations migrations
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/lhavrais-pay/target \
+    --mount=type=cache,target=/app/biere-n-collect/target \
     cargo install --path .
 
 
@@ -40,8 +40,8 @@ RUN apt-get -y update &&  \
     -y ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder-back /usr/local/cargo/bin/lhavrais-pay /usr/local/bin/lhavrais-pay
+COPY --from=builder-back /usr/local/cargo/bin/biere-n-collect /usr/local/bin/biere-n-collect
 COPY --from=builder-front /app/dist/ dist/
 
-CMD ["lhavrais-pay"]
+CMD ["biere-n-collect"]
 
