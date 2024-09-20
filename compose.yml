@@ -16,6 +16,8 @@ services:
       - biere-n-collect
   server:
     build:
+      args:
+        VITE_BAR_NAME: ${VITE_BAR_NAME}
       context: .
     volumes:
       - ${PWD}/.env:/app/.env

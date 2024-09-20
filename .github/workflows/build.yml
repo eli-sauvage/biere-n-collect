@@ -40,6 +40,5 @@ jobs:
           tags: ghcr.io/eli-sauvage/biere-n-collect:latest
           cache-from: type=gha
           build-args: |
-            VITE_SITE_URL=${{ env.VITE_SITE_URL }}
-            VITE_API_URL=${{ env.VITE_API_URL }}
+            VITE_BAR_NAME=${{ env.VITE_BAR_NAME }}
           cache-to: type=gha,mode=max

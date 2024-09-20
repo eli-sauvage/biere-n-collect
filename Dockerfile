@@ -1,5 +1,8 @@
 FROM node:20-bookworm AS builder-front
 
+ARG VITE_BAR_NAME
+ENV VITE_BAR_NAME=$VITE_BAR_NAME
+
 WORKDIR /app
 
 COPY front/package*.json .
