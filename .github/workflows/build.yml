@@ -37,7 +37,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: ghcr.io/eli-sauvage/lhavrais-pay:latest
+          tags: ghcr.io/eli-sauvage/biere-n-collect:latest
           cache-from: type=gha
           build-args: |
             VITE_SITE_URL=${{ env.VITE_SITE_URL }}

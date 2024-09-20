@@ -20,7 +20,7 @@ pub async fn setup_db_and_migrate() {
 
     let pool = match MySqlPoolOptions::new()
         .max_connections(20)
-        .connect(format!("mysql://app:{db_password}@{db_host}:3306/beer-n-collect").as_str())
+        .connect(format!("mysql://app:{db_password}@{db_host}:3306/biere-n-collect").as_str())
         .await
     {
         Ok(pool) => pool,
