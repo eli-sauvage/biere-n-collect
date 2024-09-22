@@ -22,7 +22,7 @@ function validate(){
         <div class="cart">
             <DataTable
                 :value="cart.elems_with_subtotal()">
-        <Column :field="(e: CartElemWithSubtotal) => e.cart_element.product.name + e.cart_element.variation.name ? ` (${e.cart_element.variation.name})` : ''"
+        <Column :field="(e: CartElemWithSubtotal) => e.cart_element.product.name + e.cart_element.variation.name ? ` ${e.cart_element.product.name} (${e.cart_element.variation.name})` : ''"
                     header="Article"></Column>
                 <Column :field="(e: CartElemWithSubtotal) => e.cart_element.quantity" header="Quantité"></Column>
                 <Column :field="(e: CartElemWithSubtotal) => f_price(e.subtotal)" header="Sous-total"></Column>
