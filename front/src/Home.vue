@@ -6,6 +6,7 @@ import CartVue from './components/CartView.vue';
 import Button from "primevue/button"
 import Drawer from 'primevue/drawer';
 import { get_bar_status, get_stock, type BarStatus, type Product } from './scripts/api/products';
+import { watch } from 'vue';
 
 
 let cart: Ref<Cart> = ref(new Cart([]));
@@ -20,12 +21,15 @@ let products: Ref<Product[]> = ref([]);
     cart.value = new Cart(products.value)
 })();
 
+watch(cart, (cart)=>{
+  cart.updateCache()
+}, {deep: true});
 </script>
 
 <template>
     <div v-if="bar_status?.is_open">
         <Drawer class="drawer-cart" v-model:visible="visible" header="Panier" position="bottom">
-            <CartVue :cart="cart" @validate="cart.validate($router)" />
+            <CartVue :cart="cart"/>
         </Drawer>
         <div class="product-list">
             <ProductVue v-for="product in products" :cart="cart" :product="product"/>

@@ -22,14 +22,14 @@ use crate::{
 const ORDER_DURATION_MINUTES: u64 = 10 * 60;
 
 #[derive(Deserialize, Clone, Debug)]
-struct CartElement {
-    variation_id: u32,
-    quantity: u32,
+pub struct CartElement {
+    pub variation_id: u32,
+    pub quantity: u32,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Cart {
-    elements: Vec<CartElement>,
+    pub elements: Vec<CartElement>,
 }
 
 pub type OrderId = u64;

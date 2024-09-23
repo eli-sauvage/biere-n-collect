@@ -7,13 +7,15 @@ import Column from "primevue/column"
 import ColumnGroup from "primevue/columngroup"
 import Row from "primevue/row"
 import { ref } from "vue";
-defineProps<{ cart: Cart }>();
-const emit = defineEmits<{ validate: [] }>()
+import { useRouter } from "vue-router";
+const props = defineProps<{ cart: Cart }>();
 let loading = ref(false)
 
-function validate(){
-    loading.value = true;
-    emit('validate')
+let router = useRouter()
+async function validate(){
+  loading.value = true;
+  await props.cart.validate(router)
+  loading.value = false
 }
 
 </script>

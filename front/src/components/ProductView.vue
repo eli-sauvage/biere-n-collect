@@ -7,9 +7,11 @@ import InputNumber from 'primevue/inputnumber';
 import Tag from 'primevue/tag';
 import Divider from 'primevue/divider'
 import { ref, type Ref } from 'vue';
+import { watch } from 'vue';
 let props = defineProps<{ product: Product, cart: Cart }>();
 
-let variations_with_cart_elem: Ref<[Variation, CartElement][]> = ref(props.product.variations.map(variation => [variation, get_cart_elem(variation.id)]))
+let variations_with_cart_elem: Ref<[Variation, CartElement][]> =
+  ref(props.product.variations.map(variation => [variation, props.cart.getElement(variation.id)]))
 
 function allow_add_product(quantity: number): boolean {
     let new_quantity = props.cart.elements
@@ -20,9 +22,6 @@ function allow_add_product(quantity: number): boolean {
     return props.product.stock_quantity - new_quantity >= 0;
 }
 
-function get_cart_elem(variation_id: number): CartElement {
-    return props.cart.elements.find(e => e.variation.id == variation_id) as CartElement
-}
 
 function addOne(e: Event, cartElem: CartElement) {
     e.preventDefault();
@@ -47,10 +46,10 @@ function removeOne(e: Event, cartElem: CartElement) {
             <div class="variation">
                 <p>{{ variation.name }}</p>
                 <div class="add-and-price">
-                    <InputNumber v-if="cartElem.quantity > 0" :model-value="get_cart_elem(variation.id)?.quantity"
+                    <InputNumber v-if="cartElem.quantity > 0" :model-value="cartElem.quantity"
                         inputId="horizontal-buttons" showButtons buttonLayout="horizontal" :step="1" fluid
                         class="input-buttons" focused="false"
-                        @update:model-value="e=>get_cart_elem(variation.id)?.setQuantity(e)"  >
+                        @update:model-value="e=>cartElem.setQuantity(e)"  >
                         <template #incrementbutton>
                             <Button :disabled="!allow_add_product(variation.volume)" icon="pi pi-plus"
                                 severity="primary" class="increment" @click="(e) => addOne(e, cartElem)"

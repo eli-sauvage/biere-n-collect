@@ -13,6 +13,8 @@ pub enum OrderProcessError {
     ProductNotFound(u32),
     #[error("variation not found (id = {0})")]
     VariationNotFound(u32),
+    #[error("la commande est vide")]
+    EmptyOrder,
     #[error("server error")]
     ServerError(#[from] ServerError),
 }
@@ -24,7 +26,8 @@ impl IntoResponse for OrderProcessError {
             let status = match self {
                 Self::NotEnoughStock(_, _)
                 | Self::ProductNotFound(_)
-                | Self::VariationNotFound(_) => StatusCode::BAD_REQUEST,
+                | Self::VariationNotFound(_)
+                | Self::EmptyOrder => StatusCode::BAD_REQUEST,
                 Self::BarIsClosed => StatusCode::SERVICE_UNAVAILABLE,
                 Self::ServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             };
