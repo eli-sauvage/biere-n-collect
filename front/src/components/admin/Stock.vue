@@ -5,14 +5,14 @@ import Dialog from 'primevue/dialog';
 import ProductViewAdmin from './ProductViewAdmin.vue';
 import EditProduct from './EditProduct.vue';
 import EditVariation from './EditVariation.vue';
-import { delete_product, insert_product, move_product, edit_product, add_variation } from '@/scripts/api/admin/stock/product-management';
-import { get_stock, type Product, type Variation } from '@/scripts/api/products';
+import { insert_product, edit_product, add_variation, get_all_products } from '@/scripts/api/admin/stock/product-management';
+import { type Product, type Variation } from '@/scripts/api/products';
 import { edit_variation } from '@/scripts/api/admin/stock/variations-management';
 
 let products: Ref<Product[]> = ref([]);
 
 let refresh_stock = async () => {
-    products.value = await get_stock()
+    products.value = await get_all_products()
 };
 refresh_stock()
 

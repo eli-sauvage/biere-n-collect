@@ -41,8 +41,8 @@ export async function get_bar_status(): Promise<BarStatus | null> {
 }
 
 
-export async function get_stock(): Promise<Product[]> {
-  let url = `${base}/get_available_stock`;
+export async function get_available_products(): Promise<Product[]> {
+  let url = `${base}/get_available_products`;
   let error_title = "Erreur lors de la recupération du stock";
   try {
     let res = await fetch(url).then(async e => await e.json())

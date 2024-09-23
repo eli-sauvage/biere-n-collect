@@ -9,7 +9,6 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Row from 'primevue/row';
 import ColumnGroup from 'primevue/columngroup';
-import { get_stock } from './scripts/api/products';
 import { f_price } from './scripts/utils';
 const route = useRoute()
 

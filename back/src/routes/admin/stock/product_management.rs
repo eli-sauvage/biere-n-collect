@@ -1,13 +1,13 @@
 use axum::{
-    routing::{patch, post},
-    Router,
+    routing::{get, patch, post},
+    Json, Router,
 };
 use serde::Deserialize;
 
 use crate::{
     admin::user::AdminUser,
     app::products::{self, MoveDirection, Product},
-    errors::ManageStockError,
+    errors::{ManageStockError, ServerError},
     routes::{extractors::CustomQuery as Query, reponders::OkEmptyResponse, AppState},
     utils::deserialize_empty_as_none,
 };
@@ -20,6 +20,7 @@ pub fn get_router() -> Router<AppState> {
                 .patch(edit_product)
                 .delete(delete_product),
         )
+        .route("/get_all", get(get_all_products))
         .route("/move", patch(move_product))
         .route("/add_variation", post(add_variation))
         .route("/remove_variation", post(remove_variation))
@@ -102,6 +103,10 @@ async fn delete_product(
     product.delete().await?;
 
     Ok(OkEmptyResponse::new())
+}
+async fn get_all_products() -> Result<Json<Vec<products::Product>>, ServerError> {
+    let products = products::get_all().await?;
+    Ok(Json(products))
 }
 
 #[derive(Deserialize)]

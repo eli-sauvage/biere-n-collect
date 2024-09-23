@@ -55,7 +55,7 @@ async fn validate_cart(
     if !Bar::get().await?.is_open {
         return Err(OrderProcessError::BarIsClosed);
     }
-    if cart.elements.iter().find(|e|e.quantity > 0).is_none(){
+    if cart.elements.iter().find(|e| e.quantity > 0).is_none() {
         return Err(OrderProcessError::EmptyOrder);
     }
     let order_id = Order::generate_from_cart(cart).await?;

@@ -1,6 +1,28 @@
 import { base, Error } from "../../api";
 import type { Product } from "../../products";
 
+export async function get_all_products(): Promise<Product[]> {
+  let url = `${base}/admin/stock/products/get_all`;
+  let error_title = "Erreur lors de la recupération du stock";
+  try {
+    let res = await fetch(url).then(async e => await e.json())
+    if (res.error) {
+      new Error(error_title, res.error)
+      return []
+    } else {
+      let prods = res as Product[];
+      for(let i=0; i<prods.length; i++){
+        for(let j=0; j<prods[i].variations.length; j++){
+          prods[i].variations[j].price_ttc =  prods[i].variations[j].price_ht * (1 + prods[i].variations[j].tva)
+        }
+      }
+      return prods
+    }
+  } catch (e: any) {
+    new Error(error_title, e.toString());
+    return []
+  }
+}
 export async function insert_product(new_prod: Product): Promise<boolean> {
     let url = `${base}/admin/stock/products` +
         `?name=${encodeURIComponent(new_prod.name)}` +

@@ -1,12 +1,17 @@
 use axum::{routing::get, Json, Router};
 use serde::Serialize;
 
-use crate::{admin::bar_management::Bar, app::products, errors::ServerError, routes::AppState};
+use crate::{
+    admin::bar_management::Bar,
+    app::{product_variations::Variation, products},
+    errors::ServerError,
+    routes::AppState,
+};
 
 pub fn get_router() -> Router<AppState> {
     Router::new()
         .route("/get_bar_status", get(get_bar_status))
-        .route("/get_available_stock", get(get_available_stock))
+        .route("/get_available_products", get(get_available_products))
 }
 
 #[derive(Serialize)]
@@ -28,7 +33,19 @@ async fn get_bar_status() -> Result<Json<BarStatusResponse>, ServerError> {
     Ok(Json(res))
 }
 
-async fn get_available_stock() -> Result<Json<Vec<products::Product>>, ServerError> {
-    let products = products::get_all().await?;
+async fn get_available_products() -> Result<Json<Vec<products::Product>>, ServerError> {
+    let products: Vec<products::Product> = products::get_all()
+        .await?
+        .into_iter()
+        .map(|mut p| {
+            p.variations = p
+                .variations
+                .into_iter()
+                .filter(|v| v.available_to_order)
+                .collect::<Vec<Variation>>();
+            p
+        })
+        .filter(|p| p.available_to_order && p.variations.iter().any(|v| v.available_to_order))
+        .collect();
     Ok(Json(products))
 }

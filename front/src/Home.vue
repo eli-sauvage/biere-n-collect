@@ -5,7 +5,7 @@ import { Cart, type ProductId } from './scripts/cart';
 import CartVue from './components/CartView.vue';
 import Button from "primevue/button"
 import Drawer from 'primevue/drawer';
-import { get_bar_status, get_stock, type BarStatus, type Product } from './scripts/api/products';
+import { get_bar_status, get_available_products, type BarStatus, type Product } from './scripts/api/products';
 import { watch } from 'vue';
 
 
@@ -17,7 +17,7 @@ let products: Ref<Product[]> = ref([]);
     bar_status.value = await get_bar_status();
     if (bar_status.value == null) return
     if (bar_status.value.is_open == false) return
-    products.value = await get_stock()
+    products.value = await get_available_products()
     cart.value = new Cart(products.value)
 })();
 
