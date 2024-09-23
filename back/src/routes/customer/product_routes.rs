@@ -45,7 +45,7 @@ async fn get_available_products() -> Result<Json<Vec<products::Product>>, Server
                 .collect::<Vec<Variation>>();
             p
         })
-        .filter(|p| p.available_to_order && p.variations.iter().any(|v| v.available_to_order))
+        .filter(|p| p.variations.iter().any(|v| v.available_to_order))
         .collect();
     Ok(Json(products))
 }

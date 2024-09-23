@@ -26,7 +26,6 @@ async function saveEditProd(new_prod: Product) {
     new_name: new_prod.name,
     new_description: new_prod.description,
     new_stock_quantity: new_prod.stock_quantity,
-    new_available_to_order: new_prod.available_to_order
   })) {
     editing_product.value = null;
     refresh_stock()
@@ -34,7 +33,7 @@ async function saveEditProd(new_prod: Product) {
 }
 
 async function requestCreateProduct() {
-    editing_product.value = { id: 0, name: "", description: "", stock_quantity: 0, available_to_order: true, variations: [] };
+    editing_product.value = { id: 0, name: "", description: "", stock_quantity: 0, variations: [] };
 }
 
 async function createProduct(new_prod: Product) {

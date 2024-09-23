@@ -9,7 +9,6 @@ pub struct Product {
     pub name: String,
     pub description: String,
     pub stock_quantity: i32,
-    pub available_to_order: bool,
     pub variations: Vec<Variation>,
 }
 
@@ -18,7 +17,6 @@ impl Product {
         name: String,
         description: String,
         stock_quantity: i32,
-        available_to_order: bool,
     ) -> Result<Product, ServerError> {
         //shift every product down
         sqlx::query!("UPDATE Products set position = position + 1")
@@ -27,12 +25,11 @@ impl Product {
 
         let id = sqlx::query!(
             "
-            INSERT INTO Products (name, description, stock_quantity, available_to_order, position)
-            VALUES (?, ?, ?, ?, 0)",
+            INSERT INTO Products (name, description, stock_quantity, position)
+            VALUES (?, ?, ?, 0)",
             name,
             description,
             stock_quantity,
-            available_to_order
         )
         .execute(db())
         .await?
@@ -43,13 +40,12 @@ impl Product {
             name,
             description,
             stock_quantity,
-            available_to_order,
             variations: vec![],
         })
     }
     pub async fn get(id: u32) -> Result<Option<Product>, ServerError> {
         let res_prod = sqlx::query!(
-            "SELECT id, name, description, stock_quantity, available_to_order as \"available_to_order: bool\" FROM Products WHERE id = ?",
+            "SELECT id, name, description, stock_quantity FROM Products WHERE id = ?",
             id
         )
         .fetch_optional(db())
@@ -69,7 +65,6 @@ impl Product {
                 name: prod.name,
                 description: prod.description,
                 stock_quantity: prod.stock_quantity,
-                available_to_order: prod.available_to_order,
                 variations,
             }))
         } else {
@@ -125,20 +120,6 @@ impl Product {
         .execute(db())
         .await?;
         self.stock_quantity = new_stock_quantity;
-        Ok(())
-    }
-    pub async fn set_available_to_order(
-        &mut self,
-        new_available_to_order: bool,
-    ) -> Result<(), ServerError> {
-        sqlx::query!(
-            "UPDATE Products SET available_to_order = ? WHERE id = ?",
-            new_available_to_order,
-            self.id
-        )
-        .execute(db())
-        .await?;
-        self.available_to_order = new_available_to_order;
         Ok(())
     }
 
@@ -230,8 +211,7 @@ impl Product {
 
 pub async fn get_all() -> Result<Vec<Product>, ServerError> {
     let prods = sqlx::query!(
-        "SELECT id, name, description, stock_quantity,
-        available_to_order as \"available_to_order: bool\"
+        "SELECT id, name, description, stock_quantity
         FROM Products ORDER BY position"
     )
     .fetch_all(db())
@@ -252,7 +232,6 @@ pub async fn get_all() -> Result<Vec<Product>, ServerError> {
             name: prod.name,
             description: prod.description,
             stock_quantity: prod.stock_quantity,
-            available_to_order: prod.available_to_order,
             variations,
         });
     }

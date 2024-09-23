@@ -6,7 +6,6 @@ export type Product = {
   description: string,
   stock_quantity: number,
   variations: Variation[]
-  available_to_order: boolean
 }
 export type Variation = {
     id: number,

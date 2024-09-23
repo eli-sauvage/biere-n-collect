@@ -31,7 +31,6 @@ struct InsertProductParams {
     name: String,
     description: String,
     stock_quantity: i32,
-    available_to_order: bool,
 }
 async fn insert_product(
     _user: AdminUser,
@@ -41,7 +40,6 @@ async fn insert_product(
         params.name.clone(),
         params.description.clone(),
         params.stock_quantity,
-        params.available_to_order,
     )
     .await?;
 
@@ -57,8 +55,6 @@ struct EditProductParams {
     new_description: Option<String>,
     #[serde(default, deserialize_with = "deserialize_empty_as_none")]
     new_stock_quantity: Option<i32>,
-    #[serde(default, deserialize_with = "deserialize_empty_as_none")]
-    new_available_to_order: Option<bool>,
 }
 
 async fn edit_product(
@@ -78,11 +74,6 @@ async fn edit_product(
     }
     if let Some(new_stock_quantity) = params.new_stock_quantity {
         product.set_stock_quantity(new_stock_quantity).await?;
-    }
-    if let Some(new_available_to_order) = params.new_available_to_order {
-        product
-            .set_available_to_order(new_available_to_order)
-            .await?;
     }
 
     Ok(OkEmptyResponse::new())

@@ -77,12 +77,6 @@ async function toogleVariationAvailable(variation: Variation){
   }else{console.log("non")}
 
 }
-
-async function toogleProductAvailable(){
-  if(await edit_product(props.product.id, {new_available_to_order: !props.product.available_to_order})){
-    emit("refresh_stock")
-  }
-}
 </script>
 
 

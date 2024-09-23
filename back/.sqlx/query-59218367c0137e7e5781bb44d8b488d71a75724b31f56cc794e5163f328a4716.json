@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT id, name, description, stock_quantity, available_to_order as \"available_to_order: bool\" FROM Products WHERE id = ?",
+  "query": "SELECT id, name, description, stock_quantity\n        FROM Products ORDER BY position",
   "describe": {
     "columns": [
       {
@@ -38,27 +38,17 @@
           "flags": "NOT_NULL | NO_DEFAULT_VALUE",
           "max_size": 11
         }
-      },
-      {
-        "ordinal": 4,
-        "name": "available_to_order: bool",
-        "type_info": {
-          "type": "Tiny",
-          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
-          "max_size": 1
-        }
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
-      false,
       false,
       false,
       false,
       false
     ]
   },
-  "hash": "9048558d8a2c6e859e294d31e0080c217bbabf469b5f711096d934c07cf4534f"
+  "hash": "59218367c0137e7e5781bb44d8b488d71a75724b31f56cc794e5163f328a4716"
 }

@@ -1,15 +1,13 @@
-INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (1, "ipa", "...ipa description", 100, 1, TRUE);
-INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (2, "blonde", "...blonde description", 50, 2, TRUE);
-INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (3, "cidre", "...cidre description", 0, 3, TRUE);
-INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (4, "vin rouge", "..vin description", 10, 4, TRUE);
-INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (5, "saucission", "..desc", 25, 5, TRUE);
-INSERT INTO Products(id, name, description, stock_quantity, position, available_to_order)
-VALUES (6, "test to cat", "..desc", 1, 6, TRUE);
+INSERT INTO Products(id, name, description, stock_quantity, position)
+VALUES (1, "ipa", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat", 100, 1);
+INSERT INTO Products(id, name, description, stock_quantity, position)
+VALUES (2, "blonde", "description blonde", 50, 2);
+INSERT INTO Products(id, name, description, stock_quantity, position)
+VALUES (3, "cidre", "description cidre", 0, 3);
+INSERT INTO Products(id, name, description, stock_quantity, position)
+VALUES (4, "vin rouge", "description vin", 10, 4);
+INSERT INTO Products(id, name, description, stock_quantity, position)
+VALUES (5, "saucission", "description saucission", 25, 5);
 
 
 INSERT INTO ProductVariations (name, product_id, price_ht, volume, available_to_order)
@@ -31,9 +29,6 @@ VALUES ("verre", 4, 650, 0.125, TRUE);
 
 INSERT INTO ProductVariations (name, product_id, price_ht, volume, available_to_order)
 VALUES ("", 5, 650, 1.0, TRUE);
-
-INSERT INTO ProductVariations (name, product_id, price_ht, volume, available_to_order)
-VALUES ("", 6, 100, 1.0, TRUE);
 
 INSERT INTO Users (email, role) VALUES ("elicolh@gmail.com", "admin");
 INSERT INTO Users (email, role) VALUES ("eli-sauvage@utt.fr", "waiter");

@@ -25,10 +25,6 @@ function save(e:Event) {
             <InputText id="name" v-model="prod.description" />
             <label for="stock">Stock</label>
             <InputNumber locale="fr-FR" id="stock" v-model="prod.stock_quantity" />
-            <div class="available">
-                <label for="available">Dispo à la commande</label>
-                <ToggleSwitch id="available" v-model="prod.available_to_order" />
-            </div>
         </div>
         <div class="footer">
             <Button type="button" label="Annuler" severity="secondary" @click="$emit('close')"></Button>
