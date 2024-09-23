@@ -33,13 +33,13 @@ pub async fn process_orders_to_report(orders: Vec<Order>) -> Result<Report, Serv
         .flatten()
         .for_each(|order_detail| {
             if let Some(item) = unique_items.get_mut(&order_detail.item_name) {
-                item.quantity += order_detail.quantity as u32;
+                item.quantity += order_detail.quantity;
                 item.subtotal_ttc += order_detail.subtotal_ttc;
                 item.subtotal_ht += order_detail.subtotal_ht;
             } else {
                 let item = ReportItem {
                     item_name: order_detail.item_name.clone(),
-                    quantity: order_detail.quantity as u32,
+                    quantity: order_detail.quantity,
                     tva: order_detail.tva,
                     subtotal_ht: order_detail.subtotal_ht,
                     subtotal_ttc: order_detail.subtotal_ttc,

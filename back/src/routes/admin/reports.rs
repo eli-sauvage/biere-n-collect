@@ -10,7 +10,7 @@ use crate::{
     },
     app::orders,
     errors::{OrderManagementError, ServerError},
-    routes::{admin::order_management::OrderResponse, extractors::CustomQuery as Query, AppState},
+    routes::{extractors::CustomQuery as Query, AppState},
 };
 
 pub fn get_router() -> Router<AppState> {
