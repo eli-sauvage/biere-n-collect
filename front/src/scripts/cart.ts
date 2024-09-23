@@ -16,6 +16,11 @@ export class CartElement {
         this.variation = variation;
         this.quantity = 0
     }
+    setQuantity(new_quantity: number){
+      if(new_quantity >= 0){
+        this.quantity = new_quantity
+      }
+    }
     add(quantity: number) {
         let new_quantity = this.quantity + quantity;
         if (new_quantity >= 0) {

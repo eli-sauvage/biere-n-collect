@@ -6,7 +6,6 @@ import Button from 'primevue/button';
 import InputNumber from 'primevue/inputnumber';
 import Tag from 'primevue/tag';
 import Divider from 'primevue/divider'
-import Card from 'primevue/card';
 import { ref, type Ref } from 'vue';
 let props = defineProps<{ product: Product, cart: Cart }>();
 
@@ -50,13 +49,14 @@ function removeOne(e: Event, cartElem: CartElement) {
                 <div class="add-and-price">
                     <InputNumber v-if="cartElem.quantity > 0" :model-value="get_cart_elem(variation.id)?.quantity"
                         inputId="horizontal-buttons" showButtons buttonLayout="horizontal" :step="1" fluid
-                        class="input-buttons" focused="false">
+                        class="input-buttons" focused="false"
+                        @update:model-value="e=>get_cart_elem(variation.id)?.setQuantity(e)"  >
                         <template #incrementbutton>
                             <Button :disabled="!allow_add_product(variation.volume)" icon="pi pi-plus"
                                 severity="primary" class="increment" @click="(e) => addOne(e, cartElem)"
                                 :badge="f_price(variation.price_ttc)"></Button>
                         </template>
-                        <template #decrementbutton="test">
+                        <template #decrementbutton>
                             <Button :icon="cartElem.quantity > 1 ? 'pi pi-minus' : 'pi pi-trash'" severity="secondary"
                                 class="decrement" @click="(e) => removeOne(e, cartElem)"></Button>
                         </template>
