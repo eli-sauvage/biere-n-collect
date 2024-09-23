@@ -222,7 +222,7 @@ impl Order {
         .map_err(ServerError::Sqlx)?
         .last_insert_id();
         stripe::api::push_metadata(&payment_intent.id, "order_id", &order_id.to_string()).await?;
-        for cart_element in &cart.elements {
+        for cart_element in cart.elements.iter().filter(|e|e.quantity > 0) {
             let variation = variations
                 .iter()
                 .find(|e| e.id == cart_element.variation_id)
