@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { reactive, ref, type Ref } from 'vue';
+import { ref, type Ref } from 'vue';
 import ProductVue from './components/ProductView.vue';
-import { Cart, type ProductId } from './scripts/cart';
+import { Cart } from './scripts/cart';
 import CartVue from './components/CartView.vue';
 import Button from "primevue/button"
 import Drawer from 'primevue/drawer';
@@ -21,12 +21,18 @@ let products: Ref<Product[]> = ref([]);
     cart.value = new Cart(products.value)
 })();
 
+let about_visible = ref(false);
+
 watch(cart, (cart)=>{
   cart.updateCache()
 }, {deep: true});
 </script>
 
 <template>
+  <i class="pi pi-info-circle about" @click="about_visible = !about_visible"></i>
+  <Drawer class="drawer-cart" v-model:visible="about_visible" header="A propos" position="bottom">
+    <span>© 2024 - E. Sauvage</span>
+  </Drawer>
     <div v-if="bar_status?.is_open">
         <Drawer class="drawer-cart" v-model:visible="visible" header="Panier" position="bottom">
             <CartVue :cart="cart"/>
@@ -45,6 +51,16 @@ watch(cart, (cart)=>{
 </template>
 
 <style scoped>
+.about{
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  font-size: 1rem;
+  background-color: #DDDDDD;
+  opacity: .5;
+  padding: 2px;
+  border-radius: 4px;
+}
 .product-list {
     margin-bottom: 15vh;
 }

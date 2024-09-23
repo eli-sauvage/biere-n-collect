@@ -6,7 +6,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import { useConfirm } from 'primevue/useconfirm';
 import { f_price } from '@/scripts/utils';
 import type { Product, Variation } from '@/scripts/api/products';
-import { delete_product, edit_product, move_product, remove_variation } from '@/scripts/api/admin/stock/product-management';
+import { delete_product, move_product, remove_variation } from '@/scripts/api/admin/stock/product-management';
 import { edit_variation } from '@/scripts/api/admin/stock/variations-management';
 import Divider from 'primevue/divider';
 

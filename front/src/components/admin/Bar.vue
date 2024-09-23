@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { close_bar, get_bar, open_bar, set_closing_message, type Bar } from '@/scripts/api/admin/bar-management';
 import {get_bar_openings, type BarOpening} from "../../scripts/api/admin/reports";
-import {useRouter} from "vue-router"
 import Button from 'primevue/button';
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useConfirm } from 'primevue/useconfirm';
@@ -12,10 +11,8 @@ import Column from 'primevue/column';
 import DatePicker from 'primevue/datepicker';
 import FloatLabel from 'primevue/floatlabel';
 import { ref, type Ref } from 'vue';
-import { base } from '@/scripts/api/api';
 import { watch } from 'vue';
 
-const router = useRouter();
 
 let bar: Ref<Bar | null> = ref(null);
 let new_closing_message = ref("");
