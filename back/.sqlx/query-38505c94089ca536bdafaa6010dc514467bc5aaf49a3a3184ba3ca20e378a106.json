@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT cast(SUM(unit_price_ht * (1 + tva) * quantity) as int) as result\n            FROM OrderDetails WHERE order_id = ?;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "result",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "BINARY",
+          "max_size": 20
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "38505c94089ca536bdafaa6010dc514467bc5aaf49a3a3184ba3ca20e378a106"
+}
