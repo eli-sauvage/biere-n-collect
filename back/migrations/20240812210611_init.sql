@@ -58,17 +58,16 @@ CREATE TABLE IF NOT EXISTS OrderDetails
 (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     order_id INT UNSIGNED NOT NULL,
-    variation_id INT UNSIGNED NOT NULL,
+    product_id INT UNSIGNED NOT NULL, -- no constrains bc might be deleted
+    item_name VARCHAR(255) NOT NULL,
+    unit_price_ht INT NOT NULL,
+    tva FLOAT NOT NULL,
     quantity INT UNSIGNED NOT NULL,
-    CONSTRAINT `fk_variation_id`
-        FOREIGN KEY (variation_id) REFERENCES ProductVariations (id)
-        ON DELETE RESTRICT
-        ON UPDATE RESTRICT,
     CONSTRAINT `fk_order_id`
         FOREIGN KEY (order_id) REFERENCES Orders (id)
         ON DELETE CASCADE
         ON UPDATE RESTRICT,
-    CONSTRAINT `uq_order_id_product_id` UNIQUE (order_id, variation_id)
+    CONSTRAINT `uq_order_id_product_id` UNIQUE (order_id, item_name)
 );
 
 

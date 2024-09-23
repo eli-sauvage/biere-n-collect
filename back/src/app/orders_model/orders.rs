@@ -36,10 +36,7 @@ pub type OrderId = u64;
 #[derive(Serialize)]
 pub struct OrderDetailElement {
     pub item_name: String,
-    // pub product_name: String,
-    // pub variation_name: String,
-    // pub variation_id: u32,
-    pub quantity: u8,
+    pub quantity: u32,
     pub tva: f32,
     pub subtotal_ht: i32,
     pub subtotal_ttc: i32,
@@ -119,42 +116,21 @@ impl Order {
     }
 
     pub async fn get_details(&self) -> Result<Vec<OrderDetailElement>, ServerError> {
-        let detail = sqlx::query!(
+        let detail = sqlx::query_as!(
+            OrderDetailElement,
             "SELECT
-                Products.name as product_name,
-                ProductVariations.name as variation_name,
-                ProductVariations.id as variation_id,
-                ProductVariations.tva as tva,
-                OrderDetails.quantity,
-                (ProductVariations.price_ht * OrderDetails.quantity) as subtotal_ht,
-                (ProductVariations.price_ht * OrderDetails.quantity * (1 + ProductVariations.tva)) as subtotal_ttc
+                item_name,
+                quantity,
+                tva,
+                unit_price_ht * quantity as \"subtotal_ht:i32\",
+                unit_price_ht * quantity * (1 + tva) as \"subtotal_ttc: i32\"
             FROM OrderDetails
-                INNER JOIN ProductVariations ON OrderDetails.variation_id = ProductVariations.id
-                INNER JOIN Products ON ProductVariations.id = Products.id
             WHERE order_id = ?
                 AND OrderDetails.quantity != 0",
             self.id
         )
         .fetch_all(db())
         .await?;
-        let detail: Vec<OrderDetailElement> = detail
-            .into_iter()
-            .map(|r| {
-                let item_name = if r.variation_name.is_empty() {
-                    r.product_name
-                } else {
-                    format!("{} ({})", r.product_name, r.variation_name)
-                };
-                OrderDetailElement {
-                    item_name,
-                    quantity: r.quantity as u8,
-                    tva: r.tva,
-                    subtotal_ht: r.subtotal_ht as i32,
-                    subtotal_ttc: r.subtotal_ttc as i32,
-                }
-            })
-            .collect();
-
         Ok(detail)
     }
 
@@ -178,9 +154,8 @@ impl Order {
         type ProductId = u32;
         type Quantity = u32;
         let detail: Vec<(ProductId, Quantity)> = sqlx::query!(
-            "SELECT ProductVariations.product_id, quantity
+            "SELECT product_id, quantity
             FROM OrderDetails
-                INNER JOIN ProductVariations ON OrderDetails.variation_id = ProductVariations.id
             WHERE order_id = ?",
             self.id
         )
@@ -209,32 +184,28 @@ impl Order {
 
     pub async fn generate_from_cart(cart: Cart) -> Result<OrderId, OrderProcessError> {
         let products = products::get_all().await?;
-        //let stock = stock::get_all_stocks().await?;
+        let variations = Variation::get_all().await?;
         let mut total_price: i32 = 0;
         for cart_element in &cart.elements {
-            let variation = match Variation::get(cart_element.variation_id).await? {
-                Some(v) => v,
-                None => {
-                    return Err(OrderProcessError::VariationNotFound(
-                        cart_element.variation_id,
-                    ))
-                }
-            };
-            if let Some(stock_for_item) = products
+            let variation = variations
                 .iter()
-                .find(|stock_item| stock_item.id == variation.product_id)
-            {
-                if stock_for_item.stock_quantity >= cart_element.quantity as i32 {
-                    total_price += (variation.price_ht as f32 * (1f32 + variation.tva)) as i32
-                        * cart_element.quantity as i32;
-                } else {
-                    return Err(OrderProcessError::NotEnoughStock(
-                        stock_for_item.name.clone(),
-                        stock_for_item.id,
-                    ));
-                }
+                .find(|e| e.id == cart_element.variation_id)
+                .ok_or(OrderProcessError::VariationNotFound(
+                    cart_element.variation_id,
+                ))?;
+            let product = products
+                .iter()
+                .find(|e| e.id == variation.product_id)
+                .ok_or(OrderProcessError::ProductNotFound(variation.product_id))?;
+
+            if product.stock_quantity >= cart_element.quantity as i32 {
+                total_price += (variation.price_ht as f32 * (1f32 + variation.tva)) as i32
+                    * cart_element.quantity as i32;
             } else {
-                return Err(OrderProcessError::ProductNotFound(variation.product_id));
+                return Err(OrderProcessError::NotEnoughStock(
+                    product.name.clone(),
+                    product.id,
+                ));
             }
         }
 
@@ -252,10 +223,35 @@ impl Order {
         .last_insert_id();
         stripe::api::push_metadata(&payment_intent.id, "order_id", &order_id.to_string()).await?;
         for cart_element in &cart.elements {
+            let variation = variations
+                .iter()
+                .find(|e| e.id == cart_element.variation_id)
+                .ok_or(OrderProcessError::VariationNotFound(
+                    cart_element.variation_id,
+                ))?;
+            let product = products
+                .iter()
+                .find(|e| e.id == variation.product_id)
+                .ok_or(OrderProcessError::ProductNotFound(variation.product_id))?;
+            let item_name = if variation.name.is_empty() {
+                product.name.clone()
+            } else {
+                format!("{} ({})", product.name, variation.name)
+            };
             sqlx::query!(
-                "INSERT INTO OrderDetails (order_id, variation_id, quantity) VALUES (?, ?, ?)",
+                "INSERT INTO OrderDetails(
+                    order_id,
+                    product_id,
+                    item_name,
+                    unit_price_ht,
+                    tva,
+                    quantity
+                    ) VALUES (?, ?, ?, ?, ?, ?)",
                 order_id,
-                cart_element.variation_id,
+                variation.product_id,
+                item_name,
+                variation.price_ht,
+                variation.tva,
                 cart_element.quantity
             )
             .execute(db())
@@ -299,10 +295,8 @@ impl Order {
     }
     pub async fn get_full_price_ht(&self) -> Result<i32, ServerError> {
         let total = sqlx::query!(
-            "SELECT cast(SUM(ProductVariations.price_ht * OrderDetails.quantity) as int) as result
-            FROM OrderDetails
-                INNER JOIN ProductVariations ON OrderDetails.variation_id = ProductVariations.id
-            WHERE order_id = ?;",
+            "SELECT cast(SUM(unit_price_ht * quantity) as int) as result
+            FROM OrderDetails WHERE order_id = ?;",
             self.id
         )
         .fetch_one(db())
@@ -316,10 +310,8 @@ impl Order {
     }
     pub async fn get_full_price_ttc(&self) -> Result<i32, ServerError> {
         let total = sqlx::query!(
-            "SELECT cast(SUM(ProductVariations.price_ht * (1 + ProductVariations.tva) * OrderDetails.quantity) as int) as result
-            FROM OrderDetails
-                INNER JOIN ProductVariations ON OrderDetails.variation_id = ProductVariations.id
-            WHERE order_id = ?;",
+            "SELECT cast(SUM(unit_price_ht * (1 + tva) * quantity) as int) as result
+            FROM OrderDetails WHERE order_id = ?;",
             self.id
         )
         .fetch_one(db())

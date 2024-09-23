@@ -23,6 +23,14 @@ impl Variation {
         .await?;
         Ok(res)
     }
+    pub async fn get_all() -> Result<Vec<Variation>, ServerError> {
+        let res = sqlx::query_as!(
+            Variation,
+            "SELECT id, name, price_ht, tva, product_id, volume, available_to_order as \"available_to_order: bool\" FROM ProductVariations"
+        ).fetch_all(db())
+            .await?;
+        Ok(res)
+    }
 
     pub async fn delete(self) -> Result<(), ServerError> {
         sqlx::query!("DELETE FROM ProductVariations WHERE id = ?", self.id)
