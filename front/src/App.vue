@@ -2,6 +2,7 @@
 import { useToast } from 'primevue/usetoast';
 import { set_toast } from './scripts/api/api';
 import Toast from 'primevue/toast';
+import Footer from './components/Footer.vue';
 set_toast(useToast())
 </script>
 
@@ -9,6 +10,7 @@ set_toast(useToast())
   <main>
     <Toast class="error-toast" />
     <RouterView />
+    <Footer/>
   </main>
 </template>
 
