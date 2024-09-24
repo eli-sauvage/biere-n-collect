@@ -75,25 +75,23 @@ pub async fn push_metadata(
     key: &str,
     value: &str,
 ) -> Result<(), ServerError> {
-    let url = format!(
-        "https://api.stripe.com/v1/payment_intents/{}?metadata[{}]={}",
-        payment_intent_id, key, value
-    );
-    let client = Client::new();
+    let (payment_intent_id, key, value) =
+        (payment_intent_id.clone(), key.to_owned(), value.to_owned());
+    tokio::spawn(async move {
+        let url = format!(
+            "https://api.stripe.com/v1/payment_intents/{}?metadata[{}]={}",
+            payment_intent_id, key, value
+        );
+        let client = Client::new();
 
-    let response = client
-        .post(url)
-        .basic_auth(get_secret_key()?, Some("")) // Basic auth with the secret key
-        .send()
-        .await?;
-    if response.status().is_success() {
-        Ok(())
-    } else {
-        // If the request failed, print the status and body
-        let status = response.status();
-        let body = response.text().await?;
-        Err(ServerError::StripeApi(status, body))
-    }
+        client
+            .post(url)
+            .basic_auth(get_secret_key().unwrap(), Some("")) // Basic auth with the secret key
+            .send()
+            .await
+            .unwrap();
+    });
+    Ok(())
 }
 
 pub async fn mark_as_canceled(payment_intent_id: &PaymentIntentId) -> Result<(), ServerError> {

@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted, type Ref } from "vue";
 import { loadStripe } from "@stripe/stripe-js";
-import type { Stripe, StripeElement, StripeElements } from "@stripe/stripe-js";
-import SrMessages from "./SrMessages.vue";
+import type { Stripe, StripeElements } from "@stripe/stripe-js";
 import { useRoute, useRouter } from "vue-router";
 import { f_price } from "@/scripts/utils";
 import Button from "primevue/button";
+import ProgressSpinner from "primevue/progressspinner";
 import { get_payment_infos, set_email } from "@/scripts/api/order";
 import { Error } from "@/scripts/api/api";
 import { get_stripe_pub_key } from "@/scripts/api/order";
-// let props = defineProps<{ order_id: number }>();
 let order_id = useRoute().query.order_id
 
+let is_component_mounted = ref(false)
+
 const isLoading = ref(false);
-const messages: Ref<string[]> = ref([]);
 const total_price: Ref<string> = ref("");
 const client_secret: Ref<string | null> = ref(null);
 const email: Ref<string> = ref("")
@@ -48,11 +48,9 @@ onMounted(async () => {
             email.value = e.value.email
         });
         isLoading.value = false;
-    } catch (e) {
-        if (e) {
-            messages.value.push(e.toString())
-        }
-        console.error(e)
+       is_component_mounted.value = true;
+    } catch (e: any) {
+        new Error("erreur inattendue", e.toString())
     }
 });
 
@@ -62,7 +60,6 @@ const handleSubmit = async () => {
     }
 
     isLoading.value = true;
-    console.log(elements)
 
     if (client_secret.value) {
         localStorage.setItem("email", email.value)
@@ -81,9 +78,9 @@ const handleSubmit = async () => {
 
 
     if (error.message && (error.type === "card_error" || error.type === "validation_error")) {
-        messages.value.push(error.message);
+        new Error("erreur de paiement", error.message)
     } else {
-        messages.value.push("An unexpected error occured.");
+        new Error("erreur de paiement", "erreur inattendue")
     }
 
     isLoading.value = false;
@@ -98,15 +95,13 @@ function return_home() {
     <Button icon="pi pi-home" severity="secondary" class="return" @click="return_home"></Button>
     <h1>Paiement</h1>
     <div class="form-container">
-        <h2>Total à payer : {{ total_price }}</h2>
+        <ProgressSpinner v-if="!is_component_mounted" style="display: block;"/>
+        <h2 v-else>Total à payer : {{ total_price }}</h2>
 
         <form id="payment-form" @submit.prevent="handleSubmit">
             <div id="link-authentication-element"></div>
             <div id="payment-element"></div>
-            <button id="submit" :disabled="isLoading">
-                Payer {{ total_price }}
-            </button>
-            <sr-messages :messages="messages" />
+            <Button v-if="is_component_mounted" id="submit" type="submit" :disabled="isLoading" :loading="isLoading" :label="`Payer ${total_price}`"/>
         </form>
     </div>
 </template>
