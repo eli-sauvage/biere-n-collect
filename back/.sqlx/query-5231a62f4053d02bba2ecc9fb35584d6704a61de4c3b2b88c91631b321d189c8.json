@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT product_id, quantity\n            FROM OrderDetails\n            WHERE order_id = ?",
+  "query": "SELECT product_id, quantity * variation_volume as \"volume: f32\"\n            FROM OrderDetails\n            WHERE order_id = ?",
   "describe": {
     "columns": [
       {
@@ -14,11 +14,11 @@
       },
       {
         "ordinal": 1,
-        "name": "quantity",
+        "name": "volume: f32",
         "type_info": {
-          "type": "Long",
-          "flags": "NOT_NULL | UNSIGNED | NO_DEFAULT_VALUE",
-          "max_size": 10
+          "type": "Double",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 23
         }
       }
     ],
@@ -30,5 +30,5 @@
       false
     ]
   },
-  "hash": "a115f8b68c9d435dc14611b507c63c36f7b1d3eaa29bb56345d3f826315f9b2d"
+  "hash": "5231a62f4053d02bba2ecc9fb35584d6704a61de4c3b2b88c91631b321d189c8"
 }

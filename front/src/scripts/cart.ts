@@ -16,9 +16,17 @@ export class CartElement {
         this.variation = variation;
         this.quantity = 0
     }
-    setQuantity(new_quantity: number){
-      if(new_quantity >= 0){
-        this.quantity = new_quantity
+    setQuantity(new_quantity: number, remaining: number){
+      if(new_quantity == null){
+        this.quantity = 0
+        return
+      }
+      if(new_quantity >= 0 && remaining - new_quantity >= 0){
+        this.quantity = new_quantity;
+      }else if(remaining - new_quantity < 0){
+        this.quantity = remaining;
+      }else{
+        this.quantity = 0
       }
     }
     add(quantity: number) {
@@ -38,6 +46,7 @@ export class Cart {
     elements: CartElement[] = []
   constructor(products: Product[]) {
     this.elements = products.map(prod=>prod.variations.map(variation=>new CartElement(prod, variation))).flat()
+    let qtt = 0;
     try{
       let rawOldCart = window.localStorage.getItem("cart");
       if(!rawOldCart)return
@@ -50,10 +59,13 @@ export class Cart {
           if(!oldElement.variation || !oldElement.variation.id || !oldElement.quantity)
             continue
           let elementIndex = this.elements.findIndex(e=>e.variation.id == oldElement.variation.id)
-          if(elementIndex != -1){
-            this.elements[elementIndex].quantity = oldElement.quantity;
+          if(elementIndex == -1)return
+          let element = this.elements[elementIndex]
+          if(element.product.stock_quantity - qtt - oldElement.quantity * element.variation.volume >= 0){
+            element.quantity = oldElement.quantity;
+            qtt += element.quantity * element.variation.volume
           }
-        };
+      };
       }
     }
     catch{};

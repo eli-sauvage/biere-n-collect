@@ -8,7 +8,7 @@ pub struct Product {
     pub id: u32,
     pub name: String,
     pub description: String,
-    pub stock_quantity: i32,
+    pub stock_quantity: f32,
     pub variations: Vec<Variation>,
 }
 
@@ -16,7 +16,7 @@ impl Product {
     pub async fn create(
         name: String,
         description: String,
-        stock_quantity: i32,
+        stock_quantity: f32,
     ) -> Result<Product, ServerError> {
         //shift every product down
         sqlx::query!("UPDATE Products set position = position + 1")
@@ -111,7 +111,7 @@ impl Product {
         self.description = new_description;
         Ok(())
     }
-    pub async fn set_stock_quantity(&mut self, new_stock_quantity: i32) -> Result<(), ServerError> {
+    pub async fn set_stock_quantity(&mut self, new_stock_quantity: f32) -> Result<(), ServerError> {
         sqlx::query!(
             "UPDATE Products SET stock_quantity = ? WHERE id = ?",
             new_stock_quantity,

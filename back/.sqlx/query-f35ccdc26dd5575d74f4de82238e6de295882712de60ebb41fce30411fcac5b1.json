@@ -34,9 +34,9 @@
         "ordinal": 3,
         "name": "stock_quantity",
         "type_info": {
-          "type": "Long",
+          "type": "Float",
           "flags": "NOT_NULL | NO_DEFAULT_VALUE",
-          "max_size": 11
+          "max_size": 12
         }
       }
     ],

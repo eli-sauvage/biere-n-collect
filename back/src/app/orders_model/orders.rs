@@ -152,9 +152,9 @@ impl Order {
             }
         });
         type ProductId = u32;
-        type Quantity = u32;
-        let detail: Vec<(ProductId, Quantity)> = sqlx::query!(
-            "SELECT product_id, quantity
+        type Volume = f32;
+        let detail: Vec<(ProductId, Volume)> = sqlx::query!(
+            "SELECT product_id, quantity * variation_volume as \"volume: f32\"
             FROM OrderDetails
             WHERE order_id = ?",
             self.id
@@ -162,15 +162,15 @@ impl Order {
         .fetch_all(db())
         .await?
         .into_iter()
-        .map(|r| (r.product_id, r.quantity))
+        .map(|r| (r.product_id, r.volume))
         .collect();
         let mut pool_transaction: Transaction<'static, MySql> =
             db().begin().await.map_err(ServerError::Sqlx)?;
 
-        for (product_id, quantity) in detail {
+        for (product_id, volume) in detail {
             sqlx::query!(
                 "UPDATE Products SET stock_quantity = stock_quantity - ? WHERE id = ?",
-                quantity,
+                volume,
                 product_id
             )
             .execute(&mut *pool_transaction)
@@ -198,10 +198,11 @@ impl Order {
                 .find(|e| e.id == variation.product_id)
                 .ok_or(OrderProcessError::ProductNotFound(variation.product_id))?;
 
-            if product.stock_quantity >= cart_element.quantity as i32 {
+            if product.stock_quantity as f32 >= cart_element.quantity as f32 * variation.volume {
                 total_price += (variation.price_ht as f32 * (1f32 + variation.tva)) as i32
                     * cart_element.quantity as i32;
             } else {
+                println!("not enougn {} during {}", product.name, variation.name);
                 return Err(OrderProcessError::NotEnoughStock(
                     product.name.clone(),
                     product.id,
@@ -245,14 +246,16 @@ impl Order {
                     item_name,
                     unit_price_ht,
                     tva,
-                    quantity
-                    ) VALUES (?, ?, ?, ?, ?, ?)",
+                    quantity,
+                    variation_volume
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 order_id,
                 variation.product_id,
                 item_name,
                 variation.price_ht,
                 variation.tva,
-                cart_element.quantity
+                cart_element.quantity,
+                variation.volume
             )
             .execute(db())
             .await

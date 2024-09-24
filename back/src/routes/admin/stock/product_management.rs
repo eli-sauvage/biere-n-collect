@@ -30,7 +30,7 @@ pub fn get_router() -> Router<AppState> {
 struct InsertProductParams {
     name: String,
     description: String,
-    stock_quantity: i32,
+    stock_quantity: f32,
 }
 async fn insert_product(
     _user: AdminUser,
@@ -54,7 +54,7 @@ struct EditProductParams {
     #[serde(default, deserialize_with = "deserialize_empty_as_none")]
     new_description: Option<String>,
     #[serde(default, deserialize_with = "deserialize_empty_as_none")]
-    new_stock_quantity: Option<i32>,
+    new_stock_quantity: Option<f32>,
 }
 
 async fn edit_product(

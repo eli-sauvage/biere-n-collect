@@ -23,7 +23,7 @@ function save(e:Event) {
             <label for="name">Description</label>
             <InputText id="name" v-model="prod.description" />
             <label for="stock">Stock</label>
-            <InputNumber locale="fr-FR" id="stock" v-model="prod.stock_quantity" />
+            <InputNumber id="stock" v-model="prod.stock_quantity" :min-fraction-digits="0" :max-fraction-digits="2" :use-grouping="false"/>
         </div>
         <div class="footer">
             <Button type="button" label="Annuler" severity="secondary" @click="$emit('close')"></Button>

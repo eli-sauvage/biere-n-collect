@@ -7,19 +7,19 @@ import InputNumber from 'primevue/inputnumber';
 import Tag from 'primevue/tag';
 import Divider from 'primevue/divider'
 import { ref, type Ref } from 'vue';
-import { watch } from 'vue';
 let props = defineProps<{ product: Product, cart: Cart }>();
 
 let variations_with_cart_elem: Ref<[Variation, CartElement][]> =
   ref(props.product.variations.map(variation => [variation, props.cart.getElement(variation.id)]))
 
-function allow_add_product(quantity: number): boolean {
-    let new_quantity = props.cart.elements
+function remaining_quantity(): number{
+    let already_selected = props.cart.elements
         .filter(e => e.product.id == props.product.id)
-        .map(e => e.quantity)
-        .reduce((prev, curr) => prev + curr, 0)
-        + quantity;
-    return props.product.stock_quantity - new_quantity >= 0;
+        .map(e => e.quantity * e.variation.volume)
+        .reduce((prev, curr) => prev + curr, 0);
+  
+  console.log( props.product.stock_quantity - already_selected);
+  return props.product.stock_quantity - already_selected;
 }
 
 
@@ -49,9 +49,9 @@ function removeOne(e: Event, cartElem: CartElement) {
                     <InputNumber v-if="cartElem.quantity > 0" :model-value="cartElem.quantity"
                         inputId="horizontal-buttons" showButtons buttonLayout="horizontal" :step="1" fluid
                         class="input-buttons" focused="false"
-                        @update:model-value="e=>cartElem.setQuantity(e)"  >
+            @update:model-value="e=>{cartElem.setQuantity(0, 0); cartElem.setQuantity(e, remaining_quantity() / variation.volume)}"  >
                         <template #incrementbutton>
-                            <Button :disabled="!allow_add_product(variation.volume)" icon="pi pi-plus"
+                            <Button :disabled="remaining_quantity() < variation.volume" icon="pi pi-plus"
                                 severity="primary" class="increment" @click="(e) => addOne(e, cartElem)"
                                 :badge="f_price(variation.price_ttc)"></Button>
                         </template>
@@ -61,7 +61,7 @@ function removeOne(e: Event, cartElem: CartElement) {
                         </template>
                     </InputNumber>
                     <Button v-if="cartElem.quantity == 0" icon="pi pi-plus" severity="primary" class="add-to-cart"
-                        @click="(e) => addOne(e, cartElem)" :disabled="product.stock_quantity == 0"
+                        @click="(e) => addOne(e, cartElem)" :disabled="remaining_quantity() < variation.volume"
                         :badge="f_price(variation.price_ttc)"></Button>
                 </div>
             </div>

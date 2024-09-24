@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS Products
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
   name VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
-  stock_quantity INT NOT NULL,
+  stock_quantity FLOAT NOT NULL,
   position SMALLINT UNSIGNED NOT NULL UNIQUE
 );
 
@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS OrderDetails
     unit_price_ht INT NOT NULL,
     tva FLOAT NOT NULL,
     quantity INT UNSIGNED NOT NULL,
+    variation_volume FLOAT NOT NULL,
     CONSTRAINT `fk_order_id`
         FOREIGN KEY (order_id) REFERENCES Orders (id)
         ON DELETE CASCADE
