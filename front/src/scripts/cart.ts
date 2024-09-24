@@ -77,6 +77,7 @@ export class Cart {
 
     let order_id = await validate_cart(this);
     if (order_id != null){
+      window.localStorage.setItem("cart", "{}")
       router.push({ path: "/checkout", query: { order_id: order_id } })
       return true
     }else{
