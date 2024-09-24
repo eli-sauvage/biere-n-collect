@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT\n                item_name,\n                quantity,\n                tva,\n                unit_price_ht * quantity as \"subtotal_ht:i32\",\n                unit_price_ht * quantity * (1 + tva) as \"subtotal_ttc: i32\"\n            FROM OrderDetails\n            WHERE order_id = ?\n                AND OrderDetails.quantity != 0",
+  "query": "SELECT\n                item_name,\n                quantity,\n                tva,\n                unit_price_ht * quantity as \"subtotal_ht:i32\",\n                CAST(unit_price_ht * quantity * (1 + tva) as INT) as \"subtotal_ttc: i32\"\n            FROM OrderDetails\n            WHERE order_id = ?\n                AND quantity != 0",
   "describe": {
     "columns": [
       {
@@ -43,9 +43,9 @@
         "ordinal": 4,
         "name": "subtotal_ttc: i32",
         "type_info": {
-          "type": "Double",
+          "type": "LongLong",
           "flags": "NOT_NULL | BINARY",
-          "max_size": 23
+          "max_size": 20
         }
       }
     ],
@@ -60,5 +60,5 @@
       false
     ]
   },
-  "hash": "4e269c866172c276b625a9f1eaf386bae791831191926d6514918ab2d590c04b"
+  "hash": "d24c15fe5c6f876858f081ed1320da026a30f677a08297b7f100e5d67eada830"
 }

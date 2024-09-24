@@ -123,10 +123,10 @@ impl Order {
                 quantity,
                 tva,
                 unit_price_ht * quantity as \"subtotal_ht:i32\",
-                unit_price_ht * quantity * (1 + tva) as \"subtotal_ttc: i32\"
+                CAST(unit_price_ht * quantity * (1 + tva) as INT) as \"subtotal_ttc: i32\"
             FROM OrderDetails
             WHERE order_id = ?
-                AND OrderDetails.quantity != 0",
+                AND quantity != 0",
             self.id
         )
         .fetch_all(db())
