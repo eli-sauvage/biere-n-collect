@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast';
-import { set_toast } from './scripts/api/api';
-import Toast from 'primevue/toast';
-set_toast(useToast())
+import { useToast } from "primevue/usetoast";
+import { set_toast } from "./scripts/api/api";
+import Toast from "primevue/toast";
+set_toast(useToast());
 </script>
 
 <template>

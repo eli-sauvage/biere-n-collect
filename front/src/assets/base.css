@@ -1,5 +1,5 @@
-:root{
-    --background: #57b5b3;
+:root {
+  --background: #57b5b3;
 }
 
 #app {
@@ -15,6 +15,6 @@ main {
 }
 
 body {
-    margin: 0;
+  margin: 0;
   max-width: 100vw;
 }
