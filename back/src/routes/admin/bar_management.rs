@@ -64,7 +64,7 @@ async fn set_closing_message(
     params: Query<SetClosingMessageParams>,
 ) -> Result<OkEmptyResponse, ServerError> {
     let mut bar = Bar::get(&state.pool).await?;
-    bar.set_closing_message(&state.pool, &params.closing_message)
+    bar.set_closing_message(&state.pool, params.closing_message.clone())
         .await?;
     Ok(OkEmptyResponse::new())
 }
