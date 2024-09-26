@@ -1,4 +1,5 @@
 use axum::{
+    extract::State,
     routing::{get, patch, post},
     Json, Router,
 };
@@ -33,10 +34,12 @@ struct InsertProductParams {
     stock_quantity: f32,
 }
 async fn insert_product(
+    State(state): State<AppState>,
     _user: AdminUser,
     params: Query<InsertProductParams>,
 ) -> Result<OkEmptyResponse, ManageStockError> {
     products::Product::create(
+        &state.pool,
         params.name.clone(),
         params.description.clone(),
         params.stock_quantity,
@@ -58,22 +61,27 @@ struct EditProductParams {
 }
 
 async fn edit_product(
+    State(state): State<AppState>,
     _user: AdminUser,
     params: Query<EditProductParams>,
 ) -> Result<OkEmptyResponse, ManageStockError> {
-    let mut product = match Product::get(params.product_id).await? {
+    let mut product = match Product::get(&state.pool, params.product_id).await? {
         Some(p) => p,
         None => return Err(ManageStockError::ProductNotFound(params.product_id)),
     };
 
     if let Some(new_name) = &params.new_name {
-        product.set_name(new_name.to_owned()).await?;
+        product.set_name(&state.pool, new_name.to_owned()).await?;
     }
     if let Some(new_description) = &params.new_description {
-        product.set_description(new_description.to_owned()).await?;
+        product
+            .set_description(&state.pool, new_description.to_owned())
+            .await?;
     }
     if let Some(new_stock_quantity) = params.new_stock_quantity {
-        product.set_stock_quantity(new_stock_quantity).await?;
+        product
+            .set_stock_quantity(&state.pool, new_stock_quantity)
+            .await?;
     }
 
     Ok(OkEmptyResponse::new())
@@ -84,19 +92,22 @@ struct DeleteProductParams {
     product_id: u32,
 }
 async fn delete_product(
+    State(state): State<AppState>,
     _user: AdminUser,
     params: Query<DeleteProductParams>,
 ) -> Result<OkEmptyResponse, ManageStockError> {
-    let product = match Product::get(params.product_id).await? {
+    let product = match Product::get(&state.pool, params.product_id).await? {
         Some(p) => p,
         None => return Err(ManageStockError::ProductNotFound(params.product_id)),
     };
-    product.delete().await?;
+    product.delete(&state.pool).await?;
 
     Ok(OkEmptyResponse::new())
 }
-async fn get_all_products() -> Result<Json<Vec<products::Product>>, ServerError> {
-    let products = products::get_all().await?;
+async fn get_all_products(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<products::Product>>, ServerError> {
+    let products = products::get_all(&state.pool).await?;
     Ok(Json(products))
 }
 
@@ -106,14 +117,15 @@ struct MoveProductParams {
     direction: MoveDirection,
 }
 async fn move_product(
+    State(state): State<AppState>,
     _user: AdminUser,
     params: Query<MoveProductParams>,
 ) -> Result<OkEmptyResponse, ManageStockError> {
-    let mut product = match Product::get(params.product_id).await? {
+    let mut product = match Product::get(&state.pool, params.product_id).await? {
         Some(p) => p,
         None => return Err(ManageStockError::ProductNotFound(params.product_id)),
     };
-    product.move_product(params.direction).await?;
+    product.move_product(&state.pool, params.direction).await?;
 
     Ok(OkEmptyResponse::new())
 }
@@ -128,16 +140,18 @@ struct AddVariationParams {
     available_to_order: bool,
 }
 async fn add_variation(
+    State(state): State<AppState>,
     _user: AdminUser,
     params: Query<AddVariationParams>,
 ) -> Result<OkEmptyResponse, ManageStockError> {
-    let mut product = match Product::get(params.product_id).await? {
+    let mut product = match Product::get(&state.pool, params.product_id).await? {
         Some(p) => p,
         None => return Err(ManageStockError::ProductNotFound(params.product_id)),
     };
 
     product
         .add_variation(
+            &state.pool,
             params.name.to_owned(),
             params.price_ht,
             params.tva,
@@ -155,14 +169,17 @@ struct RemoveVariationParams {
     variation_id: u32,
 }
 async fn remove_variation(
+    State(state): State<AppState>,
     _user: AdminUser,
     params: Query<RemoveVariationParams>,
 ) -> Result<OkEmptyResponse, ManageStockError> {
-    let mut product = match Product::get(params.product_id).await? {
+    let mut product = match Product::get(&state.pool, params.product_id).await? {
         Some(p) => p,
         None => return Err(ManageStockError::ProductNotFound(params.product_id)),
     };
-    product.delete_variation(params.variation_id).await?;
+    product
+        .delete_variation(&state.pool, params.variation_id)
+        .await?;
 
     Ok(OkEmptyResponse::new())
 }

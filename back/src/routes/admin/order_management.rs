@@ -5,11 +5,12 @@ use crate::{
     utils::{deserialize_empty_as_none, serialize_time},
 };
 use axum::{
+    extract::State,
     routing::{get, patch},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::types::time::OffsetDateTime;
+use sqlx::{types::time::OffsetDateTime, MySqlPool};
 
 use crate::{
     admin::user::User,
@@ -39,10 +40,10 @@ pub struct OrderResponse {
     total_price_ttc: i32,
 }
 impl OrderResponse {
-    pub async fn from_order(order: Order) -> Result<Self, ServerError> {
-        let details = order.get_details().await?;
-        let total_price_ht = order.get_full_price_ht().await?;
-        let total_price_ttc = order.get_full_price_ttc().await?;
+    pub async fn from_order(pool: &MySqlPool, order: Order) -> Result<Self, ServerError> {
+        let details = order.get_details(pool).await?;
+        let total_price_ht = order.get_full_price_ht(pool).await?;
+        let total_price_ttc = order.get_full_price_ttc(pool).await?;
         let res = OrderResponse {
             id: order.id,
             receipt: order.receipt.as_deref().cloned(),
@@ -70,6 +71,7 @@ struct GetOrderParams {
 }
 
 async fn search_orders(
+    State(state): State<AppState>,
     _user: User,
     params: Query<GetOrderParams>,
 ) -> Result<Json<Vec<OrderResponse>>, OrderManagementError> {
@@ -85,6 +87,7 @@ async fn search_orders(
         .map_err(|_| OrderManagementError::InvalidDate)?;
     println!("begin = {date_begin:?}");
     let orders = orders::search_orders(
+        &state.pool,
         params.email.as_deref(),
         date_begin,
         date_end,
@@ -93,7 +96,7 @@ async fn search_orders(
     .await?;
     let mut res: Vec<OrderResponse> = vec![];
     for order in orders {
-        res.push(OrderResponse::from_order(order).await?);
+        res.push(OrderResponse::from_order(&state.pool, order).await?);
     }
     Ok(Json(res))
 }
@@ -103,13 +106,14 @@ struct GetByReceiptParams {
     receipt: String,
 }
 async fn get_by_receipt(
+    State(state): State<AppState>,
     _user: User,
     params: Query<GetByReceiptParams>,
 ) -> Result<Json<OrderResponse>, OrderManagementError> {
-    let order = Order::get_by_receipt(&params.receipt)
+    let order = Order::get_by_receipt(&state.pool, &params.receipt)
         .await?
         .ok_or_else(|| OrderManagementError::OrderNotFound)?;
-    let res = OrderResponse::from_order(order).await?;
+    let res = OrderResponse::from_order(&state.pool, order).await?;
 
     Ok(Json(res))
 }
@@ -119,13 +123,14 @@ struct GetByIdParams {
     id: OrderId,
 }
 async fn get_by_id(
+    State(state): State<AppState>,
     _user: User,
     params: Query<GetByIdParams>,
 ) -> Result<Json<OrderResponse>, OrderManagementError> {
-    let order = Order::get(params.id)
+    let order = Order::get(&state.pool, params.id)
         .await?
         .ok_or_else(|| OrderManagementError::OrderNotFound)?;
-    let res = OrderResponse::from_order(order).await?;
+    let res = OrderResponse::from_order(&state.pool, order).await?;
 
     Ok(Json(res))
 }
@@ -136,13 +141,14 @@ struct MarkAsPaidParams {
     new_served: bool,
 }
 async fn set_served(
+    State(state): State<AppState>,
     _user: User,
     params: Query<MarkAsPaidParams>,
 ) -> Result<OkEmptyResponse, OrderManagementError> {
-    let mut order = Order::get(params.order_id)
+    let mut order = Order::get(&state.pool, params.order_id)
         .await?
         .ok_or_else(|| OrderManagementError::OrderNotFound)?;
-    order.set_served(params.new_served).await?;
+    order.set_served(&state.pool, params.new_served).await?;
 
     Ok(OkEmptyResponse::new())
 }

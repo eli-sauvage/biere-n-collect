@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use axum::{
+    extract::State,
     routing::{get, patch, post},
     Json, Router,
 };
@@ -24,8 +25,11 @@ pub fn get_router() -> Router<AppState> {
         .route("/disconnect", patch(disconnect_user))
 }
 
-async fn get_all_users(_user: AdminUser) -> Result<Json<Vec<User>>, UserManagementError> {
-    let all_users = User::get_all().await?;
+async fn get_all_users(
+    State(state): State<AppState>,
+    _user: AdminUser,
+) -> Result<Json<Vec<User>>, UserManagementError> {
+    let all_users = User::get_all(&state.pool).await?;
     Ok(Json(all_users))
 }
 
@@ -35,10 +39,11 @@ struct AddUserParams {
     role: Role,
 }
 async fn add_user(
+    State(state): State<AppState>,
     _user: AdminUser,
     params: Query<AddUserParams>,
 ) -> Result<OkEmptyResponse, UserManagementError> {
-    if let Some(_existing_user) = User::get_from_email(&params.email).await? {
+    if let Some(_existing_user) = User::get_from_email(&state.pool, &params.email).await? {
         return Err(UserManagementError::UserAlreadyExists(params.email.clone()));
     }
     if let Err(e) = Mailbox::from_str(&params.email) {
@@ -47,7 +52,7 @@ async fn add_user(
             e,
         ));
     }
-    User::create(&params.email, params.role).await?;
+    User::create(&state.pool, &params.email, params.role).await?;
 
     Ok(OkEmptyResponse::new())
 }
@@ -57,6 +62,7 @@ struct DeleteUserParams {
     email: String,
 }
 async fn delete_user(
+    State(state): State<AppState>,
     user: AdminUser,
     params: Query<DeleteUserParams>,
 ) -> Result<OkEmptyResponse, UserManagementError> {
@@ -64,15 +70,15 @@ async fn delete_user(
         return Err(UserManagementError::UserCannotUpdateItSelf);
     }
 
-    let user_to_delete = User::get_from_email(&params.email)
+    let user_to_delete = User::get_from_email(&state.pool, &params.email)
         .await?
         .ok_or_else(|| UserManagementError::UserDoesNotExist(params.email.clone()))?;
 
     for session in &user_to_delete.active_sessions {
-        Session::delete_if_exists(&session.uuid).await?;
+        Session::delete_if_exists(&state.pool, &session.uuid).await?;
     }
 
-    user_to_delete.delete().await?;
+    user_to_delete.delete(&state.pool).await?;
 
     Ok(OkEmptyResponse::new())
 }
@@ -83,6 +89,7 @@ struct UpdateRoleParams {
     new_role: Role,
 }
 async fn update_role(
+    State(state): State<AppState>,
     user: AdminUser,
     params: Query<UpdateRoleParams>,
 ) -> Result<OkEmptyResponse, UserManagementError> {
@@ -90,11 +97,13 @@ async fn update_role(
         return Err(UserManagementError::UserCannotUpdateItSelf);
     }
 
-    let user_to_update = User::get_from_email(&params.email)
+    let user_to_update = User::get_from_email(&state.pool, &params.email)
         .await?
         .ok_or_else(|| UserManagementError::UserDoesNotExist(params.email.clone()))?;
 
-    user_to_update.update_role(params.new_role).await?;
+    user_to_update
+        .update_role(&state.pool, params.new_role)
+        .await?;
 
     Ok(OkEmptyResponse::new())
 }
@@ -104,6 +113,7 @@ struct DisconnectUserParams {
     email: String,
 }
 async fn disconnect_user(
+    State(state): State<AppState>,
     user: AdminUser,
     params: Query<DisconnectUserParams>,
 ) -> Result<OkEmptyResponse, UserManagementError> {
@@ -111,12 +121,12 @@ async fn disconnect_user(
         return Err(UserManagementError::UserCannotUpdateItSelf);
     }
 
-    let user_to_disconnect = User::get_from_email(&params.email)
+    let user_to_disconnect = User::get_from_email(&state.pool, &params.email)
         .await?
         .ok_or_else(|| UserManagementError::UserDoesNotExist(params.email.clone()))?;
 
     for session in &user_to_disconnect.active_sessions {
-        Session::delete_if_exists(&session.uuid).await?;
+        Session::delete_if_exists(&state.pool, &session.uuid).await?;
     }
 
     Ok(OkEmptyResponse::new())

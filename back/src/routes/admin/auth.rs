@@ -30,9 +30,10 @@ struct Auth {
     email: Option<String>,
     error: Option<String>,
 }
-async fn get_auth(request: Request) -> Json<Auth> {
-    let mut parts = request.into_parts().0;
-    match User::from_request_parts(&mut parts, &()).await {
+async fn get_auth(State(state): State<AppState>, request: Request) -> Json<Auth> {
+    let (mut parts, _) = request.into_parts();
+
+    match User::from_request_parts(&mut parts, &state).await {
         Ok(user) => Json(Auth {
             authenticated: true,
             role: Some(user.role),
@@ -49,6 +50,7 @@ async fn get_auth(request: Request) -> Json<Auth> {
 
 async fn delete_current(
     _user: User,
+    State(state): State<AppState>,
     cookie_jar: CookieJar,
 ) -> Result<OkEmptyResponse, SessionError> {
     println!("delete");
@@ -59,7 +61,7 @@ async fn delete_current(
 
     let cookie_jar = cookie_jar.remove(Cookie::build("session").path("/"));
 
-    Session::delete_if_exists(&session).await?;
+    Session::delete_if_exists(&state.pool, &session).await?;
 
     Ok(OkEmptyResponse::new_with_cookies(cookie_jar))
 }
@@ -74,7 +76,7 @@ async fn create_challenge(
 ) -> Result<OkEmptyResponse, SessionError> {
     state
         .challenge_manager
-        .create_challenge(&params.email)
+        .create_challenge(&state.pool, &params.email)
         .await?;
     Ok(OkEmptyResponse::new())
 }
@@ -89,16 +91,21 @@ async fn verify_challenge(
     State(state): State<AppState>,
     params: Query<VerifyChallengeParams>,
 ) -> Result<OkEmptyResponse, SessionError> {
-    let session = state
+    let challenge_succedeed = state
         .challenge_manager
         .verify_challenge(&params.email, &params.code)
         .await?;
 
-    let cookie = Cookie::build(("session", session.uuid))
-        .expires(session.expires)
-        .path("/")
-        .secure(true);
+    if challenge_succedeed {
+        let session = Session::new(&state.pool, params.email.clone()).await?;
+        let cookie = Cookie::build(("session", session.uuid))
+            .expires(session.expires)
+            .path("/")
+            .secure(true);
 
-    let cookies = cookies.add(cookie);
-    Ok(OkEmptyResponse::new_with_cookies(cookies))
+        let cookies = cookies.add(cookie);
+        Ok(OkEmptyResponse::new_with_cookies(cookies))
+    } else {
+        Err(SessionError::ChallengeFailed(params.email.clone()))
+    }
 }

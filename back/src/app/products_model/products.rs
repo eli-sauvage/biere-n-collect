@@ -1,5 +1,6 @@
-use crate::{db, errors::ServerError};
+use crate::errors::ServerError;
 use serde::{Deserialize, Serialize};
+use sqlx::MySqlPool;
 
 use crate::app::product_variations::Variation;
 
@@ -14,13 +15,14 @@ pub struct Product {
 
 impl Product {
     pub async fn create(
+        pool: &MySqlPool,
         name: String,
         description: String,
         stock_quantity: f32,
     ) -> Result<Product, ServerError> {
         //shift every product down
         sqlx::query!("UPDATE Products set position = position + 1")
-            .execute(db())
+            .execute(pool)
             .await?;
 
         let id = sqlx::query!(
@@ -31,7 +33,7 @@ impl Product {
             description,
             stock_quantity,
         )
-        .execute(db())
+        .execute(pool)
         .await?
         .last_insert_id() as u32;
 
@@ -43,12 +45,12 @@ impl Product {
             variations: vec![],
         })
     }
-    pub async fn get(id: u32) -> Result<Option<Product>, ServerError> {
+    pub async fn get(pool: &MySqlPool, id: u32) -> Result<Option<Product>, ServerError> {
         let res_prod = sqlx::query!(
             "SELECT id, name, description, stock_quantity FROM Products WHERE id = ?",
             id
         )
-        .fetch_optional(db())
+        .fetch_optional(pool)
         .await?;
         if let Some(prod) = res_prod {
             let variations = sqlx::query_as!(
@@ -58,7 +60,7 @@ impl Product {
                 FROM ProductVariations WHERE product_id = ?",
                 prod.id
             )
-            .fetch_all(db())
+            .fetch_all(pool)
             .await?;
             Ok(Some(Product {
                 id: prod.id,
@@ -72,52 +74,64 @@ impl Product {
         }
     }
 
-    pub async fn delete(self) -> Result<(), ServerError> {
+    pub async fn delete(self, pool: &MySqlPool) -> Result<(), ServerError> {
         for variation in self.variations {
-            variation.delete().await?;
+            variation.delete(pool).await?;
         }
         sqlx::query!("DELETE FROM Products WHERE id = ?", self.id)
-            .execute(db())
+            .execute(pool)
             .await?;
         Ok(())
     }
 
-    pub async fn get_position(&self) -> Result<u16, ServerError> {
+    pub async fn get_position(&self, pool: &MySqlPool) -> Result<u16, ServerError> {
         let pos = sqlx::query!("SELECT position FROM Products WHERE id = ?", self.id)
-            .fetch_one(db())
+            .fetch_one(pool)
             .await?
             .position;
         Ok(pos)
     }
-    pub async fn set_name(&mut self, new_name: String) -> Result<(), ServerError> {
+    pub async fn set_name(
+        &mut self,
+        pool: &MySqlPool,
+        new_name: String,
+    ) -> Result<(), ServerError> {
         sqlx::query!(
             "UPDATE Products SET name = ? WHERE id = ?",
             new_name,
             self.id
         )
-        .execute(db())
+        .execute(pool)
         .await?;
         self.name = new_name;
         Ok(())
     }
-    pub async fn set_description(&mut self, new_description: String) -> Result<(), ServerError> {
+    pub async fn set_description(
+        &mut self,
+        pool: &MySqlPool,
+        new_description: String,
+    ) -> Result<(), ServerError> {
         sqlx::query!(
             "UPDATE Products SET description = ? WHERE id = ?",
             new_description,
             self.id
         )
-        .execute(db())
+        .execute(pool)
         .await?;
         self.description = new_description;
         Ok(())
     }
-    pub async fn set_stock_quantity(&mut self, new_stock_quantity: f32) -> Result<(), ServerError> {
+    pub async fn set_stock_quantity(
+        &mut self,
+        pool: &MySqlPool,
+        new_stock_quantity: f32,
+    ) -> Result<(), ServerError> {
         sqlx::query!(
             "UPDATE Products SET stock_quantity = ? WHERE id = ?",
             new_stock_quantity,
             self.id
         )
-        .execute(db())
+        .execute(pool)
         .await?;
         self.stock_quantity = new_stock_quantity;
         Ok(())
@@ -125,6 +139,7 @@ impl Product {
 
     pub async fn add_variation(
         &mut self,
+        pool: &MySqlPool,
         name: String,
         price_ht: i32,
         tva: f32,
@@ -141,7 +156,7 @@ impl Product {
             volume,
             available_to_order
         )
-        .execute(db())
+        .execute(pool)
         .await?
         .last_insert_id() as u32;
 
@@ -158,11 +173,15 @@ impl Product {
         Ok(())
     }
 
-    pub async fn delete_variation(&mut self, variation_id: u32) -> Result<(), ServerError> {
+    pub async fn delete_variation(
+        &mut self,
+        pool: &MySqlPool,
+        variation_id: u32,
+    ) -> Result<(), ServerError> {
         if let Some(variation_index) = self.variations.iter().position(|v| v.id == variation_id) {
             let variation = self.variations.remove(variation_index);
             sqlx::query!("DELETE FROM ProductVariations WHERE id = ?", variation.id)
-                .execute(db())
+                .execute(pool)
                 .await?;
         }
 
@@ -178,13 +197,17 @@ pub enum MoveDirection {
 }
 
 impl Product {
-    pub async fn move_product(&mut self, direction: MoveDirection) -> Result<(), ServerError> {
+    pub async fn move_product(
+        &mut self,
+        pool: &MySqlPool,
+        direction: MoveDirection,
+    ) -> Result<(), ServerError> {
         let max_pos = sqlx::query!("SELECT MAX(position) as max_pos FROM Products",)
-            .fetch_one(db())
+            .fetch_one(pool)
             .await?
             .max_pos
             .unwrap_or(0);
-        let current_position = self.get_position().await?;
+        let current_position = self.get_position(pool).await?;
         let new_pos = match (current_position, direction) {
             (0, MoveDirection::Up) => current_position,
             (pos, MoveDirection::Down) if pos == max_pos => current_position,
@@ -196,25 +219,25 @@ impl Product {
             current_position,
             new_pos,
         )
-        .execute(db())
+        .execute(pool)
         .await?;
         sqlx::query!(
             "UPDATE Products SET position = ? WHERE id = ?",
             new_pos,
             self.id
         )
-        .execute(db())
+        .execute(pool)
         .await?;
         Ok(())
     }
 }
 
-pub async fn get_all() -> Result<Vec<Product>, ServerError> {
+pub async fn get_all(pool: &MySqlPool) -> Result<Vec<Product>, ServerError> {
     let prods = sqlx::query!(
         "SELECT id, name, description, stock_quantity
         FROM Products ORDER BY position"
     )
-    .fetch_all(db())
+    .fetch_all(pool)
     .await?;
     let mut res: Vec<Product> = vec![];
     for prod in prods {
@@ -225,7 +248,7 @@ pub async fn get_all() -> Result<Vec<Product>, ServerError> {
             FROM ProductVariations WHERE product_id = ?",
             prod.id
         )
-        .fetch_all(db())
+        .fetch_all(pool)
         .await?;
         res.push(Product {
             id: prod.id,

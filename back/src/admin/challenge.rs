@@ -1,12 +1,12 @@
 use lettre::message::Mailbox;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use sqlx::types::time::OffsetDateTime;
+use sqlx::{types::time::OffsetDateTime, MySqlPool};
 use std::{collections::HashMap, time::Duration};
 use tokio::sync::RwLock;
 
 use crate::errors::SessionError;
 
-use super::{auth::Session, mail, user::User};
+use super::{mail, user::User};
 
 const CHALLENGE_DURATION: Duration = Duration::from_secs(60 * 10);
 struct Challenge {
@@ -36,9 +36,13 @@ impl ChallengeManager {
             challenges: RwLock::new(HashMap::new()),
         }
     }
-    pub async fn create_challenge(&self, email: &str) -> Result<(), SessionError> {
+    pub async fn create_challenge(
+        &self,
+        pool: &MySqlPool,
+        email: &str,
+    ) -> Result<(), SessionError> {
         let mut challenges = self.challenges.write().await;
-        User::get_from_email(email)
+        User::get_from_email(pool, email)
             .await?
             .ok_or_else(|| SessionError::ChallengeNotFound(email.to_owned()))?;
         let challenge = Challenge::new();
@@ -57,7 +61,7 @@ impl ChallengeManager {
         &self,
         email: &str,
         user_code: &str,
-    ) -> Result<Session, SessionError> {
+    ) -> Result<bool, SessionError> {
         let challenges = self.challenges.read().await;
         let challenge = challenges
             .get(email)
@@ -86,10 +90,9 @@ impl ChallengeManager {
         if challenge_code == user_code {
             let mut challenges = self.challenges.write().await;
             challenges.remove(&email);
-            let session = Session::new(email).await?;
-            Ok(session)
+            Ok(true)
         } else {
-            Err(SessionError::ChallengeFailed(email.to_string()))
+            Ok(false)
         }
     }
 }

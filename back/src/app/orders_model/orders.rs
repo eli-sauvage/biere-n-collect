@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-use sqlx::{types::time::OffsetDateTime, MySql, Transaction};
+use sqlx::{types::time::OffsetDateTime, MySql, MySqlPool, Transaction};
 use uuid::Uuid;
 
 use crate::{
@@ -15,7 +15,6 @@ use crate::{
             payment_intents::{PaymentIntent, PaymentIntentStatus},
         },
     },
-    db,
     errors::{OrderProcessError, ServerError},
 };
 
@@ -53,57 +52,63 @@ pub struct Order {
 }
 
 impl Order {
-    pub async fn get(id: OrderId) -> Result<Option<Order>, ServerError> {
-        cancel_expired_orders();
+    pub async fn get(pool: &MySqlPool, id: OrderId) -> Result<Option<Order>, ServerError> {
+        cancel_expired_orders(pool);
         let order_opt = sqlx::query_as!(
             Order,
             "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE id = ? AND expires > CURRENT_TIMESTAMP",
             id
         )
-        .fetch_optional(db())
+        .fetch_optional(pool)
         .await?;
 
         Ok(order_opt)
     }
 
-    pub async fn get_from_client_secret(client_secret: &str) -> Result<Option<Order>, ServerError> {
+    pub async fn get_from_client_secret(
+        pool: &MySqlPool,
+        client_secret: &str,
+    ) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
            Order,
             "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE client_secret = ? AND expires > CURRENT_TIMESTAMP",
             client_secret
         )
-        .fetch_optional(db())
+        .fetch_optional(pool)
         .await?;
         Ok(order_opt)
     }
 
-    pub async fn get_by_receipt(receipt: &str) -> Result<Option<Order>, ServerError> {
+    pub async fn get_by_receipt(
+        pool: &MySqlPool,
+        receipt: &str,
+    ) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
             Order,
             "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE receipt = ? AND expires > CURRENT_TIMESTAMP",
             receipt
         )
-        .fetch_optional(db())
+        .fetch_optional(pool)
         .await?;
         Ok(order_opt)
     }
 
-    pub async fn set_email(&mut self, email: &str) -> Result<(), ServerError> {
+    pub async fn set_email(&mut self, pool: &MySqlPool, email: &str) -> Result<(), ServerError> {
         sqlx::query!(
             "UPDATE Orders SET user_email = ? WHERE id = ?",
             email,
             self.id
         )
-        .execute(db())
+        .execute(pool)
         .await?;
         self.user_email = Some(email.to_owned());
         stripe::api::push_metadata(&self.payment_intent_id, "email", email).await?;
         Ok(())
     }
 
-    pub async fn set_served(&mut self, served: bool) -> Result<(), ServerError> {
+    pub async fn set_served(&mut self, pool: &MySqlPool, served: bool) -> Result<(), ServerError> {
         sqlx::query!("UPDATE Orders SET served = ? WHERE id = ?", served, self.id)
-            .execute(db())
+            .execute(pool)
             .await?;
         self.served = served;
         stripe::api::push_metadata(
@@ -115,7 +120,10 @@ impl Order {
         Ok(())
     }
 
-    pub async fn get_details(&self) -> Result<Vec<OrderDetailElement>, ServerError> {
+    pub async fn get_details(
+        &self,
+        pool: &MySqlPool,
+    ) -> Result<Vec<OrderDetailElement>, ServerError> {
         let detail = sqlx::query_as!(
             OrderDetailElement,
             "SELECT
@@ -129,25 +137,27 @@ impl Order {
                 AND quantity != 0",
             self.id
         )
-        .fetch_all(db())
+        .fetch_all(pool)
         .await?;
         Ok(detail)
     }
 
-    async fn mark_as_paid(&mut self) -> Result<(), ServerError> {
+    async fn mark_as_paid(&mut self, pool: &MySqlPool) -> Result<(), ServerError> {
         let receipt = Uuid::new_v4().to_string();
         sqlx::query!(
             "UPDATE Orders SET receipt = ? WHERE id = ?",
             receipt,
             self.id
         )
-        .execute(db())
+        .execute(pool)
         .await?;
         stripe::api::push_metadata(&self.payment_intent_id, "reçu", &receipt).await?;
         self.receipt = Some(Receipt(receipt));
+
         let self_thread = self.clone();
+        let pool_thread = pool.to_owned();
         tokio::spawn(async move {
-            if let Err(e) = mail::send_qr(&self_thread).await {
+            if let Err(e) = mail::send_qr(&pool_thread, &self_thread).await {
                 eprintln!("error while sending receipt mail : {e:?}")
             }
         });
@@ -159,13 +169,13 @@ impl Order {
             WHERE order_id = ?",
             self.id
         )
-        .fetch_all(db())
+        .fetch_all(pool)
         .await?
         .into_iter()
         .map(|r| (r.product_id, r.volume))
         .collect();
         let mut pool_transaction: Transaction<'static, MySql> =
-            db().begin().await.map_err(ServerError::Sqlx)?;
+            pool.begin().await.map_err(ServerError::Sqlx)?;
 
         for (product_id, volume) in detail {
             sqlx::query!(
@@ -182,9 +192,12 @@ impl Order {
         Ok(())
     }
 
-    pub async fn generate_from_cart(cart: Cart) -> Result<OrderId, OrderProcessError> {
-        let products = products::get_all().await?;
-        let variations = Variation::get_all().await?;
+    pub async fn generate_from_cart(
+        pool: &MySqlPool,
+        cart: Cart,
+    ) -> Result<OrderId, OrderProcessError> {
+        let products = products::get_all(pool).await?;
+        let variations = Variation::get_all(pool).await?;
         let mut total_price: i32 = 0;
         for cart_element in &cart.elements {
             let variation = variations
@@ -218,7 +231,7 @@ impl Order {
             payment_intent.id,
             payment_intent.client_secret
         )
-        .execute(db())
+        .execute(pool)
         .await
         .map_err(ServerError::Sqlx)?
         .last_insert_id();
@@ -257,17 +270,18 @@ impl Order {
                 cart_element.quantity,
                 variation.volume
             )
-            .execute(db())
+            .execute(pool)
             .await
             .map_err(ServerError::Sqlx)?;
         }
+        let pool = pool.to_owned();
         tokio::spawn(async move {
-            let order = Order::get(order_id)
+            let order = Order::get(&pool, order_id)
                 .await
                 .expect("could not fetch order while setting details metadatas");
             if let Some(order) = order {
                 let details = order
-                    .get_details()
+                    .get_details(&pool)
                     .await
                     .expect("could not fetch details while setting details metadatas");
                 for detail in details {
@@ -283,26 +297,29 @@ impl Order {
         });
         Ok(order_id)
     }
-    pub async fn get_payment_intent(&mut self) -> Result<PaymentIntent, ServerError> {
+    pub async fn get_payment_intent(
+        &mut self,
+        pool: &MySqlPool,
+    ) -> Result<PaymentIntent, ServerError> {
         let intent = stripe::api::fetch_payment_intent(&self.payment_intent_id).await?;
         if intent.status == PaymentIntentStatus::Succeeded {
             let receipt = sqlx::query!("SELECT receipt FROM Orders WHERE id = ?", self.id)
-                .fetch_one(db())
+                .fetch_one(pool)
                 .await?
                 .receipt;
             if receipt.is_none() {
-                self.mark_as_paid().await?;
+                self.mark_as_paid(pool).await?;
             }
         }
         Ok(intent)
     }
-    pub async fn get_full_price_ht(&self) -> Result<i32, ServerError> {
+    pub async fn get_full_price_ht(&self, pool: &MySqlPool) -> Result<i32, ServerError> {
         let total = sqlx::query!(
             "SELECT cast(SUM(unit_price_ht * quantity) as int) as result
             FROM OrderDetails WHERE order_id = ?;",
             self.id
         )
-        .fetch_one(db())
+        .fetch_one(pool)
         .await
         .map_err(ServerError::Sqlx)?;
 
@@ -311,13 +328,13 @@ impl Order {
             .ok_or(ServerError::Sqlx(sqlx::Error::RowNotFound))?;
         Ok(res as i32)
     }
-    pub async fn get_full_price_ttc(&self) -> Result<i32, ServerError> {
+    pub async fn get_full_price_ttc(&self, pool: &MySqlPool) -> Result<i32, ServerError> {
         let total = sqlx::query!(
             "SELECT cast(SUM(unit_price_ht * (1 + tva) * quantity) as int) as result
             FROM OrderDetails WHERE order_id = ?;",
             self.id
         )
-        .fetch_one(db())
+        .fetch_one(pool)
         .await
         .map_err(ServerError::Sqlx)?;
 
@@ -329,6 +346,7 @@ impl Order {
 }
 
 pub async fn search_orders(
+    pool: &MySqlPool,
     email: Option<&str>,
     date_begin: Option<OffsetDateTime>,
     date_end: Option<OffsetDateTime>,
@@ -343,7 +361,7 @@ pub async fn search_orders(
             receipt.unwrap_or(""),
             date_begin.unwrap_or(OffsetDateTime::UNIX_EPOCH),
             date_end
-        ).fetch_all(db()).await?
+        ).fetch_all(pool).await?
     } else {
         sqlx::query_as!(
             Order,
@@ -352,16 +370,17 @@ pub async fn search_orders(
             email.unwrap_or(""),
             receipt.unwrap_or(""),
             date_begin.unwrap_or(OffsetDateTime::UNIX_EPOCH),
-        ).fetch_all(db()).await?
+        ).fetch_all(pool).await?
     };
     Ok(orders)
 }
 
-pub fn cancel_expired_orders() {
+pub fn cancel_expired_orders(pool: &MySqlPool) {
+    let pool = pool.to_owned();
     tokio::spawn(async move {
         let expired_payment_intents =
             sqlx::query!("SELECT payment_intent_id from Orders WHERE expires < CURRENT_TIMESTAMP AND canceled = FALSE AND receipt IS NULL")
-                .fetch_all(db())
+                .fetch_all(&pool)
                 .await
                 .unwrap();
 
@@ -373,7 +392,7 @@ pub fn cancel_expired_orders() {
                 "UPDATE Orders SET canceled = TRUE WHERE payment_intent_id = ?",
                 payment_intent.payment_intent_id
             )
-            .execute(db())
+            .execute(&pool)
             .await
             .unwrap();
         }

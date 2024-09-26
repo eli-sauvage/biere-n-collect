@@ -1,7 +1,7 @@
 use serde::Serialize;
-use sqlx::types::time::OffsetDateTime;
+use sqlx::{types::time::OffsetDateTime, MySqlPool};
 
-use crate::{db, errors::ServerError, utils::serialize_time};
+use crate::{errors::ServerError, utils::serialize_time};
 
 #[derive(Serialize)]
 pub struct Bar {
@@ -11,46 +11,50 @@ pub struct Bar {
     pub closing_message: String,
 }
 impl Bar {
-    pub async fn get() -> Result<Bar, ServerError> {
+    pub async fn get(pool: &MySqlPool) -> Result<Bar, ServerError> {
         let res = sqlx::query_as!(
             Bar,
             "SELECT is_open as \"is_open: bool\", open_since, closing_message FROM Bar"
         )
-        .fetch_one(db())
+        .fetch_one(pool)
         .await?;
         Ok(res)
     }
 
-    pub async fn open(&mut self) -> Result<(), ServerError> {
+    pub async fn open(&mut self, pool: &MySqlPool) -> Result<(), ServerError> {
         sqlx::query!("UPDATE Bar SET is_open = TRUE")
-            .execute(db())
+            .execute(pool)
             .await?;
         let now = OffsetDateTime::now_utc();
         sqlx::query!("UPDATE Bar SET open_since = ?", now)
-            .execute(db())
+            .execute(pool)
             .await?;
         self.is_open = true;
         self.open_since = now;
         Ok(())
     }
 
-    pub async fn close(&mut self) -> Result<(), ServerError> {
+    pub async fn close(&mut self, pool: &MySqlPool) -> Result<(), ServerError> {
         sqlx::query!("UPDATE Bar SET is_open = FALSE")
-            .execute(db())
+            .execute(pool)
             .await?;
         sqlx::query!(
             "INSERT INTO BarOpenings (begin, end) VALUES (?, CURRENT_TIMESTAMP)",
             self.open_since
         )
-        .execute(db())
+        .execute(pool)
         .await?;
         self.is_open = false;
         Ok(())
     }
 
-    pub async fn set_closing_message(&mut self, msg: &str) -> Result<(), ServerError> {
+    pub async fn set_closing_message(
+        &mut self,
+        pool: &MySqlPool,
+        msg: &str,
+    ) -> Result<(), ServerError> {
         sqlx::query!("UPDATE Bar SET closing_message = ?", msg)
-            .execute(db())
+            .execute(pool)
             .await?;
         Ok(())
     }
@@ -63,9 +67,9 @@ pub struct BarOpening {
     #[serde(serialize_with = "serialize_time")]
     end: OffsetDateTime,
 }
-pub async fn get_bar_openings() -> Result<Vec<BarOpening>, ServerError> {
+pub async fn get_bar_openings(pool: &MySqlPool) -> Result<Vec<BarOpening>, ServerError> {
     let res = sqlx::query!("SELECT begin, end FROM BarOpenings")
-        .fetch_all(db())
+        .fetch_all(pool)
         .await?;
     Ok(res
         .into_iter()

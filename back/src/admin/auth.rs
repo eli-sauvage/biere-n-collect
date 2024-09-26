@@ -1,6 +1,6 @@
-use crate::{db, errors::ServerError};
+use crate::errors::ServerError;
 
-use sqlx::types::time::OffsetDateTime;
+use sqlx::{types::time::OffsetDateTime, MySqlPool};
 use std::time::Duration;
 
 use uuid::Uuid;
@@ -14,23 +14,23 @@ pub struct Session {
     pub uuid: String,
 }
 impl Session {
-    async fn delete_old_sessions() -> Result<(), ServerError> {
+    async fn delete_old_sessions(pool: &MySqlPool) -> Result<(), ServerError> {
         sqlx::query!("DELETE FROM Sessions WHERE CURRENT_TIMESTAMP > expires")
-            .execute(db())
+            .execute(pool)
             .await
             .map_err(ServerError::Sqlx)?;
         Ok(())
     }
 
-    pub async fn delete_if_exists(uuid: &str) -> Result<(), ServerError> {
+    pub async fn delete_if_exists(pool: &MySqlPool, uuid: &str) -> Result<(), ServerError> {
         sqlx::query!("DELETE FROM Sessions WHERE uuid = ?", uuid)
-            .execute(db())
+            .execute(pool)
             .await?;
         Ok(())
     }
 
-    pub async fn new(email: String) -> Result<Session, ServerError> {
-        Session::delete_old_sessions().await?;
+    pub async fn new(pool: &MySqlPool, email: String) -> Result<Session, ServerError> {
+        Session::delete_old_sessions(pool).await?;
         // Session::delete_if_exists(pool, &email).await?;
         let session = Session {
             uuid: Uuid::new_v4().to_string(),
@@ -43,29 +43,32 @@ impl Session {
             session.email,
             session.expires,
             session.uuid
-        ).execute(db())
+        ).execute(pool)
         .await
         .map_err(ServerError::Sqlx)?;
 
         Ok(session)
     }
 
-    pub async fn get_all() -> Result<Vec<Session>, ServerError> {
+    pub async fn get_all(pool: &MySqlPool) -> Result<Vec<Session>, ServerError> {
         let sessions = sqlx::query_as!(Session, "SELECT email, expires, uuid FROM Sessions INNER JOIN Users ON Users.id = Sessions.user_id")
-            .fetch_all(db())
+            .fetch_all(pool)
             .await?;
 
         Ok(sessions)
     }
 
-    pub async fn get_all_sessions_for_email(email: &str) -> Result<Vec<Session>, ServerError> {
-        Session::delete_old_sessions().await?;
+    pub async fn get_all_sessions_for_email(
+        pool: &MySqlPool,
+        email: &str,
+    ) -> Result<Vec<Session>, ServerError> {
+        Session::delete_old_sessions(pool).await?;
         let sessions = sqlx::query_as!(
             Session,
                 "SELECT uuid, expires, email FROM Sessions INNER JOIN Users ON Sessions.user_id = Users.id WHERE Users.email = ?",
                 email
             )
-            .fetch_all(db())
+            .fetch_all(pool)
             .await
             .map_err(ServerError::Sqlx)?;
         Ok(sessions)

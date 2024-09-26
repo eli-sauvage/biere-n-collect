@@ -1,4 +1,5 @@
 use axum::{
+    extract::State,
     routing::{get, post},
     Json, Router,
 };
@@ -28,20 +29,28 @@ pub fn get_router() -> Router<AppState> {
         )
 }
 
-async fn get_bar(_user: AdminUser) -> Result<Json<Bar>, ServerError> {
-    let bar = Bar::get().await?;
+async fn get_bar(
+    State(state): State<AppState>,
+    _user: AdminUser,
+) -> Result<Json<Bar>, ServerError> {
+    let bar = Bar::get(&state.pool).await?;
     Ok(Json(bar))
 }
 
-async fn open_bar(_user: AdminUser) -> Result<OkEmptyResponse, ServerError> {
-    let mut bar = Bar::get().await?;
-    bar.open().await?;
+async fn open_bar(
+    State(state): State<AppState>,
+    _user: AdminUser,
+) -> Result<OkEmptyResponse, ServerError> {
+    let mut bar = Bar::get(&state.pool).await?;
+    bar.open(&state.pool).await?;
     Ok(OkEmptyResponse::new())
 }
-//#TODO: pdf report
-async fn close_bar(_user: AdminUser) -> Result<OkEmptyResponse, ServerError> {
-    let mut bar = Bar::get().await?;
-    bar.close().await?;
+async fn close_bar(
+    State(state): State<AppState>,
+    _user: AdminUser,
+) -> Result<OkEmptyResponse, ServerError> {
+    let mut bar = Bar::get(&state.pool).await?;
+    bar.close(&state.pool).await?;
     Ok(OkEmptyResponse::new())
 }
 
@@ -50,11 +59,13 @@ struct SetClosingMessageParams {
     closing_message: String,
 }
 async fn set_closing_message(
+    State(state): State<AppState>,
     _user: AdminUser,
     params: Query<SetClosingMessageParams>,
 ) -> Result<OkEmptyResponse, ServerError> {
-    let mut bar = Bar::get().await?;
-    bar.set_closing_message(&params.closing_message).await?;
+    let mut bar = Bar::get(&state.pool).await?;
+    bar.set_closing_message(&state.pool, &params.closing_message)
+        .await?;
     Ok(OkEmptyResponse::new())
 }
 

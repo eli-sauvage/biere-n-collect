@@ -1,4 +1,4 @@
-use axum::{routing::get, Json, Router};
+use axum::{extract::State, routing::get, Json, Router};
 use serde::Serialize;
 
 use crate::{
@@ -19,8 +19,10 @@ struct BarStatusResponse {
     is_open: bool,
     closed_message: Option<String>,
 }
-async fn get_bar_status() -> Result<Json<BarStatusResponse>, ServerError> {
-    let bar = Bar::get().await?;
+async fn get_bar_status(
+    State(state): State<AppState>,
+) -> Result<Json<BarStatusResponse>, ServerError> {
+    let bar = Bar::get(&state.pool).await?;
     let res = BarStatusResponse {
         is_open: bar.is_open,
         closed_message: if bar.is_open {
@@ -33,8 +35,10 @@ async fn get_bar_status() -> Result<Json<BarStatusResponse>, ServerError> {
     Ok(Json(res))
 }
 
-async fn get_available_products() -> Result<Json<Vec<products::Product>>, ServerError> {
-    let products: Vec<products::Product> = products::get_all()
+async fn get_available_products(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<products::Product>>, ServerError> {
+    let products: Vec<products::Product> = products::get_all(&state.pool)
         .await?
         .into_iter()
         .map(|mut p| {

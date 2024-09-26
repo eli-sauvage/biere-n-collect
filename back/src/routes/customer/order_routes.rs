@@ -1,5 +1,6 @@
 use axum::{
     body::Body,
+    extract::State,
     http::HeaderValue,
     response::Response,
     routing::{get, patch, post},
@@ -50,15 +51,16 @@ struct ValidateCartResponse {
     order_id: OrderId,
 }
 async fn validate_cart(
+    State(state): State<AppState>,
     JsonExtractor(Json(cart)): JsonExtractor<Cart>,
 ) -> Result<Json<ValidateCartResponse>, OrderProcessError> {
-    if !Bar::get().await?.is_open {
+    if !Bar::get(&state.pool).await?.is_open {
         return Err(OrderProcessError::BarIsClosed);
     }
-    if cart.elements.iter().find(|e| e.quantity > 0).is_none() {
+    if !cart.elements.iter().any(|e| e.quantity > 0) {
         return Err(OrderProcessError::EmptyOrder);
     }
-    let order_id = Order::generate_from_cart(cart).await?;
+    let order_id = Order::generate_from_cart(&state.pool, cart).await?;
     Ok(Json(ValidateCartResponse { order_id }))
 }
 
@@ -72,16 +74,17 @@ struct PaymentInfos {
     total_price: i32,
 }
 async fn get_payment_infos(
+    State(state): State<AppState>,
     params: Query<PaymentInfosParams>,
 ) -> Result<Json<PaymentInfos>, PaymentIntentError> {
-    if !Bar::get().await?.is_open {
+    if !Bar::get(&state.pool).await?.is_open {
         return Err(PaymentIntentError::BarIsClosed);
     }
-    let mut order = Order::get(params.order_id)
+    let mut order = Order::get(&state.pool, params.order_id)
         .await?
         .ok_or_else(|| PaymentIntentError::OrderNotFound(params.order_id))?;
 
-    let intent = order.get_payment_intent().await?;
+    let intent = order.get_payment_intent(&state.pool).await?;
 
     Ok(Json(PaymentInfos {
         client_secret: intent.client_secret,
@@ -95,14 +98,17 @@ struct SetEmailParams {
     email: String,
 }
 
-async fn set_email(params: Query<SetEmailParams>) -> Result<OkEmptyResponse, PaymentIntentError> {
-    if !Bar::get().await?.is_open {
+async fn set_email(
+    State(state): State<AppState>,
+    params: Query<SetEmailParams>,
+) -> Result<OkEmptyResponse, PaymentIntentError> {
+    if !Bar::get(&state.pool).await?.is_open {
         return Err(PaymentIntentError::BarIsClosed);
     }
-    let mut order = Order::get_from_client_secret(&params.client_secret)
+    let mut order = Order::get_from_client_secret(&state.pool, &params.client_secret)
         .await?
         .ok_or_else(|| PaymentIntentError::OrderNotFoundFromSecrets)?;
-    order.set_email(&params.email).await?;
+    order.set_email(&state.pool, &params.email).await?;
 
     Ok(OkEmptyResponse::new())
 }
@@ -120,28 +126,32 @@ struct PaymentStatusResponse {
     total_price: i32,
 }
 async fn get_payment_status(
+    State(state): State<AppState>,
     params: Query<PaymentStatusParams>,
 ) -> Result<Json<PaymentStatusResponse>, PaymentIntentError> {
-    let mut order = Order::get_from_client_secret(&params.client_secret)
+    let mut order = Order::get_from_client_secret(&state.pool, &params.client_secret)
         .await?
         .ok_or_else(|| PaymentIntentError::OrderNotFoundFromSecrets)?;
 
-    let intent = order.get_payment_intent().await?;
+    let intent = order.get_payment_intent(&state.pool).await?;
     let total_price = intent.amount;
 
     let res = Json(PaymentStatusResponse {
         status: intent.status,
         receipt: order.receipt.as_deref().cloned(),
         email: order.user_email.clone(),
-        detail: order.get_details().await?,
+        detail: order.get_details(&state.pool).await?,
         total_price,
     });
 
     Ok(res)
 }
 
-async fn get_qr_code(params: Query<PaymentStatusParams>) -> Result<Response, PaymentIntentError> {
-    let order = Order::get_from_client_secret(&params.client_secret)
+async fn get_qr_code(
+    State(state): State<AppState>,
+    params: Query<PaymentStatusParams>,
+) -> Result<Response, PaymentIntentError> {
+    let order = Order::get_from_client_secret(&state.pool, &params.client_secret)
         .await?
         .ok_or_else(|| PaymentIntentError::OrderNotFoundFromSecrets)?;
     let receipt = order.receipt.ok_or_else(|| PaymentIntentError::NoReceipt)?;

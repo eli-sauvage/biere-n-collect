@@ -1,16 +1,9 @@
 use core::fmt;
 use serde::{de, Deserialize, Deserializer, Serializer};
-use sqlx::{mysql::MySqlPoolOptions, types::time::OffsetDateTime, MySql, Pool};
+use sqlx::{mysql::MySqlPoolOptions, types::time::OffsetDateTime, MySqlPool};
 use std::{env, str::FromStr};
-use tokio::sync::OnceCell;
 
-static DB: OnceCell<Pool<MySql>> = OnceCell::const_new();
-
-pub fn db() -> &'static Pool<MySql> {
-    DB.get().expect("db oncecell is not initialized")
-}
-
-pub async fn setup_db_and_migrate() {
+pub async fn setup_db_and_migrate() -> MySqlPool {
     let db_password = env::var("MARIADB_PASSWORD").expect("db password is not set in environment");
     let db_host = env::var("MARIADB_HOST").expect("mariadb host is not set in environment");
 
@@ -36,7 +29,7 @@ pub async fn setup_db_and_migrate() {
         panic!("could not migrate : {e:?}");
     };
 
-    DB.get_or_init(|| async move { pool }).await;
+    pool
 }
 
 pub fn serialize_time<S: Serializer>(

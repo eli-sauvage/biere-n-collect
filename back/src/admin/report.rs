@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::Serialize;
+use sqlx::MySqlPool;
 use tokio::task::JoinSet;
 
 use crate::{
@@ -18,11 +19,15 @@ pub struct ReportItem {
     subtotal_ttc: i32,
 }
 
-pub async fn process_orders_to_report(orders: Vec<Order>) -> Result<Report, ServerError> {
+pub async fn process_orders_to_report(
+    pool: &MySqlPool,
+    orders: Vec<Order>,
+) -> Result<Report, ServerError> {
     let mut unique_items: HashMap<String, ReportItem> = HashMap::new();
     let mut handles: JoinSet<Result<Vec<OrderDetailElement>, ServerError>> = JoinSet::new();
     orders.into_iter().for_each(|order| {
-        handles.spawn(async move { order.get_details().await });
+        let thread_pool = pool.to_owned();
+        handles.spawn(async move { order.get_details(&thread_pool).await });
     });
     handles
         .join_all()

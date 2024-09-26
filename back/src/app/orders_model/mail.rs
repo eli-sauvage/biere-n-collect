@@ -6,6 +6,7 @@ use lettre::{
     transport::smtp::authentication::Credentials,
     AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
 };
+use sqlx::MySqlPool;
 
 use crate::errors::{SendReceiptEmailError, ServerError};
 
@@ -18,7 +19,7 @@ fn get_smtp_credentials() -> (SmtpUsername, SmtpPassword) {
     let smtp_password = env::var("SMTP_PASSWORD").expect("env var SMTP_PASSWORD not found");
     (smtp_username, smtp_password)
 }
-pub async fn send_qr(order: &Order) -> Result<(), SendReceiptEmailError> {
+pub async fn send_qr(pool: &MySqlPool, order: &Order) -> Result<(), SendReceiptEmailError> {
     let to: Mailbox = order
         .user_email
         .clone()
@@ -50,7 +51,7 @@ Total: {}€
 
 Reçu: {}",
         order
-            .get_details()
+            .get_details(pool)
             .await?
             .iter()
             .map(|d| format!(
@@ -61,7 +62,7 @@ Reçu: {}",
             ))
             .collect::<Vec<String>>()
             .join("\n"),
-        order.get_full_price_ttc().await? / 100,
+        order.get_full_price_ttc(pool).await? / 100,
         *receipt
     ));
     let creds = get_smtp_credentials();

@@ -1,4 +1,4 @@
-use axum::{routing::patch, Router};
+use axum::{extract::State, routing::patch, Router};
 use serde::Deserialize;
 
 use crate::{
@@ -29,33 +29,34 @@ struct EditVariationsParams {
 }
 
 async fn edit_variation(
+    State(state): State<AppState>,
     _user: AdminUser,
     params: Query<EditVariationsParams>,
 ) -> Result<OkEmptyResponse, ManageStockError> {
-    let mut variation = match Variation::get(params.variation_id).await? {
+    let mut variation = match Variation::get(&state.pool, params.variation_id).await? {
         Some(c) => c,
         None => return Err(ManageStockError::VariationNotFound(params.variation_id)),
     };
 
     if let Some(new_name) = &params.new_name {
-        variation.set_name(new_name.to_owned()).await?;
+        variation.set_name(&state.pool, new_name.to_owned()).await?;
     }
 
     if let Some(new_price) = params.new_price_ht {
-        variation.set_price_ht(new_price).await?;
+        variation.set_price_ht(&state.pool, new_price).await?;
     }
 
     if let Some(new_tva) = params.new_tva {
-        variation.set_tva(new_tva).await?;
+        variation.set_tva(&state.pool, new_tva).await?;
     }
 
     if let Some(new_volume) = params.new_volume {
-        variation.set_volume(new_volume).await?;
+        variation.set_volume(&state.pool, new_volume).await?;
     }
 
     if let Some(new_available_to_order) = params.new_available_to_order {
         variation
-            .set_available_to_order(new_available_to_order)
+            .set_available_to_order(&state.pool, new_available_to_order)
             .await?;
     }
 

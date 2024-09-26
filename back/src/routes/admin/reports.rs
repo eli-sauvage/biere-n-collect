@@ -1,4 +1,4 @@
-use axum::{routing::get, Json, Router};
+use axum::{extract::State, routing::get, Json, Router};
 use serde::Deserialize;
 use sqlx::types::time::OffsetDateTime;
 
@@ -20,9 +20,10 @@ pub fn get_router() -> Router<AppState> {
 }
 
 async fn get_bar_openings(
+    State(state): State<AppState>,
     _user: AdminUser,
 ) -> Result<Json<Vec<bar_management::BarOpening>>, ServerError> {
-    let openings = bar_management::get_bar_openings().await?;
+    let openings = bar_management::get_bar_openings(&state.pool).await?;
     Ok(Json(openings))
 }
 
@@ -32,6 +33,7 @@ struct GetReportQuery {
     end: i64,
 }
 async fn get_report(
+    State(state): State<AppState>,
     _user: AdminUser,
     params: Query<GetReportQuery>,
 ) -> Result<Json<Report>, OrderManagementError> {
@@ -39,7 +41,7 @@ async fn get_report(
         .map_err(|_| OrderManagementError::InvalidDate)?;
     let end = OffsetDateTime::from_unix_timestamp(params.end / 1000)
         .map_err(|_| OrderManagementError::InvalidDate)?;
-    let orders = orders::search_orders(None, Some(begin), Some(end), None).await?;
-    let report = process_orders_to_report(orders).await?;
+    let orders = orders::search_orders(&state.pool, None, Some(begin), Some(end), None).await?;
+    let report = process_orders_to_report(&state.pool, orders).await?;
     Ok(Json(report))
 }

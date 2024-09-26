@@ -1,10 +1,11 @@
 use axum::{async_trait, extract::FromRequestParts, http::request::Parts};
 use axum_extra::extract::CookieJar;
 use serde::{Deserialize, Serialize, Serializer};
+use sqlx::MySqlPool;
 
 use crate::{
-    db,
     errors::{ServerError, UserParseError},
+    routes::AppState,
 };
 
 use super::auth::Session;
@@ -32,9 +33,9 @@ where
 }
 
 impl User {
-    pub async fn create(email: &str, role: Role) -> Result<User, ServerError> {
+    pub async fn create(pool: &MySqlPool, email: &str, role: Role) -> Result<User, ServerError> {
         sqlx::query!("INSERT INTO Users (email, role) VALUES (?, ?)", email, role)
-            .execute(db())
+            .execute(pool)
             .await
             .map_err(ServerError::Sqlx)?;
         Ok(User {
@@ -44,11 +45,11 @@ impl User {
         })
     }
 
-    pub async fn get_all() -> Result<Vec<User>, ServerError> {
+    pub async fn get_all(pool: &MySqlPool) -> Result<Vec<User>, ServerError> {
         let record = sqlx::query!("SELECT email, role as \"role: Role\" FROM Users")
-            .fetch_all(db())
+            .fetch_all(pool)
             .await?;
-        let all_sessions = Session::get_all().await?;
+        let all_sessions = Session::get_all(pool).await?;
         let users: Vec<User> = record
             .into_iter()
             .map(|r| {
@@ -67,14 +68,17 @@ impl User {
         Ok(users)
     }
 
-    pub async fn get_from_email(email: &str) -> Result<Option<User>, ServerError> {
+    pub async fn get_from_email(
+        pool: &MySqlPool,
+        email: &str,
+    ) -> Result<Option<User>, ServerError> {
         let user_opt = sqlx::query!(
             "SELECT email, role as \"role: Role\" FROM Users WHERE email = ?",
             email
         )
-        .fetch_optional(db())
+        .fetch_optional(pool)
         .await?;
-        let active_sessions = Session::get_all_sessions_for_email(email).await?;
+        let active_sessions = Session::get_all_sessions_for_email(pool, email).await?;
 
         let user_opt = user_opt.map(|user| User {
             email: user.email,
@@ -84,34 +88,34 @@ impl User {
         Ok(user_opt)
     }
 
-    pub async fn get_from_uuid(uuid: &str) -> Result<Option<User>, ServerError> {
+    pub async fn get_from_uuid(pool: &MySqlPool, uuid: &str) -> Result<Option<User>, ServerError> {
         let email_record = match sqlx::query!(
             "SELECT email FROM Users INNER JOIN Sessions ON Sessions.user_id = Users.id WHERE uuid = ?",
             uuid
         )
-        .fetch_optional(db())
+        .fetch_optional(pool)
         .await?
         {
             Some(user_id) => user_id,
             None => return Ok(None),
         };
-        User::get_from_email(&email_record.email).await
+        User::get_from_email(pool, &email_record.email).await
     }
 
-    pub async fn update_role(self, new_role: Role) -> Result<(), ServerError> {
+    pub async fn update_role(self, pool: &MySqlPool, new_role: Role) -> Result<(), ServerError> {
         sqlx::query!(
             "UPDATE Users SET role = ? WHERE email = ?",
             new_role,
             self.email
         )
-        .execute(db())
+        .execute(pool)
         .await?;
         Ok(())
     }
 
-    pub async fn delete(self) -> Result<(), ServerError> {
+    pub async fn delete(self, pool: &MySqlPool) -> Result<(), ServerError> {
         sqlx::query!("DELETE FROM Users WHERE email = ?", self.email)
-            .execute(db())
+            .execute(pool)
             .await
             .map_err(ServerError::Sqlx)?;
         Ok(())
@@ -119,17 +123,21 @@ impl User {
 }
 
 #[async_trait]
-impl<S: Send + Sync> FromRequestParts<S> for User {
+impl FromRequestParts<AppState> for User {
     type Rejection = UserParseError;
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let cookies = CookieJar::from_request_parts(parts, _state)
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let cookies = CookieJar::from_request_parts(parts, state)
             .await
             .map_err(|_| UserParseError::CannotExtractCookies)?;
         let session_uuid = cookies
             .get("session")
             .ok_or_else(|| UserParseError::SessionNotFound)?
             .value();
-        let user = User::get_from_uuid(session_uuid)
+
+        let user = User::get_from_uuid(&state.pool, session_uuid)
             .await?
             .ok_or_else(|| UserParseError::UserNotFound)?;
         Ok(user)
@@ -138,10 +146,13 @@ impl<S: Send + Sync> FromRequestParts<S> for User {
 
 pub struct AdminUser(pub User);
 #[async_trait]
-impl<S: Send + Sync> FromRequestParts<S> for AdminUser {
+impl FromRequestParts<AppState> for AdminUser {
     type Rejection = UserParseError;
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let user = User::from_request_parts(parts, _state).await?;
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let user = User::from_request_parts(parts, state).await?;
         if let Role::Admin = user.role {
             Ok(AdminUser(user))
         } else {
