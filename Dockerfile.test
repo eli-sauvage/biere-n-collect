@@ -1,12 +1,6 @@
 FROM rust:1-bookworm
 
-
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/biere-n-collect/target \
-    cargo install sqlx-cli
-
-ARG DATABASE_URL
-ENV DATABASE_URL $DATABASE_URL
+ENV SQLX_OFFLINE true
 
 WORKDIR /app/biere-n-collect/
 
@@ -18,18 +12,6 @@ COPY back/.sqlx .sqlx
 COPY back/migrations migrations
 
 
-# RUN --mount=type=cache,target=/usr/local/cargo/registry \
-#     --mount=type=cache,target=/app/biere-n-collect/target \
-#     sqlx migrate run
+RUN cargo build --tests
 
-# RUN --mount=type=cache,target=/usr/local/cargo/registry \
-#     --mount=type=cache,target=/app/biere-n-collect/target \
-#     cargo sqlx prepare -- --tests
-
-# RUN --mount=type=cache,target=/usr/local/cargo/registry \
-#     --mount=type=cache,target=/app/biere-n-collect/target \
-#     cargo build --tests
-
-ENV SQLX_OFFLINE ""
-
-CMD ["sh", "-c", "sqlx migrate run && cargo test"]
+CMD ["cargo", "test"]

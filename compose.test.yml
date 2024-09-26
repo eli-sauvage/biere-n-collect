@@ -8,15 +8,13 @@ services:
       test: ["CMD", "/usr/local/bin/healthcheck.sh", "--connect"]
       retries: 10
       interval: 5s
+    ports:
+      - 1234:3306
+
   test-back:
     build:
       context: .
       dockerfile: Dockerfile.test
-      args:
-        DATABASE_URL: "mysql://root:test-root-password@db-test:3306/biere-n-collect"
-    working_dir: /app
-    volumes:
-      - ${PWD}/back:/app
     environment:
       DATABASE_URL: "mysql://root:test-root-password@db-test:3306/biere-n-collect"
     depends_on:
