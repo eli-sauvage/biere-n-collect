@@ -34,15 +34,16 @@ jobs:
 
       - name: test back
         run: |
-          docker compose up -d
           bash test.sh
+          docker compose build
+          docker compose push
 
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          tags: ghcr.io/eli-sauvage/biere-n-collect:latest
-          cache-from: type=gha
-          build-args: |
-            VITE_BAR_NAME=${{ env.VITE_BAR_NAME }}
-          cache-to: type=gha,mode=max
+      # - name: Build and push
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     push: true
+      #     tags: ghcr.io/eli-sauvage/biere-n-collect:latest
+      #     cache-from: type=gha
+      #     build-args: |
+      #       VITE_BAR_NAME=${{ env.VITE_BAR_NAME }}
+      #     cache-to: type=gha,mode=max
