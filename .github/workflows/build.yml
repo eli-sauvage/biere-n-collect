@@ -70,16 +70,16 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: release-image
-          path: ./release-image.tar
+          path: ./release-image
 
       - name: ls
         run: |
           ls -la
-          ls ./release-image.tar
+          ls ./release-image
 
       - name: Load Docker image
         run: |
-          docker load -i ./release-image.tar
+          docker load -i ./release-image/release-image.tar
 
       - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
