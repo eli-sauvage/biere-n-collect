@@ -12,11 +12,11 @@ jobs:
     steps:
       - name: create file
         run: echo "bonjour" > /test/file
-    print_file:
-      runs-on: ubuntu-latest
-      steps:
-        - name: print file
-          run: cat /test/file
+  print_file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: print file
+        run: cat /test/file
 
   # test:
   #   runs-on: ubuntu-latest
