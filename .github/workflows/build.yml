@@ -72,6 +72,11 @@ jobs:
           name: release-image
           path: ./release-image.tar
 
+      - name: ls
+        run: |
+          ls -la
+          ls ./release-image.tar
+
       - name: Load Docker image
         run: |
           docker load -i ./release-image.tar
