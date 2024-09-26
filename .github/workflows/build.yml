@@ -47,7 +47,7 @@ jobs:
 
       - name: Save Docker image for later use
         run: |
-          docker save rust-project:release -o ./release-image.tar
+          docker save ghcr.io/eli-sauvage/biere-n-collect:latest -o ./release-image.tar
 
   push:
     runs-on: ubuntu-latest
