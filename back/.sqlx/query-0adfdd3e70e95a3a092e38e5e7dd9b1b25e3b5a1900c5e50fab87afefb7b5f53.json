@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT is_open as \"is_open: bool\" FROM Bar",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "is_open: bool",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL",
+          "max_size": 1
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0adfdd3e70e95a3a092e38e5e7dd9b1b25e3b5a1900c5e50fab87afefb7b5f53"
+}
