@@ -39,6 +39,8 @@ pub enum SessionError {
     ChallengeNotFound(String),
     #[error("session not found for current user")]
     SessionNotFound,
+    #[error("user not found with email {0}")]
+    UserNotFound(String),
     #[error("challenge for user {0} has expired")]
     ChallengeExpired(String),
     #[error("the code submitted for user {0} is invalid")]
@@ -61,6 +63,7 @@ impl IntoResponse for SessionError {
                 | Self::ChallengeFailed(_)
                 | Self::SessionNotFound
                 | Self::InvalidCode(_)
+                | Self::UserNotFound(_)
                 | Self::InvalidEmailAddress(_) => StatusCode::BAD_REQUEST,
                 Self::ServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             };

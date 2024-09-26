@@ -20,6 +20,8 @@ pub enum Role {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct User {
+    #[serde(skip)]
+    pub id: u32,
     pub email: String,
     pub role: Role,
     #[serde(serialize_with = "serialize_sessions_into_len")]
@@ -34,11 +36,13 @@ where
 
 impl User {
     pub async fn create(pool: &MySqlPool, email: &str, role: Role) -> Result<User, ServerError> {
-        sqlx::query!("INSERT INTO Users (email, role) VALUES (?, ?)", email, role)
+        let id = sqlx::query!("INSERT INTO Users (email, role) VALUES (?, ?)", email, role)
             .execute(pool)
             .await
-            .map_err(ServerError::Sqlx)?;
+            .map_err(ServerError::Sqlx)?
+            .last_insert_id() as u32;
         Ok(User {
+            id,
             email: email.to_owned(),
             role,
             active_sessions: vec![],
@@ -46,7 +50,7 @@ impl User {
     }
 
     pub async fn get_all(pool: &MySqlPool) -> Result<Vec<User>, ServerError> {
-        let record = sqlx::query!("SELECT email, role as \"role: Role\" FROM Users")
+        let record = sqlx::query!("SELECT id, email, role as \"role: Role\" FROM Users")
             .fetch_all(pool)
             .await?;
         let all_sessions = Session::get_all(pool).await?;
@@ -59,6 +63,7 @@ impl User {
                     .cloned()
                     .collect();
                 User {
+                    id: r.id,
                     email: r.email,
                     role: r.role,
                     active_sessions: sessions,
@@ -73,7 +78,7 @@ impl User {
         email: &str,
     ) -> Result<Option<User>, ServerError> {
         let user_opt = sqlx::query!(
-            "SELECT email, role as \"role: Role\" FROM Users WHERE email = ?",
+            "SELECT id, email, role as \"role: Role\" FROM Users WHERE email = ?",
             email
         )
         .fetch_optional(pool)
@@ -81,6 +86,7 @@ impl User {
         let active_sessions = Session::get_all_sessions_for_email(pool, email).await?;
 
         let user_opt = user_opt.map(|user| User {
+            id: user.id,
             email: user.email,
             role: user.role,
             active_sessions,

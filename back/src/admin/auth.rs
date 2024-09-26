@@ -1,9 +1,11 @@
-use crate::errors::ServerError;
+use crate::errors::{ServerError, SessionError, UserParseError};
 
 use sqlx::{types::time::OffsetDateTime, MySqlPool};
 use std::time::Duration;
 
 use uuid::Uuid;
+
+use super::user::User;
 
 const SESSION_DURATION: Duration = Duration::from_secs(12 * 60 * 60);
 
@@ -29,7 +31,7 @@ impl Session {
         Ok(())
     }
 
-    pub async fn new(pool: &MySqlPool, email: String) -> Result<Session, ServerError> {
+    pub async fn new(pool: &MySqlPool, email: String) -> Result<Session, SessionError> {
         Session::delete_old_sessions(pool).await?;
         // Session::delete_if_exists(pool, &email).await?;
         let session = Session {
@@ -38,12 +40,17 @@ impl Session {
             email,
         };
 
+        let user = User::get_from_email(pool, &session.email)
+            .await?
+            .ok_or(SessionError::UserNotFound(session.email.clone()))?;
+
         sqlx::query!(
-            "INSERT INTO Sessions (user_id, expires, uuid) VALUES ((SELECT id FROM Users WHERE email = ?), ?, ?)",
-            session.email,
+            "INSERT INTO Sessions (user_id, expires, uuid) VALUES (?, ?, ?)",
+            user.id,
             session.expires,
             session.uuid
-        ).execute(pool)
+        )
+        .execute(pool)
         .await
         .map_err(ServerError::Sqlx)?;
 
