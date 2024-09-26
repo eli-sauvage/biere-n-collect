@@ -14,6 +14,7 @@ jobs:
         run: echo "bonjour" > /test/file
   print_file:
     runs-on: ubuntu-latest
+    needs: setup_environment
     steps:
       - name: print file
         run: cat /test/file
