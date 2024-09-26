@@ -57,6 +57,9 @@ jobs:
       packages: write
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
       - name: copy env template
         run: cp .env.template .env
 
