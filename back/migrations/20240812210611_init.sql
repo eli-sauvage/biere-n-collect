@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS Products
   name VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
   stock_quantity FLOAT NOT NULL,
-  position SMALLINT UNSIGNED NOT NULL UNIQUE
+  position SMALLINT UNSIGNED UNIQUE
 );
 
 

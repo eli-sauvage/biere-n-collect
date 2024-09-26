@@ -89,7 +89,7 @@ impl Product {
             .fetch_one(pool)
             .await?
             .position;
-        Ok(pos)
+        Ok(pos.unwrap_or(0))
     }
     pub async fn set_name(
         &mut self,
@@ -214,20 +214,27 @@ impl Product {
             (_, MoveDirection::Up) => current_position - 1,
             (_, MoveDirection::Down) => current_position + 1,
         };
+
+        let mut transaction = pool.begin().await?;
+        sqlx::query!("UPDATE Products SET position = NULL WHERE id = ?", self.id)
+            .execute(&mut *transaction)
+            .await?;
         sqlx::query!(
             "UPDATE Products SET position = ? WHERE position = ?",
             current_position,
             new_pos,
         )
-        .execute(pool)
+        .execute(&mut *transaction)
         .await?;
         sqlx::query!(
             "UPDATE Products SET position = ? WHERE id = ?",
             new_pos,
             self.id
         )
-        .execute(pool)
+        .execute(&mut *transaction)
         .await?;
+
+        transaction.commit().await?;
         Ok(())
     }
 }
