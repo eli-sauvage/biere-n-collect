@@ -9,6 +9,7 @@ import {
     type BarStatus,
     type Product,
 } from './scripts/api/products'
+import CartView from './components/CartView.vue'
 
 let cart: Ref<Cart> = ref(new Cart([]))
 let bar_status: Ref<BarStatus | null> = ref(null)
@@ -53,7 +54,7 @@ watch(
             header="Panier"
             position="bottom"
         >
-            <CartVue :cart="cart" />
+            <CartView :cart="cart" />
         </Drawer>
         <div class="product-list">
             <ProductVue

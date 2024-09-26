@@ -20,7 +20,6 @@ function remaining_quantity(): number {
         .map((e) => e.quantity * e.variation.volume)
         .reduce((prev, curr) => prev + curr, 0)
 
-    console.log(props.product.stock_quantity - already_selected)
     return props.product.stock_quantity - already_selected
 }
 
