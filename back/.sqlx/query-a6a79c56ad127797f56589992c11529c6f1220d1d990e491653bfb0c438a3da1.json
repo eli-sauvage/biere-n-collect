@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE Sessions SET expires = CURRENT_TIMESTAMP - 1000 WHERE uuid = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "a6a79c56ad127797f56589992c11529c6f1220d1d990e491653bfb0c438a3da1"
+}
