@@ -1,10 +1,19 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT email, role as \"role: Role\" FROM Users",
+  "query": "SELECT id, email, role as \"role: Role\" FROM Users WHERE email = ?",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Long",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 10
+        }
+      },
+      {
+        "ordinal": 1,
         "name": "email",
         "type_info": {
           "type": "VarString",
@@ -13,7 +22,7 @@
         }
       },
       {
-        "ordinal": 1,
+        "ordinal": 2,
         "name": "role: Role",
         "type_info": {
           "type": "String",
@@ -23,12 +32,13 @@
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 1
     },
     "nullable": [
+      false,
       false,
       false
     ]
   },
-  "hash": "7da3ec6649ad2ae5dd3b9b7ab812b05df3e0c7db9d1a793e3804bdec6fe4574a"
+  "hash": "d2df641f4be2ec914fceea53b74ffc9118f3f01c764b2f5729c2c7536442526f"
 }

@@ -1,7 +1,9 @@
 use core::fmt;
 use serde::{de, Deserialize, Deserializer, Serializer};
-use sqlx::{mysql::MySqlPoolOptions, types::time::OffsetDateTime, MySqlPool};
+use sqlx::{migrate, mysql::MySqlPoolOptions, types::time::OffsetDateTime, MySqlPool};
 use std::{env, str::FromStr};
+
+pub static MIGRATOR: migrate::Migrator = sqlx::migrate!("./migrations");
 
 pub async fn setup_db_and_migrate() -> MySqlPool {
     let db_password = env::var("MARIADB_PASSWORD").expect("db password is not set in environment");
@@ -25,7 +27,7 @@ pub async fn setup_db_and_migrate() -> MySqlPool {
         .expect("could not execute test query");
     assert_eq!(row.0, 150); //test connection
 
-    if let Err(e) = sqlx::migrate!("./migrations").run(&pool).await {
+    if let Err(e) = MIGRATOR.run(&pool).await {
         panic!("could not migrate : {e:?}");
     };
 

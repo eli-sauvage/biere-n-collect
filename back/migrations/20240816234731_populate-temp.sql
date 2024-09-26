@@ -31,4 +31,5 @@ INSERT INTO ProductVariations (name, product_id, price_ht, volume, available_to_
 VALUES ("", 5, 650, 1.0, TRUE);
 
 INSERT INTO Users (email, role) VALUES ("elicolh@gmail.com", "admin");
-INSERT INTO Users (email, role) VALUES ("eli-sauvage@utt.fr", "waiter");
+INSERT INTO Users (email, role) VALUES ("sauvagemartial@yahoo.fr", "admin");
+INSERT INTO Users (email, role) VALUES ("eli.sauvage@utt.fr", "waiter");

@@ -1,4 +1,4 @@
-use crate::errors::{ServerError, SessionError, UserParseError};
+use crate::errors::{ServerError, SessionError};
 
 use sqlx::{types::time::OffsetDateTime, MySqlPool};
 use std::time::Duration;
@@ -80,4 +80,117 @@ impl Session {
             .map_err(ServerError::Sqlx)?;
         Ok(sessions)
     }
+}
+
+#[sqlx::test]
+async fn test_new_session(pool: MySqlPool) {
+    let email = "elicolh@gmail.com";
+    let res = Session::new(&pool, email.into()).await.unwrap();
+    assert_eq!(res.email, email);
+    //valid uuid
+    let session_uuid = <uuid::Uuid as std::str::FromStr>::from_str(&res.uuid).unwrap();
+    assert_eq!(session_uuid.get_version(), Some(uuid::Version::Random));
+
+    let user = User::get_from_email(&pool, email).await.unwrap().unwrap();
+    let session_in_db = sqlx::query!("SELECT * FROM Sessions WHERE uuid = ?", res.uuid)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+    assert_eq!(session_in_db.user_id, user.id);
+    assert_eq!(session_in_db.uuid, res.uuid);
+    assert_eq!(
+        session_in_db.expires,
+        res.expires.replace_millisecond(0).unwrap() //sub second is kind of random ?
+    );
+}
+
+#[sqlx::test]
+async fn test_new_session_for_non_existant_user(pool: MySqlPool) {
+    let res = Session::new(&pool, "test@example.com".into()).await;
+    assert!(res.is_err());
+    if let Err(SessionError::UserNotFound(email)) = res {
+        assert_eq!(email, "test@example.com")
+    } else {
+        panic!("error should be UserNotFound")
+    }
+}
+
+#[sqlx::test]
+async fn test_get_all(pool: MySqlPool) {
+    let email = "elicolh@gmail.com";
+    let session1 = Session::new(&pool, email.to_owned()).await.unwrap();
+    let session2 = Session::new(&pool, email.to_owned()).await.unwrap();
+
+    let sessions = Session::get_all(&pool).await.unwrap();
+    assert_eq!(sessions.len(), 2);
+    assert_eq!(sessions[0].uuid, session1.uuid);
+    assert_eq!(sessions[1].uuid, session2.uuid);
+}
+
+#[sqlx::test]
+async fn test_get_all_no_sessions(pool: MySqlPool) {
+    let all_sessions = Session::get_all(&pool).await.unwrap();
+    assert!(all_sessions.is_empty());
+}
+
+#[sqlx::test]
+async fn test_get_all_for_email(pool: MySqlPool) {
+    let email1 = "elicolh@gmail.com";
+    let email2 = "eli.sauvage@utt.fr";
+    let session1 = Session::new(&pool, email1.to_owned()).await.unwrap();
+    Session::new(&pool, email2.to_owned()).await.unwrap();
+
+    let sessions = Session::get_all_sessions_for_email(&pool, email1)
+        .await
+        .unwrap();
+    assert_eq!(sessions.len(), 1);
+    assert_eq!(sessions[0].uuid, session1.uuid);
+}
+
+#[sqlx::test]
+async fn test_get_all_for_email_no_session(pool: MySqlPool) {
+    let email1 = "elicolh@gmail.com";
+    let email2 = "eli.sauvage@utt.fr";
+    Session::new(&pool, email2.to_owned()).await.unwrap();
+
+    let sessions = Session::get_all_sessions_for_email(&pool, email1)
+        .await
+        .unwrap();
+
+    assert!(sessions.is_empty());
+}
+
+#[sqlx::test]
+async fn delete_old_sessions_test(pool: MySqlPool) {
+    let email = "elicolh@gmail.com";
+    let session1 = Session::new(&pool, email.to_owned()).await.unwrap();
+    let session2 = Session::new(&pool, email.to_owned()).await.unwrap();
+
+    sqlx::query!(
+        "UPDATE Sessions SET expires = CURRENT_TIMESTAMP - 1000 WHERE uuid = ?",
+        session1.uuid
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    Session::delete_old_sessions(&pool).await.unwrap();
+    let sessions = Session::get_all(&pool).await.unwrap();
+    assert_eq!(sessions.len(), 1);
+    assert_eq!(sessions[0].uuid, session2.uuid);
+}
+
+#[sqlx::test]
+async fn test_delete_if_exists(pool: MySqlPool) {
+    let email = "elicolh@gmail.com";
+    let session1 = Session::new(&pool, email.to_owned()).await.unwrap();
+    let session2 = Session::new(&pool, email.to_owned()).await.unwrap();
+
+    Session::delete_if_exists(&pool, &session1.uuid)
+        .await
+        .unwrap();
+    let sessions = Session::get_all(&pool).await.unwrap();
+    assert_eq!(sessions.len(), 1);
+    assert_eq!(sessions[0].uuid, session2.uuid);
 }

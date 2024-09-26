@@ -11,13 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write 
+      packages: write
 
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-      -
-        name: Set up Docker Buildx
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to the Container registry
@@ -26,12 +25,17 @@ jobs:
           registry: ghcr.io
           username: eli-sauvage
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: copy env template
         run: cp .env.template .env
 
       - name: load dotenv file
         uses: xom9ikk/dotenv@v2.3.0
+
+      - name: test back
+        run: |
+          docker compose up -d
+          bash test.sh
 
       - name: Build and push
         uses: docker/build-push-action@v5
