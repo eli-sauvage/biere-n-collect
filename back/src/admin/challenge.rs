@@ -1,12 +1,12 @@
-use lettre::message::Mailbox;
+use lettre::{message::Mailbox, Message};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sqlx::{types::time::OffsetDateTime, MySqlPool};
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, env, time::Duration};
 use tokio::sync::RwLock;
 
-use crate::errors::SessionError;
+use crate::errors::{ServerError, SessionError};
 
-use super::{mail, user::User};
+use super::user::User;
 
 const CHALLENGE_DURATION: Duration = Duration::from_secs(60 * 10);
 struct Challenge {
@@ -40,21 +40,48 @@ impl ChallengeManager {
         &self,
         pool: &MySqlPool,
         email: &str,
-    ) -> Result<(), SessionError> {
+    ) -> Result<Message, SessionError> {
         let mut challenges = self.challenges.write().await;
         User::get_from_email(pool, email)
             .await?
             .ok_or_else(|| SessionError::ChallengeNotFound(email.to_owned()))?;
         let challenge = Challenge::new();
 
-        let email: Mailbox = email.parse()?;
-
-        mail::send_code(&email, challenge.code).await?;
+        let code = challenge
+            .code
+            .iter()
+            .map(|e| e.to_string())
+            .collect::<Vec<String>>()
+            .chunks(2)
+            .map(|chunk| chunk.concat())
+            .collect::<Vec<String>>();
+        let from: Mailbox = env::var("SMTP_USERNAME")
+            .expect("could not find app email in env")
+            .parse()?;
+        let to: Mailbox = email.parse()?;
+        let login_link = env::var("VITE_SITE_URL")
+            .map(|e| format!("{e}/login?email={to}&code={}", code.join("")))
+            .unwrap_or("".to_string());
+        let email = Message::builder()
+        .from(from)
+        .to(to.clone())
+        .subject(format!("connexion à biere n collect pour le bar {}", env::var("VITE_BAR_NAME").unwrap_or("".into())))
+        .header(lettre::message::header::ContentType::TEXT_PLAIN)
+        .body(format!(
+            "Une tentative de connexion pour le compte
+            {to}
+            a été détéctée.
+            \n\nAfin de vous connecter, veuillez saisir le code \n{}\n dans l'invite.
+            Vous pouvez également cliquer sur le lien ci dessous :
+            {login_link}
+            \n\n\n--------\n\n<i>Ignorez ce message si vous n'êtes pas à l'origine de la connexion.</i>",
+            code.join(" - ")
+        )).map_err(ServerError::EmailBuild)?;
 
         //doesn't matter if the user already has a challenge, we want it to be overwritten (new attempt)
-        challenges.insert(email.to_string(), challenge);
+        challenges.insert(to.to_string(), challenge);
 
-        Ok(())
+        Ok(email)
     }
 
     pub async fn verify_challenge(

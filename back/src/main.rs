@@ -4,10 +4,12 @@ mod utils;
 
 use admin::challenge::ChallengeManager;
 mod errors;
+mod mail_manager;
 mod routes;
 
 use axum::{middleware, Router};
 use errors::ServerError;
+use mail_manager::GmailManager;
 use routes::generate_app_state;
 use tokio::signal;
 use tower_http::services::{ServeDir, ServeFile};
@@ -17,7 +19,8 @@ async fn main() -> Result<(), ServerError> {
     dotenvy::dotenv().expect("could not load env from .env file");
     let pool = utils::setup_db_and_migrate().await;
     let challenge_manager = ChallengeManager::new();
-    let state = generate_app_state(challenge_manager, pool);
+    let mail_manager = Box::new(GmailManager {});
+    let state = generate_app_state(challenge_manager, pool, mail_manager);
 
     let app = Router::new()
         .nest("/api", routes::customer::get_router())

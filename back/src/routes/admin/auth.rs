@@ -74,10 +74,11 @@ async fn create_challenge(
     State(state): State<AppState>,
     params: Query<CreateChallengeParams>,
 ) -> Result<OkEmptyResponse, SessionError> {
-    state
+    let message = state
         .challenge_manager
         .create_challenge(&state.pool, &params.email)
         .await?;
+    state.mail_manager.send_mail(message).await?;
     Ok(OkEmptyResponse::new())
 }
 
