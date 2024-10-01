@@ -2,8 +2,8 @@ use std::env;
 
 use axum::async_trait;
 use lettre::{
-    transport::smtp::authentication::Credentials, AsyncSmtpTransport, AsyncTransport, Message,
-    Tokio1Executor,
+    message, transport::smtp::authentication::Credentials, AsyncSmtpTransport, AsyncTransport,
+    Message, Tokio1Executor,
 };
 
 use crate::errors::ServerError;
@@ -27,6 +27,23 @@ impl MailManager for GmailManager {
 
         // Send the email
         mailer.send(message).await?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+use tokio::sync::RwLock;
+
+#[cfg(test)]
+pub struct TestMailManager {
+    received_mail: RwLock<Vec<Message>>,
+}
+
+#[cfg(test)]
+#[async_trait]
+impl MailManager for TestMailManager {
+    async fn send_mail(&self, message: Message) -> Result<(), ServerError> {
+        self.received_mail.write().await.push(message);
         Ok(())
     }
 }
