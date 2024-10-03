@@ -73,8 +73,8 @@ export class Cart {
                     let element = this.elements[elementIndex]
                     if (
                         element.product.stock_quantity -
-                            qtt -
-                            oldElement.quantity * element.variation.volume >=
+                        qtt -
+                        oldElement.quantity * element.variation.volume >=
                         0
                     ) {
                         element.quantity = oldElement.quantity
@@ -82,7 +82,7 @@ export class Cart {
                     }
                 }
             }
-        } catch {}
+        } catch { }
     }
     updateCache() {
         window.localStorage.setItem(
@@ -118,7 +118,6 @@ export class Cart {
 
         let order_id = await validate_cart(this)
         if (order_id != null) {
-            window.localStorage.setItem('cart', '{}')
             router.push({ path: '/checkout', query: { order_id: order_id } })
             return true
         } else {
