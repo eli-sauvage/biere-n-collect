@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use sqlx::MySqlPool;
 
 use crate::{
-    errors::{ServerError, UserParseError},
+    errors::{ServerError, UserManagementError, UserParseError},
     routes::AppState,
 };
 
@@ -35,7 +35,15 @@ where
 }
 
 impl User {
-    pub async fn create(pool: &MySqlPool, email: &str, role: Role) -> Result<User, ServerError> {
+    pub async fn create(
+        pool: &MySqlPool,
+        email: &str,
+        role: Role,
+    ) -> Result<User, UserManagementError> {
+        let existing_user = User::get_from_email(pool, email).await?;
+        if existing_user.is_some() {
+            return Err(UserManagementError::UserAlreadyExists(email.to_owned()));
+        }
         let id = sqlx::query!("INSERT INTO Users (email, role) VALUES (?, ?)", email, role)
             .execute(pool)
             .await
@@ -165,4 +173,62 @@ impl FromRequestParts<AppState> for AdminUser {
             Err(UserParseError::NotAdmin(user.email))
         }
     }
+}
+
+#[sqlx::test]
+async fn test_user_create_update_role_delete(pool: MySqlPool) {
+    let email = "user@example.com";
+    let role = Role::Admin;
+    let user = User::create(&pool, email, role).await.unwrap();
+    assert_eq!(user.email, email);
+    assert!(user.active_sessions.is_empty());
+    assert_eq!(user.role, Role::Admin);
+
+    user.update_role(&pool, Role::Waiter).await.unwrap();
+    let user = User::get_from_email(&pool, email).await.unwrap().unwrap();
+    assert_eq!(user.role, Role::Waiter);
+
+    user.delete(&pool).await.unwrap();
+    let user = User::get_from_email(&pool, email).await.unwrap();
+    assert!(user.is_none());
+}
+
+#[sqlx::test]
+async fn test_user_duplicate(pool: MySqlPool) {
+    let email = "user@example.com";
+    let role = Role::Admin;
+    User::create(&pool, email, role).await.unwrap();
+    let user2 = User::create(&pool, email, role).await;
+    assert!(user2.is_err());
+    match user2.unwrap_err() {
+        UserManagementError::UserAlreadyExists(m) => {
+            assert_eq!(m, email);
+        }
+        _ => panic!("wrong error on duplicate user"),
+    };
+}
+
+#[sqlx::test]
+async fn test_user_extractor(pool: MySqlPool) {
+    use axum::{
+        http::{method::Method, Request},
+        routing::get,
+        Router,
+    };
+    let email = "user@example.com";
+    let user = User::create(&pool, email, Role::Waiter).await.unwrap();
+    let session = Session::new(&pool, email.to_owned()).await.unwrap();
+    let app = Router::new().route("/", get(test_fn));
+    async fn test_fn(user: User) {
+        assert_eq!(user.email, "user@example.com");
+    }
+
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri("/")
+        .header("Cookie", format!("session={}", session.uuid))
+        .body("")
+        .unwrap();
+
+
 }

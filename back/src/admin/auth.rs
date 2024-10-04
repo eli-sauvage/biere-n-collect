@@ -168,7 +168,7 @@ async fn delete_old_sessions_test(pool: MySqlPool) {
     let session2 = Session::new(&pool, email.to_owned()).await.unwrap();
 
     sqlx::query!(
-        "UPDATE Sessions SET expires = CURRENT_TIMESTAMP - 1000 WHERE uuid = ?",
+        "UPDATE Sessions SET expires = CURRENT_TIMESTAMP - INTERVAL 1 MINUTE WHERE uuid = ?",
         session1.uuid
     )
     .execute(&pool)
