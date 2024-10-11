@@ -174,6 +174,12 @@ impl FromRequestParts<AppState> for AdminUser {
         }
     }
 }
+impl std::ops::Deref for AdminUser{
+    type Target = User;
+    fn deref(&self) -> &Self::Target {
+        &self.0       
+    }
+}
 
 #[sqlx::test]
 async fn test_user_create_update_role_delete(pool: MySqlPool) {

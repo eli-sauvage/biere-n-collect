@@ -66,7 +66,7 @@ async fn delete_user(
     user: AdminUser,
     params: Query<DeleteUserParams>,
 ) -> Result<OkEmptyResponse, UserManagementError> {
-    if user.0.email == params.email {
+    if user.email == params.email {
         return Err(UserManagementError::UserCannotUpdateItSelf);
     }
 
@@ -93,7 +93,7 @@ async fn update_role(
     user: AdminUser,
     params: Query<UpdateRoleParams>,
 ) -> Result<OkEmptyResponse, UserManagementError> {
-    if user.0.email == params.email {
+    if user.email == params.email {
         return Err(UserManagementError::UserCannotUpdateItSelf);
     }
 
@@ -117,7 +117,7 @@ async fn disconnect_user(
     user: AdminUser,
     params: Query<DisconnectUserParams>,
 ) -> Result<OkEmptyResponse, UserManagementError> {
-    if user.0.email == params.email {
+    if user.email == params.email {
         return Err(UserManagementError::UserCannotUpdateItSelf);
     }
 
