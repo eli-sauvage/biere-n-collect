@@ -221,10 +221,19 @@ async fn test_user_extractor(pool: MySqlPool) {
         routing::get,
         Router,
     };
+    use crate::{routes::InnerState, mail_manager::TestMailManager};
+    use tower::util::ServiceExt;
+    use std::sync::Arc;
+    use axum::http::StatusCode;
     let email = "user@example.com";
-    let user = User::create(&pool, email, Role::Waiter).await.unwrap();
+    let _user = User::create(&pool, email, Role::Waiter).await.unwrap();
     let session = Session::new(&pool, email.to_owned()).await.unwrap();
-    let app = Router::new().route("/", get(test_fn));
+    let state = InnerState{
+        challenge_manager: Default::default(),
+        pool: pool,
+        mail_manager: Box::new(TestMailManager{..Default::default()})
+    };
+    let app = Router::new().route("/", get(test_fn)).with_state(Arc::new(state));
     async fn test_fn(user: User) {
         assert_eq!(user.email, "user@example.com");
     }
@@ -233,8 +242,85 @@ async fn test_user_extractor(pool: MySqlPool) {
         .method(Method::GET)
         .uri("/")
         .header("Cookie", format!("session={}", session.uuid))
-        .body("")
+        .body("".to_string())
         .unwrap();
 
+    let res = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri("/")
+        .header("Cookie", format!("session={}", "123abc"))
+        .body("".to_string())
+        .unwrap();
 
+    let res = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri("/")
+        .body("".to_string())
+        .unwrap();
+
+    let res = app.oneshot(request).await.unwrap();
+    assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[sqlx::test]
+async fn test_admin_extractor(pool: MySqlPool) {
+    use axum::{
+        http::{method::Method, Request},
+        routing::get,
+        Router,
+    };
+    use crate::{routes::InnerState, mail_manager::TestMailManager};
+    use tower::util::ServiceExt;
+    use std::sync::Arc;
+    use axum::http::StatusCode;
+    let email = "user@example.com";
+    let _user = User::create(&pool, email, Role::Waiter).await.unwrap();
+    let email_admin = "admin@example.com";
+    let _admin = User::create(&pool, email_admin, Role::Admin).await.unwrap();
+    let session = Session::new(&pool, email.to_owned()).await.unwrap();
+    let session_admin = Session::new(&pool, email_admin.to_owned()).await.unwrap();
+    let state = InnerState{
+        challenge_manager: Default::default(),
+        pool: pool,
+        mail_manager: Box::new(TestMailManager{..Default::default()})
+    };
+    let app = Router::new().route("/", get(test_fn)).with_state(Arc::new(state));
+    async fn test_fn(user: AdminUser) {
+        assert_eq!(user.email, "admin@example.com");
+    }
+
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri("/")
+        .header("Cookie", format!("session={}", session.uuid))
+        .body("".to_string())
+        .unwrap();
+
+    let res = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri("/")
+        .header("Cookie", format!("session={}", session_admin.uuid))
+        .body("".to_string())
+        .unwrap();
+
+    let res = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri("/")
+        .body("".to_string())
+        .unwrap();
+
+    let res = app.oneshot(request).await.unwrap();
+    assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
 }

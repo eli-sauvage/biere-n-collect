@@ -24,3 +24,6 @@ serde_json = "1.0"
 axum-extra = { version = "0.9.3", features = ["cookie"] }
 qrcode = { version = "0.14.1", features = ["svg", "image"], default-features = false }
 image = { version = "0.25.2", default-features = false, features = ["png", "rayon"] }
+
+[dev-dependencies]
+tower = { version = "0.5.1", features = ["util"] }

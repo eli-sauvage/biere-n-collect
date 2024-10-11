@@ -35,8 +35,9 @@ impl MailManager for GmailManager {
 use tokio::sync::RwLock;
 
 #[cfg(test)]
+#[derive(Default)]
 pub struct TestMailManager {
-    received_mail: RwLock<Vec<Message>>,
+    pub received_mail: RwLock<Vec<Message>>,
 }
 
 #[cfg(test)]

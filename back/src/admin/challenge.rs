@@ -27,6 +27,7 @@ impl Challenge {
 }
 
 type Email = String;
+#[derive(Default)]
 pub struct ChallengeManager {
     challenges: RwLock<HashMap<Email, Challenge>>,
 }
