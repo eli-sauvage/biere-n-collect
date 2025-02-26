@@ -9,8 +9,9 @@ mod routes;
 
 use axum::{middleware, Router};
 use errors::ServerError;
-use mail_manager::GmailManager;
+use mail_manager::{GmailManager, MailManager};
 use routes::generate_app_state;
+use std::sync::Arc;
 use tokio::signal;
 use tower_http::services::{ServeDir, ServeFile};
 
@@ -19,7 +20,7 @@ async fn main() -> Result<(), ServerError> {
     dotenvy::dotenv().expect("could not load env from .env file");
     let pool = utils::setup_db_and_migrate().await;
     let challenge_manager = ChallengeManager::new();
-    let mail_manager = Box::new(GmailManager {});
+    let mail_manager: Arc<Box<dyn MailManager>> = Arc::new(Box::new(GmailManager {}));
     let state = generate_app_state(challenge_manager, pool, mail_manager);
 
     let app = Router::new()

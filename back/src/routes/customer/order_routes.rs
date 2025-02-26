@@ -84,7 +84,9 @@ async fn get_payment_infos(
         .await?
         .ok_or_else(|| PaymentIntentError::OrderNotFound(params.order_id))?;
 
-    let intent = order.get_payment_intent(&state.pool).await?;
+    let intent = order
+        .get_payment_intent(&state.pool, state.mail_manager.clone())
+        .await?;
 
     Ok(Json(PaymentInfos {
         client_secret: intent.client_secret,
@@ -133,7 +135,9 @@ async fn get_payment_status(
         .await?
         .ok_or_else(|| PaymentIntentError::OrderNotFoundFromSecrets)?;
 
-    let intent = order.get_payment_intent(&state.pool).await?;
+    let intent = order
+        .get_payment_intent(&state.pool, state.mail_manager.clone())
+        .await?;
     let total_price = intent.amount;
 
     let res = Json(PaymentStatusResponse {

@@ -2,8 +2,8 @@ use std::env;
 
 use axum::async_trait;
 use lettre::{
-    message, transport::smtp::authentication::Credentials, AsyncSmtpTransport, AsyncTransport,
-    Message, Tokio1Executor,
+    transport::smtp::authentication::Credentials, AsyncSmtpTransport, AsyncTransport, Message,
+    Tokio1Executor,
 };
 
 use crate::errors::ServerError;

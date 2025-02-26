@@ -136,14 +136,14 @@ async fn get_by_id(
 }
 
 #[derive(Deserialize)]
-struct MarkAsPaidParams {
+struct SetServedParams {
     order_id: OrderId,
     new_served: bool,
 }
 async fn set_served(
     State(state): State<AppState>,
     _user: User,
-    params: Query<MarkAsPaidParams>,
+    params: Query<SetServedParams>,
 ) -> Result<OkEmptyResponse, OrderManagementError> {
     let mut order = Order::get(&state.pool, params.order_id)
         .await?

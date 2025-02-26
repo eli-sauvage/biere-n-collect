@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use sqlx::{types::time::OffsetDateTime, MySql, MySqlPool, Transaction};
@@ -16,6 +16,7 @@ use crate::{
         },
     },
     errors::{OrderProcessError, ServerError},
+    mail_manager::MailManager,
 };
 
 const ORDER_DURATION_MINUTES: u64 = 10 * 60;
@@ -142,7 +143,11 @@ impl Order {
         Ok(detail)
     }
 
-    async fn mark_as_paid(&mut self, pool: &MySqlPool) -> Result<(), ServerError> {
+    async fn mark_as_paid(
+        &mut self,
+        pool: &MySqlPool,
+        mail_manager: Arc<Box<dyn MailManager>>,
+    ) -> Result<(), ServerError> {
         let receipt = Uuid::new_v4().to_string();
         sqlx::query!(
             "UPDATE Orders SET receipt = ? WHERE id = ?",
@@ -157,7 +162,7 @@ impl Order {
         let self_thread = self.clone();
         let pool_thread = pool.to_owned();
         tokio::spawn(async move {
-            if let Err(e) = mail::send_qr(&pool_thread, &self_thread).await {
+            if let Err(e) = mail::send_qr(&pool_thread, mail_manager, &self_thread).await {
                 eprintln!("error while sending receipt mail : {e:?}")
             }
         });
@@ -300,6 +305,7 @@ impl Order {
     pub async fn get_payment_intent(
         &mut self,
         pool: &MySqlPool,
+        mail_manager: Arc<Box<dyn MailManager>>,
     ) -> Result<PaymentIntent, ServerError> {
         let intent = stripe::api::fetch_payment_intent(&self.payment_intent_id).await?;
         if intent.status == PaymentIntentStatus::Succeeded {
@@ -308,7 +314,7 @@ impl Order {
                 .await?
                 .receipt;
             if receipt.is_none() {
-                self.mark_as_paid(pool).await?;
+                self.mark_as_paid(pool, mail_manager).await?;
             }
         }
         Ok(intent)

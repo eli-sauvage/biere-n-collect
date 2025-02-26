@@ -174,10 +174,10 @@ impl FromRequestParts<AppState> for AdminUser {
         }
     }
 }
-impl std::ops::Deref for AdminUser{
+impl std::ops::Deref for AdminUser {
     type Target = User;
     fn deref(&self) -> &Self::Target {
-        &self.0       
+        &self.0
     }
 }
 
@@ -216,24 +216,28 @@ async fn test_user_duplicate(pool: MySqlPool) {
 
 #[sqlx::test]
 async fn test_user_extractor(pool: MySqlPool) {
+    use crate::{mail_manager::TestMailManager, routes::InnerState};
+    use axum::http::StatusCode;
     use axum::{
         http::{method::Method, Request},
         routing::get,
         Router,
     };
-    use crate::{routes::InnerState, mail_manager::TestMailManager};
-    use tower::util::ServiceExt;
     use std::sync::Arc;
-    use axum::http::StatusCode;
+    use tower::util::ServiceExt;
     let email = "user@example.com";
     let _user = User::create(&pool, email, Role::Waiter).await.unwrap();
     let session = Session::new(&pool, email.to_owned()).await.unwrap();
-    let state = InnerState{
+    let state = InnerState {
         challenge_manager: Default::default(),
-        pool: pool,
-        mail_manager: Box::new(TestMailManager{..Default::default()})
+        pool,
+        mail_manager: Arc::new(Box::new(TestMailManager {
+            ..Default::default()
+        })),
     };
-    let app = Router::new().route("/", get(test_fn)).with_state(Arc::new(state));
+    let app = Router::new()
+        .route("/", get(test_fn))
+        .with_state(Arc::new(state));
     async fn test_fn(user: User) {
         assert_eq!(user.email, "user@example.com");
     }
@@ -247,7 +251,7 @@ async fn test_user_extractor(pool: MySqlPool) {
 
     let res = app.clone().oneshot(request).await.unwrap();
     assert_eq!(res.status(), StatusCode::OK);
-    
+
     let request = Request::builder()
         .method(Method::GET)
         .uri("/")
@@ -257,7 +261,7 @@ async fn test_user_extractor(pool: MySqlPool) {
 
     let res = app.clone().oneshot(request).await.unwrap();
     assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
-    
+
     let request = Request::builder()
         .method(Method::GET)
         .uri("/")
@@ -270,27 +274,31 @@ async fn test_user_extractor(pool: MySqlPool) {
 
 #[sqlx::test]
 async fn test_admin_extractor(pool: MySqlPool) {
+    use crate::{mail_manager::TestMailManager, routes::InnerState};
+    use axum::http::StatusCode;
     use axum::{
         http::{method::Method, Request},
         routing::get,
         Router,
     };
-    use crate::{routes::InnerState, mail_manager::TestMailManager};
-    use tower::util::ServiceExt;
     use std::sync::Arc;
-    use axum::http::StatusCode;
+    use tower::util::ServiceExt;
     let email = "user@example.com";
     let _user = User::create(&pool, email, Role::Waiter).await.unwrap();
     let email_admin = "admin@example.com";
     let _admin = User::create(&pool, email_admin, Role::Admin).await.unwrap();
     let session = Session::new(&pool, email.to_owned()).await.unwrap();
     let session_admin = Session::new(&pool, email_admin.to_owned()).await.unwrap();
-    let state = InnerState{
+    let state = InnerState {
         challenge_manager: Default::default(),
-        pool: pool,
-        mail_manager: Box::new(TestMailManager{..Default::default()})
+        pool,
+        mail_manager: Arc::new(Box::new(TestMailManager {
+            ..Default::default()
+        })),
     };
-    let app = Router::new().route("/", get(test_fn)).with_state(Arc::new(state));
+    let app = Router::new()
+        .route("/", get(test_fn))
+        .with_state(Arc::new(state));
     async fn test_fn(user: AdminUser) {
         assert_eq!(user.email, "admin@example.com");
     }
@@ -304,7 +312,7 @@ async fn test_admin_extractor(pool: MySqlPool) {
 
     let res = app.clone().oneshot(request).await.unwrap();
     assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
-    
+
     let request = Request::builder()
         .method(Method::GET)
         .uri("/")
@@ -314,7 +322,7 @@ async fn test_admin_extractor(pool: MySqlPool) {
 
     let res = app.clone().oneshot(request).await.unwrap();
     assert_eq!(res.status(), StatusCode::OK);
-    
+
     let request = Request::builder()
         .method(Method::GET)
         .uri("/")

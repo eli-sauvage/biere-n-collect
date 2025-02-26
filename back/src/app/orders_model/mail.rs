@@ -1,14 +1,16 @@
-use std::env;
+use std::{env, sync::Arc};
 
 use image::{codecs::png, ImageEncoder, Luma};
 use lettre::{
     message::{Attachment, Mailbox, MultiPart, SinglePart},
-    transport::smtp::authentication::Credentials,
-    AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
+    Message,
 };
 use sqlx::MySqlPool;
 
-use crate::errors::{SendReceiptEmailError, ServerError};
+use crate::{
+    errors::{SendReceiptEmailError, ServerError},
+    mail_manager::MailManager,
+};
 
 use super::orders::Order;
 
@@ -19,7 +21,11 @@ fn get_smtp_credentials() -> (SmtpUsername, SmtpPassword) {
     let smtp_password = env::var("SMTP_PASSWORD").expect("env var SMTP_PASSWORD not found");
     (smtp_username, smtp_password)
 }
-pub async fn send_qr(pool: &MySqlPool, order: &Order) -> Result<(), SendReceiptEmailError> {
+pub async fn send_qr(
+    pool: &MySqlPool,
+    mail_manager: Arc<Box<dyn MailManager>>,
+    order: &Order,
+) -> Result<(), SendReceiptEmailError> {
     let to: Mailbox = order
         .user_email
         .clone()
@@ -73,14 +79,6 @@ Reçu: {}",
         .subject("Merci pour votre commande")
         .multipart(MultiPart::mixed().singlepart(body).singlepart(attachment))
         .map_err(ServerError::EmailBuild)?;
-    // Open a remote connection to gmail using STARTTLS
-    let mailer: AsyncSmtpTransport<Tokio1Executor> =
-        AsyncSmtpTransport::<Tokio1Executor>::starttls_relay("smtp.gmail.com")
-            .unwrap()
-            .credentials(Credentials::new(creds.0, creds.1))
-            .build();
-
-    // Send the email
-    mailer.send(email).await.map_err(ServerError::EmailSend)?;
+    mail_manager.send_mail(email).await?;
     Ok(())
 }

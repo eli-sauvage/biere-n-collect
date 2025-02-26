@@ -13,14 +13,14 @@ use std::sync::Arc;
 pub struct InnerState {
     pub challenge_manager: ChallengeManager,
     pub pool: MySqlPool,
-    pub mail_manager: Box<dyn MailManager>,
+    pub mail_manager: Arc<Box<dyn MailManager>>,
 }
 pub type AppState = Arc<InnerState>;
 
 pub fn generate_app_state(
     challenge_manager: ChallengeManager,
     pool: MySqlPool,
-    mail_manager: Box<dyn MailManager>,
+    mail_manager: Arc<Box<dyn MailManager>>,
 ) -> AppState {
     Arc::new(InnerState {
         challenge_manager,
