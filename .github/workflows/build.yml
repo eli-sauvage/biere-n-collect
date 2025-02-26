@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: copy env template
         run: cp .env.template .env
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: copy env template
         run: cp .env.template .env
@@ -58,7 +58,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: copy env template
         run: cp .env.template .env
@@ -67,7 +67,7 @@ jobs:
         uses: xom9ikk/dotenv@v2.3.0
 
       - name: Download the saved Docker image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: release-image
           path: ./release-image

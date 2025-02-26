@@ -1,1 +1,1 @@
-docker compose -f compose.test.yml up --remove-orphans --build test-back
+docker compose -f compose.test.yml run --remove-orphans --build test-back
