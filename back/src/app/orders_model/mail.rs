@@ -1,4 +1,4 @@
-use std::{env, sync::Arc};
+use std::sync::Arc;
 
 use image::{codecs::png, ImageEncoder, Luma};
 use lettre::{
@@ -14,13 +14,6 @@ use crate::{
 
 use super::orders::Order;
 
-type SmtpUsername = String;
-type SmtpPassword = String;
-fn get_smtp_credentials() -> (SmtpUsername, SmtpPassword) {
-    let smtp_username = env::var("SMTP_USERNAME").expect("env var SMTP_USERNAME not found");
-    let smtp_password = env::var("SMTP_PASSWORD").expect("env var SMTP_PASSWORD not found");
-    (smtp_username, smtp_password)
-}
 pub async fn send_qr(
     pool: &MySqlPool,
     mail_manager: Arc<Box<dyn MailManager>>,
@@ -71,11 +64,9 @@ Reçu: {}",
         order.get_full_price_ttc(pool).await? / 100,
         *receipt
     ));
-    let creds = get_smtp_credentials();
-    let from: Mailbox = creds.0.parse()?;
     let email = Message::builder()
-        .from(from)
         .to(to.clone())
+        .from(mail_manager.get_sender()?)
         .subject("Merci pour votre commande")
         .multipart(MultiPart::mixed().singlepart(body).singlepart(attachment))
         .map_err(ServerError::EmailBuild)?;

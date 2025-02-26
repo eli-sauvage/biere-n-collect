@@ -2,8 +2,8 @@ use std::env;
 
 use axum::async_trait;
 use lettre::{
-    transport::smtp::authentication::Credentials, AsyncSmtpTransport, AsyncTransport, Message,
-    Tokio1Executor,
+    message::Mailbox, transport::smtp::authentication::Credentials, AsyncSmtpTransport,
+    AsyncTransport, Message, Tokio1Executor,
 };
 
 use crate::errors::ServerError;
@@ -11,6 +11,7 @@ use crate::errors::ServerError;
 #[async_trait]
 pub trait MailManager: Send + Sync {
     async fn send_mail(&self, message: Message) -> Result<(), ServerError>;
+    fn get_sender(&self) -> Result<Mailbox, ServerError>;
 }
 
 pub struct GmailManager {}
@@ -29,6 +30,12 @@ impl MailManager for GmailManager {
         mailer.send(message).await?;
         Ok(())
     }
+    fn get_sender(&self) -> Result<Mailbox, ServerError> {
+        env::var("SMTP_USERNAME")
+            .unwrap_or("".into())
+            .parse()
+            .map_err(ServerError::EmailAddress)
+    }
 }
 
 #[cfg(test)]
@@ -46,5 +53,10 @@ impl MailManager for TestMailManager {
     async fn send_mail(&self, message: Message) -> Result<(), ServerError> {
         self.received_mail.write().await.push(message);
         Ok(())
+    }
+    fn get_sender(&self) -> Result<Mailbox, ServerError> {
+        String::from("test@example.com")
+            .parse()
+            .map_err(ServerError::EmailAddress)
     }
 }
