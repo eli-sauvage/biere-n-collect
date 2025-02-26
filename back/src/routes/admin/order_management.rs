@@ -25,6 +25,7 @@ pub fn get_router() -> Router<AppState> {
         .route("/by_receipt", get(get_by_receipt))
         .route("/search", get(search_orders))
         .route("/set_served", patch(set_served))
+        .route("/notify_client", patch(notify_client))
 }
 
 #[derive(Serialize)]
@@ -149,6 +150,26 @@ async fn set_served(
         .await?
         .ok_or_else(|| OrderManagementError::OrderNotFound)?;
     order.set_served(&state.pool, params.new_served).await?;
+
+    Ok(OkEmptyResponse::new())
+}
+
+#[derive(Deserialize)]
+struct NotifyClient {
+    order_id: OrderId,
+}
+async fn notify_client(
+    State(state): State<AppState>,
+    _user: User,
+    params: Query<NotifyClient>,
+) -> Result<OkEmptyResponse, OrderManagementError> {
+    let mut order = Order::get(&state.pool, params.order_id)
+        .await?
+        .ok_or_else(|| OrderManagementError::OrderNotFound)?;
+
+    order
+        .notify_client(&state.pool, state.mail_manager.clone())
+        .await?;
 
     Ok(OkEmptyResponse::new())
 }

@@ -43,6 +43,8 @@ pub enum OrderManagementError {
     InvalidDate,
     #[error("order not found")]
     OrderNotFound,
+    #[error("a notification for client <{0}> was requested but has already been sent")]
+    AlreadyNotified(String),
     #[error("server error")]
     ServerError(#[from] ServerError),
 }
@@ -52,7 +54,9 @@ impl IntoResponse for OrderManagementError {
             e.into_response()
         } else {
             let status = match self {
-                Self::InvalidDate | Self::OrderNotFound => StatusCode::BAD_REQUEST,
+                Self::InvalidDate | Self::OrderNotFound | Self::AlreadyNotified(_) => {
+                    StatusCode::BAD_REQUEST
+                }
                 Self::ServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             };
             (status, ErrorResponse::json(self.to_string())).into_response()

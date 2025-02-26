@@ -73,3 +73,36 @@ Reçu: {}",
     mail_manager.send_mail(email).await?;
     Ok(())
 }
+
+pub async fn send_notification(
+    mail_manager: Arc<Box<dyn MailManager>>,
+    order: &Order,
+) -> Result<(), SendReceiptEmailError> {
+    let to: Mailbox = order
+        .user_email
+        .clone()
+        .ok_or_else(|| SendReceiptEmailError::NoEmailAddress)?
+        .parse()?;
+
+    let receipt = order
+        .receipt
+        .clone()
+        .ok_or_else(|| SendReceiptEmailError::NoReceipt)?;
+
+    let body = SinglePart::plain(format!(
+        "Votre commande est prête !
+
+Vous pouvez venir la récupérer au bar dès maintenant.
+
+Reçu: {}",
+        *receipt
+    ));
+    let email = Message::builder()
+        .to(to.clone())
+        .from(mail_manager.get_sender()?)
+        .subject("Merci pour votre commande")
+        .singlepart(body)
+        .map_err(ServerError::EmailBuild)?;
+    mail_manager.send_mail(email).await?;
+    Ok(())
+}

@@ -15,7 +15,7 @@ use crate::{
             payment_intents::{PaymentIntent, PaymentIntentStatus},
         },
     },
-    errors::{OrderProcessError, ServerError},
+    errors::{OrderManagementError, OrderProcessError, ServerError},
     mail_manager::MailManager,
 };
 
@@ -50,6 +50,7 @@ pub struct Order {
     pub receipt: Option<Receipt>,
     pub payment_intent_id: String,
     pub served: bool,
+    pub client_notified: bool,
 }
 
 impl Order {
@@ -57,7 +58,7 @@ impl Order {
         cancel_expired_orders(pool);
         let order_opt = sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE id = ? AND expires > CURRENT_TIMESTAMP",
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE id = ? AND expires > CURRENT_TIMESTAMP",
             id
         )
         .fetch_optional(pool)
@@ -72,7 +73,7 @@ impl Order {
     ) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
            Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE client_secret = ? AND expires > CURRENT_TIMESTAMP",
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE client_secret = ? AND expires > CURRENT_TIMESTAMP",
             client_secret
         )
         .fetch_optional(pool)
@@ -86,7 +87,7 @@ impl Order {
     ) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\" from Orders WHERE receipt = ? AND expires > CURRENT_TIMESTAMP",
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE receipt = ? AND expires > CURRENT_TIMESTAMP",
             receipt
         )
         .fetch_optional(pool)
@@ -118,6 +119,34 @@ impl Order {
             &served.to_string(),
         )
         .await?;
+        Ok(())
+    }
+
+    pub async fn notify_client(
+        &mut self,
+        pool: &MySqlPool,
+        mail_manager: Arc<Box<dyn MailManager>>,
+    ) -> Result<(), OrderManagementError> {
+        if self.client_notified {
+            return Err(OrderManagementError::AlreadyNotified(
+                self.user_email
+                    .clone()
+                    .unwrap_or("<email unset>".to_string()),
+            ));
+        }
+        if let Err(e) = mail::send_notification(mail_manager, self).await {
+            eprintln!("error while sending receipt mail : {e:?}")
+        }
+        sqlx::query!(
+            "UPDATE Orders SET client_notified = ? WHERE id = ?",
+            true,
+            self.id
+        )
+        .execute(pool)
+        .await
+        .map_err(ServerError::Sqlx)?;
+        self.served = true;
+        stripe::api::push_metadata(&self.payment_intent_id, "client_notifié", "true").await?;
         Ok(())
     }
 
@@ -361,7 +390,7 @@ pub async fn search_orders(
     let orders = if let Some(date_end) = date_end {
         sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\"  from Orders
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\"  from Orders
             WHERE user_email LIKE CONCAT('%', ?, '%') AND receipt LIKE CONCAT('%', ?, '%') AND timestamp > ? AND timestamp < ? ORDER BY timestamp DESC",
             email.unwrap_or(""),
             receipt.unwrap_or(""),
@@ -371,7 +400,7 @@ pub async fn search_orders(
     } else {
         sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\"  from Orders
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\"  from Orders
             WHERE user_email LIKE CONCAT('%', ?, '%') AND receipt LIKE CONCAT('%', ?, '%') AND timestamp > ? ORDER BY timestamp DESC",
             email.unwrap_or(""),
             receipt.unwrap_or(""),
