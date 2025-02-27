@@ -85,13 +85,10 @@ const handleSubmit = async () => {
         },
     })
 
-    if (
-        error.message &&
-        (error.type === 'card_error' || error.type === 'validation_error')
-    ) {
-        new Error('erreur de paiement', error.message)
+    if (error.message) {
+        new Error('erreur de paiement', `${error.type || ''} ${error.message}`)
     } else {
-        new Error('erreur de paiement', 'erreur inattendue')
+        new Error('erreur de paiement', error.toString() || error.type)
     }
 
     isLoading.value = false
@@ -103,12 +100,7 @@ function return_home() {
 }
 </script>
 <template>
-    <Button
-        icon="pi pi-home"
-        severity="secondary"
-        class="return"
-        @click="return_home"
-    ></Button>
+    <Button icon="pi pi-home" severity="secondary" class="return" @click="return_home"></Button>
     <h1>Paiement</h1>
     <div class="form-container">
         <ProgressSpinner v-if="!is_component_mounted" style="display: block" />
@@ -117,14 +109,8 @@ function return_home() {
         <form id="payment-form" @submit.prevent="handleSubmit">
             <div id="link-authentication-element"></div>
             <div id="payment-element"></div>
-            <Button
-                v-if="is_component_mounted"
-                id="submit"
-                type="submit"
-                :disabled="isLoading"
-                :loading="isLoading"
-                :label="`Payer ${total_price}`"
-            />
+            <Button v-if="is_component_mounted" id="submit" type="submit" :disabled="isLoading" :loading="isLoading"
+                :label="`Payer ${total_price}`" />
         </form>
     </div>
 </template>
