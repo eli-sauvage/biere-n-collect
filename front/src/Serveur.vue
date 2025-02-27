@@ -268,6 +268,7 @@ const startSearch = async (e: Event) => {
     </Dialog>
     <Dialog
         modal
+        :draggable="false"
         header="Résultats de la recherche"
         v-model:visible="search_dialog_visible"
     >
@@ -277,6 +278,7 @@ const startSearch = async (e: Event) => {
                 :selected_order="order"
                 @click="select_order(order)"
             />
+            <span v-if="orders.length == 0">Aucune commande trouvée</span>
         </div>
     </Dialog>
 </template>

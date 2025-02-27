@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\"  from Orders\n            WHERE user_email LIKE CONCAT('%', ?, '%') AND receipt LIKE CONCAT('%', ?, '%') AND timestamp > ? ORDER BY timestamp DESC",
+  "query": "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE id = ? AND expires > CURRENT_TIMESTAMP",
   "describe": {
     "columns": [
       {
@@ -56,10 +56,19 @@
           "flags": "NOT_NULL",
           "max_size": 1
         }
+      },
+      {
+        "ordinal": 6,
+        "name": "client_notified!: bool",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL",
+          "max_size": 1
+        }
       }
     ],
     "parameters": {
-      "Right": 3
+      "Right": 1
     },
     "nullable": [
       false,
@@ -67,8 +76,9 @@
       true,
       true,
       false,
+      false,
       false
     ]
   },
-  "hash": "f9d41e22f90664cbbf0300f4eb9bbdcf87c7007916b92d7f773ad881f1e7e25d"
+  "hash": "c5b41a97a4173f6c2f222eb640171ab453137cb805449953e273d0c231163334"
 }
