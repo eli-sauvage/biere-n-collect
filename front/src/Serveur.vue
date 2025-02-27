@@ -14,6 +14,7 @@ import {
     get_order_by_receipt,
     set_served,
     type Order,
+    notify_client,
 } from './scripts/api/admin/order-management'
 import { f_price } from './scripts/utils'
 
@@ -38,6 +39,11 @@ let role: Ref<role> = ref(null)
 let orders: Ref<Order[]> = ref([])
 let selected_order: Ref<Order | null> = ref(null)
 
+const refresh_order = async () => {
+    if (selected_order.value == null) return
+    selected_order.value = await get_order_by_id(selected_order.value.id)
+}
+
 const select_order = (order: Order) => {
     search_dialog_visible.value = false
     selected_order.value = order
@@ -45,7 +51,13 @@ const select_order = (order: Order) => {
 const setServed = async (order: Order, served: boolean) => {
     let res = await set_served(order, served)
     if (!res) return
-    selected_order.value = null
+    await refresh_order()
+}
+
+const notifyClient = async (order: Order) => {
+    let res = await notify_client(order)
+    if (!res) return
+    await refresh_order()
 }
 
 const toggle_served = async () => {
@@ -232,15 +244,24 @@ const startSearch = async (e: Event) => {
                 severity="secondary"
             ></Button>
             <Button
-                label="fermer"
-                @click="selected_order = null"
-                severity="secondary"
-            ></Button>
-            <Button
                 v-if="!selected_order.served"
                 icon="pi pi-check"
                 label="Commande servie"
                 @click="setServed(selected_order, true)"
+                severity="secondary"
+            ></Button>
+        </div>
+        <div class="selected-order-footer">
+            <Button
+                label="Fermer"
+                @click="selected_order = null"
+                severity="secondary"
+            ></Button>
+            <Button
+                icon="pi pi-bell"
+                label="Notifier client"
+                :disabled="selected_order.client_notified"
+                @click="notifyClient(selected_order)"
                 severity="secondary"
             ></Button>
         </div>
@@ -278,6 +299,12 @@ const startSearch = async (e: Event) => {
 
 .close-selected-order-btn {
     margin-top: 20px;
+    display: flex;
+    justify-content: end;
+}
+
+.selected-order-footer {
+    margin-top: 5px;
     display: flex;
     justify-content: space-between;
 }

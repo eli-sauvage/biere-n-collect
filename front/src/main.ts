@@ -8,6 +8,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import PrimeVue from 'primevue/config'
 import Aura from '@primevue/themes/aura'
 import ToastService from 'primevue/toastservice'
+import Toast from 'primevue/toast'
 import ConfirmationService from 'primevue/confirmationservice'
 import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
@@ -90,9 +91,6 @@ app.use(PrimeVue, {
         },
     },
 })
-app.use(ConfirmationService)
-app.use(ToastService)
-app.mount('#app')
 
 app.component('Button', Button)
 app.component('ConfirmPopup', ConfirmPopup)
@@ -124,3 +122,8 @@ app.component('TabPanel', TabPanel)
 app.component('TabList', TabList)
 app.component('TabPanels', TabPanels)
 app.component('Drawer', Drawer)
+app.component('Toast', Toast)
+
+app.use(ConfirmationService)
+app.use(ToastService)
+app.mount('#app')

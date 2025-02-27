@@ -109,6 +109,7 @@ impl Order {
     }
 
     pub async fn set_served(&mut self, pool: &MySqlPool, served: bool) -> Result<(), ServerError> {
+        println!("set_served {} {}", self.id, served);
         sqlx::query!("UPDATE Orders SET served = ? WHERE id = ?", served, self.id)
             .execute(pool)
             .await?;
@@ -179,7 +180,7 @@ impl Order {
     ) -> Result<(), ServerError> {
         let receipt = Uuid::new_v4().to_string();
         sqlx::query!(
-            "UPDATE Orders SET receipt = ? WHERE id = ?",
+            "UPDATE Orders SET receipt = ?, expires = NULL WHERE id = ?",
             receipt,
             self.id
         )
@@ -391,7 +392,7 @@ pub async fn search_orders(
         sqlx::query_as!(
             Order,
             "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\"  from Orders
-            WHERE user_email LIKE CONCAT('%', ?, '%') AND receipt LIKE CONCAT('%', ?, '%') AND timestamp > ? AND timestamp < ? ORDER BY timestamp DESC",
+            WHERE receipt IS NOT NULL AND user_email LIKE CONCAT('%', ?, '%') AND receipt LIKE CONCAT('%', ?, '%') AND timestamp > ? AND timestamp < ? ORDER BY timestamp DESC",
             email.unwrap_or(""),
             receipt.unwrap_or(""),
             date_begin.unwrap_or(OffsetDateTime::UNIX_EPOCH),

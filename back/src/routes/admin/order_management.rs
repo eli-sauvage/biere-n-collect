@@ -33,6 +33,7 @@ pub struct OrderResponse {
     id: OrderId,
     receipt: Option<String>,
     served: bool,
+    client_notified: bool,
     #[serde(serialize_with = "serialize_time")]
     timestamp: OffsetDateTime,
     user_email: Option<String>,
@@ -49,6 +50,7 @@ impl OrderResponse {
             id: order.id,
             receipt: order.receipt.as_deref().cloned(),
             served: order.served,
+            client_notified: order.client_notified,
             timestamp: order.timestamp,
             user_email: order.user_email,
             detail: details,
