@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE id = ? AND expires > CURRENT_TIMESTAMP",
+  "query": "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE receipt = ? AND expires > CURRENT_TIMESTAMP OR expires IS NULL",
   "describe": {
     "columns": [
       {
@@ -80,5 +80,5 @@
       false
     ]
   },
-  "hash": "c5b41a97a4173f6c2f222eb640171ab453137cb805449953e273d0c231163334"
+  "hash": "ecbc112d8f5c88b26f8df9e94bc1c178655fb3507e582f132ef2dfad0d734645"
 }

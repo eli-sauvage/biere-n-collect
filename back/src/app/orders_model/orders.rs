@@ -58,7 +58,7 @@ impl Order {
         cancel_expired_orders(pool);
         let order_opt = sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE id = ? AND expires > CURRENT_TIMESTAMP",
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE id = ? AND expires > CURRENT_TIMESTAMP OR expires IS NULL",
             id
         )
         .fetch_optional(pool)
@@ -73,7 +73,7 @@ impl Order {
     ) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
            Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE client_secret = ? AND expires > CURRENT_TIMESTAMP",
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE client_secret = ? AND expires > CURRENT_TIMESTAMP OR expires IS NULL",
             client_secret
         )
         .fetch_optional(pool)
@@ -87,7 +87,7 @@ impl Order {
     ) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE receipt = ? AND expires > CURRENT_TIMESTAMP",
+            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE receipt = ? AND expires > CURRENT_TIMESTAMP OR expires IS NULL",
             receipt
         )
         .fetch_optional(pool)

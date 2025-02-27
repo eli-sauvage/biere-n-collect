@@ -24,7 +24,7 @@ WORKDIR /app/biere-n-collect/
 COPY back/Cargo.toml Cargo.toml
 COPY back/src/ src/
 
-#/!\ please make sure to run `cargo sqlx prepare` before
+#/!\ please make sure to run `cargo sqlx prepare -- --tests` before
 COPY back/.sqlx .sqlx
 COPY back/migrations migrations
 
