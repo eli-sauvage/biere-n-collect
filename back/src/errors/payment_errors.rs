@@ -10,12 +10,14 @@ use super::ServerError;
 pub enum PaymentIntentError {
     #[error("le bar est fermé! impossible de continuer")]
     BarIsClosed,
-    #[error("order with id {0} not found")]
+    #[error("la commande <id={0}> n'a pas été trouvée")]
     OrderNotFound(OrderId),
-    #[error("order not found from the given secrets")]
+    #[error("La commande n'a pas été trouvée à partir du token")]
     OrderNotFoundFromSecrets,
-    #[error("the receipt does not exist yet, please try again after paying")]
+    #[error("Le reçu n'a pas encore été crée, merci de réessayer après avoir payer")]
     NoReceipt,
+    #[error("Cette commande a déjà été payée")]
+    AlreadyPaid,
     #[error("server error")]
     ServerError(#[from] ServerError),
 }
@@ -29,6 +31,7 @@ impl IntoResponse for PaymentIntentError {
                     StatusCode::NOT_FOUND
                 }
                 Self::BarIsClosed => StatusCode::SERVICE_UNAVAILABLE,
+                Self::AlreadyPaid => StatusCode::BAD_REQUEST,
                 Self::ServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             };
             (status, Json(json!({"error": self.to_string()}))).into_response()

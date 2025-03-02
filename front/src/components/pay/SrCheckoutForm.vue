@@ -23,21 +23,33 @@ const email: Ref<string> = ref('')
 let stripe: Stripe
 let elements: StripeElements
 
+let loading_canceled = ref(false)
+
 onMounted(async () => {
     try {
         const publishableKey = await get_stripe_pub_key()
         if (publishableKey == null) return
         let config_res = await loadStripe(publishableKey)
         if (!config_res) {
+            loading_canceled.value = true
             return
         }
         stripe = config_res
 
         let parsed_order_id = parseInt(order_id as string)
-        if (typeof parsed_order_id != 'number' || Number.isNaN(parsed_order_id))
+        if (
+            typeof parsed_order_id != 'number' ||
+            Number.isNaN(parsed_order_id)
+        ) {
+            loading_canceled.value = true
             return
+        }
         let payment_infos = await get_payment_infos(parsed_order_id)
-        if (payment_infos == null) return
+        console.log(payment_infos)
+        if (payment_infos == null) {
+            loading_canceled.value = true
+            return
+        }
         client_secret.value = payment_infos.client_secret
         total_price.value = f_price(payment_infos.total_price)
 
@@ -100,17 +112,31 @@ function return_home() {
 }
 </script>
 <template>
-    <Button icon="pi pi-home" severity="secondary" class="return" @click="return_home"></Button>
+    <Button
+        icon="pi pi-home"
+        severity="secondary"
+        class="return"
+        @click="return_home"
+    ></Button>
     <h1>Paiement</h1>
     <div class="form-container">
-        <ProgressSpinner v-if="!is_component_mounted" style="display: block" />
-        <h2 v-else>Total à payer : {{ total_price }}</h2>
+        <ProgressSpinner
+            v-if="!(is_component_mounted || loading_canceled)"
+            style="display: block"
+        />
+        <h2 v-if="is_component_mounted">Total à payer : {{ total_price }}</h2>
 
         <form id="payment-form" @submit.prevent="handleSubmit">
             <div id="link-authentication-element"></div>
             <div id="payment-element"></div>
-            <Button v-if="is_component_mounted" id="submit" type="submit" :disabled="isLoading" :loading="isLoading"
-                :label="`Payer ${total_price}`" />
+            <Button
+                v-if="is_component_mounted"
+                id="submit"
+                type="submit"
+                :disabled="isLoading"
+                :loading="isLoading"
+                :label="`Payer ${total_price}`"
+            />
         </form>
     </div>
 </template>

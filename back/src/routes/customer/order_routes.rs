@@ -88,6 +88,10 @@ async fn get_payment_infos(
         .get_payment_intent(&state.pool, state.mail_manager.clone())
         .await?;
 
+    if intent.status == PaymentIntentStatus::Succeeded {
+        return Err(PaymentIntentError::AlreadyPaid);
+    }
+
     Ok(Json(PaymentInfos {
         client_secret: intent.client_secret,
         total_price: intent.amount,
