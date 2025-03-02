@@ -18,6 +18,6 @@ repos:
       - id: sqlxprepare
         name: sqlx prepare
         description: Sqlx prepare for offline exec (pipeline)
-        entry: bash -c "docker compose up db -d && cd back && cargo sqlx prepare --check"
+        entry: bash -c "docker compose up db -d && cd back && cargo sqlx prepare --check -- --tests"
         pass_filenames: false
         language: system
