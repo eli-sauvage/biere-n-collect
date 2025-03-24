@@ -33,7 +33,6 @@ pub async fn create_payment_intent(amount: i64) -> Result<PaymentIntent, ServerE
     if response.status().is_success() {
         // Deserialize the response into the PaymentIntent struct
         let payment_intent: PaymentIntent = response.json().await?;
-        println!("Payment Intent created: {:?}", payment_intent);
         Ok(payment_intent)
     } else {
         // If the request failed, print the status and body

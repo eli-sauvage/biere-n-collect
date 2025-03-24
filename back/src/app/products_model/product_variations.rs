@@ -1,6 +1,6 @@
 use crate::errors::ServerError;
 use serde::Serialize;
-use sqlx::MySqlPool;
+use sqlx::SqlitePool;
 
 #[derive(Debug, Serialize)]
 pub struct Variation {
@@ -14,26 +14,39 @@ pub struct Variation {
 }
 
 impl Variation {
-    pub async fn get(pool: &MySqlPool, id: u32) -> Result<Option<Variation>, ServerError> {
-        let res = sqlx::query_as!(
-            Variation,
-            "SELECT id, name, price_ht, tva, product_id, volume, available_to_order as \"available_to_order: bool\" FROM ProductVariations WHERE id = ?",
-            id
-        )
-        .fetch_optional(pool)
-        .await?;
+    pub async fn get(pool: &SqlitePool, id: u32) -> Result<Option<Variation>, ServerError> {
+        let res = sqlx::query!("SELECT * FROM ProductVariations WHERE id = ?", id)
+            .fetch_optional(pool)
+            .await?
+            .map(|r| Variation {
+                id: r.id as u32,
+                name: r.name,
+                product_id: r.product_id as u32,
+                price_ht: r.price_ht as i32,
+                tva: r.tva as f32,
+                volume: r.volume as f32,
+                available_to_order: r.available_to_order,
+            });
         Ok(res)
     }
-    pub async fn get_all(pool: &MySqlPool) -> Result<Vec<Variation>, ServerError> {
-        let res = sqlx::query_as!(
-            Variation,
-            "SELECT id, name, price_ht, tva, product_id, volume, available_to_order as \"available_to_order: bool\" FROM ProductVariations"
-        ).fetch_all(pool)
-            .await?;
-        Ok(res)
+    pub async fn get_all(pool: &SqlitePool) -> Result<Vec<Variation>, ServerError> {
+        let res = sqlx::query!("SELECT * FROM ProductVariations")
+            .fetch_all(pool)
+            .await?
+            .into_iter()
+            .map(|r| Variation {
+                id: r.id as u32,
+                name: r.name,
+                product_id: r.product_id as u32,
+                price_ht: r.price_ht as i32,
+                tva: r.tva as f32,
+                volume: r.volume as f32,
+                available_to_order: r.available_to_order,
+            });
+        Ok(res.collect())
     }
 
-    pub async fn delete(self, pool: &MySqlPool) -> Result<(), ServerError> {
+    pub async fn delete(self, pool: &SqlitePool) -> Result<(), ServerError> {
         sqlx::query!("DELETE FROM ProductVariations WHERE id = ?", self.id)
             .execute(pool)
             .await?;
@@ -42,7 +55,7 @@ impl Variation {
 
     pub async fn set_price_ht(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         new_price_ht: i32,
     ) -> Result<(), ServerError> {
         sqlx::query!(
@@ -56,7 +69,7 @@ impl Variation {
         Ok(())
     }
 
-    pub async fn set_tva(&mut self, pool: &MySqlPool, new_tva: f32) -> Result<(), ServerError> {
+    pub async fn set_tva(&mut self, pool: &SqlitePool, new_tva: f32) -> Result<(), ServerError> {
         sqlx::query!(
             "UPDATE ProductVariations SET tva = ? WHERE id = ?",
             new_tva,
@@ -70,7 +83,7 @@ impl Variation {
 
     pub async fn set_name(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         new_name: String,
     ) -> Result<(), ServerError> {
         sqlx::query!(
@@ -85,7 +98,7 @@ impl Variation {
     }
     pub async fn set_volume(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         new_volume: f32,
     ) -> Result<(), ServerError> {
         sqlx::query!(
@@ -100,7 +113,7 @@ impl Variation {
     }
     pub async fn set_available_to_order(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         new_available_to_order: bool,
     ) -> Result<(), ServerError> {
         sqlx::query!(

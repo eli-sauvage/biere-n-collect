@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use serde::Serialize;
-use sqlx::MySqlPool;
+use sqlx::SqlitePool;
 use tokio::task::JoinSet;
 
 use crate::{
@@ -20,7 +20,7 @@ pub struct ReportItem {
 }
 
 pub async fn process_orders_to_report(
-    pool: &MySqlPool,
+    pool: &SqlitePool,
     orders: Vec<Order>,
 ) -> Result<Report, ServerError> {
     let mut unique_items: HashMap<String, ReportItem> = HashMap::new();

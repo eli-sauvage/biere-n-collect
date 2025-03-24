@@ -1,14 +1,13 @@
 use core::fmt;
 use serde::{de, Deserialize, Deserializer, Serializer};
-use sqlx::{migrate, mysql::MySqlPoolOptions, types::time::OffsetDateTime, MySqlPool};
+use sqlx::{migrate, sqlite::SqlitePoolOptions, types::time::OffsetDateTime, SqlitePool};
 use std::{env, str::FromStr};
 
 pub static MIGRATOR: migrate::Migrator = sqlx::migrate!("./migrations");
 
-pub async fn setup_db_and_migrate() -> MySqlPool {
+pub async fn setup_db_and_migrate() -> SqlitePool {
     for env_name in [
-        "MARIADB_PASSWORD",
-        "MARIADB_HOST",
+        "DATABASE_URL",
         "SMTP_USERNAME",
         "SMTP_PASSWORD",
         "VITE_BAR_NAME",
@@ -20,12 +19,11 @@ pub async fn setup_db_and_migrate() -> MySqlPool {
             panic!("env var {env_name} is empty");
         }
     }
-    let db_password = env::var("MARIADB_PASSWORD").expect("db password is not set in environment");
-    let db_host = env::var("MARIADB_HOST").expect("mariadb host is not set in environment");
+    let db_url = env::var("DATABASE_URL").unwrap();
 
-    let pool = match MySqlPoolOptions::new()
+    let pool = match SqlitePoolOptions::new()
         .max_connections(20)
-        .connect(format!("mysql://app:{db_password}@{db_host}:3306/biere-n-collect").as_str())
+        .connect(&db_url)
         .await
     {
         Ok(pool) => pool,

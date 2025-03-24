@@ -5,7 +5,7 @@ use lettre::{
     message::{Attachment, Mailbox, MultiPart, SinglePart},
     Message,
 };
-use sqlx::MySqlPool;
+use sqlx::SqlitePool;
 
 use crate::{
     errors::{SendReceiptEmailError, ServerError},
@@ -15,7 +15,7 @@ use crate::{
 use super::orders::Order;
 
 pub async fn send_qr(
-    pool: &MySqlPool,
+    pool: &SqlitePool,
     mail_manager: Arc<Box<dyn MailManager>>,
     order: &Order,
 ) -> Result<(), SendReceiptEmailError> {

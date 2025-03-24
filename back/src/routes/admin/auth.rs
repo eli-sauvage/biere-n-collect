@@ -53,7 +53,6 @@ async fn delete_current(
     State(state): State<AppState>,
     cookie_jar: CookieJar,
 ) -> Result<OkEmptyResponse, SessionError> {
-    println!("delete");
     let session = cookie_jar
         .get("session")
         .ok_or_else(|| SessionError::SessionNotFound)?

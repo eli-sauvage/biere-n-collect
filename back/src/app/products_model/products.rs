@@ -1,6 +1,6 @@
 use crate::errors::ServerError;
 use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
+use sqlx::SqlitePool;
 
 use crate::app::product_variations::Variation;
 
@@ -15,7 +15,7 @@ pub struct Product {
 
 impl Product {
     pub async fn create(
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         name: String,
         description: String,
         stock_quantity: f32,
@@ -35,17 +35,17 @@ impl Product {
         )
         .execute(pool)
         .await?
-        .last_insert_id() as u32;
+        .last_insert_rowid();
 
         Ok(Product {
-            id,
+            id: id as u32,
             name,
             description,
             stock_quantity,
             variations: vec![],
         })
     }
-    pub async fn get(pool: &MySqlPool, id: u32) -> Result<Option<Product>, ServerError> {
+    pub async fn get(pool: &SqlitePool, id: u32) -> Result<Option<Product>, ServerError> {
         let res_prod = sqlx::query!(
             "SELECT id, name, description, stock_quantity FROM Products WHERE id = ?",
             id
@@ -53,28 +53,35 @@ impl Product {
         .fetch_optional(pool)
         .await?;
         if let Some(prod) = res_prod {
-            let variations = sqlx::query_as!(
-                Variation,
-                "SELECT id, name, price_ht, tva, volume, product_id,
-                available_to_order as \"available_to_order: bool\"
-                FROM ProductVariations WHERE product_id = ?",
+            let variations = sqlx::query!(
+                "SELECT * FROM ProductVariations WHERE product_id = ?",
                 prod.id
             )
             .fetch_all(pool)
-            .await?;
+            .await?
+            .into_iter()
+            .map(|r| Variation {
+                id: r.id as u32,
+                available_to_order: r.available_to_order,
+                name: r.name,
+                product_id: r.product_id as u32,
+                price_ht: r.price_ht as i32,
+                tva: r.tva as f32,
+                volume: r.volume as f32,
+            });
             Ok(Some(Product {
-                id: prod.id,
+                id: prod.id as u32,
                 name: prod.name,
                 description: prod.description,
-                stock_quantity: prod.stock_quantity,
-                variations,
+                stock_quantity: prod.stock_quantity as f32,
+                variations: variations.collect(),
             }))
         } else {
             Ok(None)
         }
     }
 
-    pub async fn delete(self, pool: &MySqlPool) -> Result<(), ServerError> {
+    pub async fn delete(self, pool: &SqlitePool) -> Result<(), ServerError> {
         for variation in self.variations {
             variation.delete(pool).await?;
         }
@@ -84,7 +91,7 @@ impl Product {
         Ok(())
     }
 
-    pub async fn get_position(&self, pool: &MySqlPool) -> Result<u16, ServerError> {
+    pub async fn get_position(&self, pool: &SqlitePool) -> Result<i64, ServerError> {
         let pos = sqlx::query!("SELECT position FROM Products WHERE id = ?", self.id)
             .fetch_one(pool)
             .await?
@@ -93,7 +100,7 @@ impl Product {
     }
     pub async fn set_name(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         new_name: String,
     ) -> Result<(), ServerError> {
         sqlx::query!(
@@ -108,7 +115,7 @@ impl Product {
     }
     pub async fn set_description(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         new_description: String,
     ) -> Result<(), ServerError> {
         sqlx::query!(
@@ -123,7 +130,7 @@ impl Product {
     }
     pub async fn set_stock_quantity(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         new_stock_quantity: f32,
     ) -> Result<(), ServerError> {
         sqlx::query!(
@@ -139,7 +146,7 @@ impl Product {
 
     pub async fn add_variation(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         name: String,
         price_ht: i32,
         tva: f32,
@@ -158,10 +165,10 @@ impl Product {
         )
         .execute(pool)
         .await?
-        .last_insert_id() as u32;
+        .last_insert_rowid();
 
         self.variations.push(Variation {
-            id: variation_id,
+            id: variation_id as u32,
             name,
             price_ht,
             tva,
@@ -175,7 +182,7 @@ impl Product {
 
     pub async fn delete_variation(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         variation_id: u32,
     ) -> Result<(), ServerError> {
         if let Some(variation_index) = self.variations.iter().position(|v| v.id == variation_id) {
@@ -199,7 +206,7 @@ pub enum MoveDirection {
 impl Product {
     pub async fn move_product(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         direction: MoveDirection,
     ) -> Result<(), ServerError> {
         let max_pos = sqlx::query!("SELECT MAX(position) as max_pos FROM Products",)
@@ -239,7 +246,7 @@ impl Product {
     }
 }
 
-pub async fn get_all(pool: &MySqlPool) -> Result<Vec<Product>, ServerError> {
+pub async fn get_all(pool: &SqlitePool) -> Result<Vec<Product>, ServerError> {
     let prods = sqlx::query!(
         "SELECT id, name, description, stock_quantity
         FROM Products ORDER BY position"
@@ -248,21 +255,28 @@ pub async fn get_all(pool: &MySqlPool) -> Result<Vec<Product>, ServerError> {
     .await?;
     let mut res: Vec<Product> = vec![];
     for prod in prods {
-        let variations = sqlx::query_as!(
-            Variation,
-            "SELECT id, name, price_ht, tva, volume, product_id, 
-            available_to_order as \"available_to_order: bool\"
-            FROM ProductVariations WHERE product_id = ?",
+        let variations = sqlx::query!(
+            "SELECT * FROM ProductVariations WHERE product_id = ?",
             prod.id
         )
         .fetch_all(pool)
-        .await?;
+        .await?
+        .into_iter()
+        .map(|r| Variation {
+            id: r.id as u32,
+            available_to_order: r.available_to_order,
+            name: r.name,
+            product_id: r.product_id as u32,
+            price_ht: r.price_ht as i32,
+            tva: r.tva as f32,
+            volume: r.volume as f32,
+        });
         res.push(Product {
-            id: prod.id,
+            id: prod.id as u32,
             name: prod.name,
             description: prod.description,
-            stock_quantity: prod.stock_quantity,
-            variations,
+            stock_quantity: prod.stock_quantity as f32,
+            variations: variations.collect(),
         });
     }
     Ok(res)

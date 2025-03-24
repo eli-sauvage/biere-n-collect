@@ -1,7 +1,7 @@
 use axum::{async_trait, extract::FromRequestParts, http::request::Parts};
 use axum_extra::extract::CookieJar;
 use serde::{Deserialize, Serialize, Serializer};
-use sqlx::MySqlPool;
+use sqlx::SqlitePool;
 
 use crate::{
     errors::{ServerError, UserManagementError, UserParseError},
@@ -36,7 +36,7 @@ where
 
 impl User {
     pub async fn create(
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         email: &str,
         role: Role,
     ) -> Result<User, UserManagementError> {
@@ -48,7 +48,7 @@ impl User {
             .execute(pool)
             .await
             .map_err(ServerError::Sqlx)?
-            .last_insert_id() as u32;
+            .last_insert_rowid() as u32;
         Ok(User {
             id,
             email: email.to_owned(),
@@ -57,7 +57,7 @@ impl User {
         })
     }
 
-    pub async fn get_all(pool: &MySqlPool) -> Result<Vec<User>, ServerError> {
+    pub async fn get_all(pool: &SqlitePool) -> Result<Vec<User>, ServerError> {
         let record = sqlx::query!("SELECT id, email, role as \"role: Role\" FROM Users")
             .fetch_all(pool)
             .await?;
@@ -71,7 +71,7 @@ impl User {
                     .cloned()
                     .collect();
                 User {
-                    id: r.id,
+                    id: r.id as u32,
                     email: r.email,
                     role: r.role,
                     active_sessions: sessions,
@@ -82,7 +82,7 @@ impl User {
     }
 
     pub async fn get_from_email(
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         email: &str,
     ) -> Result<Option<User>, ServerError> {
         let user_opt = sqlx::query!(
@@ -94,7 +94,7 @@ impl User {
         let active_sessions = Session::get_all_sessions_for_email(pool, email).await?;
 
         let user_opt = user_opt.map(|user| User {
-            id: user.id,
+            id: user.id as u32,
             email: user.email,
             role: user.role,
             active_sessions,
@@ -102,7 +102,7 @@ impl User {
         Ok(user_opt)
     }
 
-    pub async fn get_from_uuid(pool: &MySqlPool, uuid: &str) -> Result<Option<User>, ServerError> {
+    pub async fn get_from_uuid(pool: &SqlitePool, uuid: &str) -> Result<Option<User>, ServerError> {
         let email_record = match sqlx::query!(
             "SELECT email FROM Users INNER JOIN Sessions ON Sessions.user_id = Users.id WHERE uuid = ?",
             uuid
@@ -116,7 +116,7 @@ impl User {
         User::get_from_email(pool, &email_record.email).await
     }
 
-    pub async fn update_role(self, pool: &MySqlPool, new_role: Role) -> Result<(), ServerError> {
+    pub async fn update_role(self, pool: &SqlitePool, new_role: Role) -> Result<(), ServerError> {
         sqlx::query!(
             "UPDATE Users SET role = ? WHERE email = ?",
             new_role,
@@ -127,7 +127,7 @@ impl User {
         Ok(())
     }
 
-    pub async fn delete(self, pool: &MySqlPool) -> Result<(), ServerError> {
+    pub async fn delete(self, pool: &SqlitePool) -> Result<(), ServerError> {
         sqlx::query!("DELETE FROM Users WHERE email = ?", self.email)
             .execute(pool)
             .await
@@ -182,7 +182,7 @@ impl std::ops::Deref for AdminUser {
 }
 
 #[sqlx::test]
-async fn test_user_create_update_role_delete(pool: MySqlPool) {
+async fn test_user_create_update_role_delete(pool: SqlitePool) {
     let email = "user@example.com";
     let role = Role::Admin;
     let user = User::create(&pool, email, role).await.unwrap();
@@ -200,7 +200,7 @@ async fn test_user_create_update_role_delete(pool: MySqlPool) {
 }
 
 #[sqlx::test]
-async fn test_user_duplicate(pool: MySqlPool) {
+async fn test_user_duplicate(pool: SqlitePool) {
     let email = "user@example.com";
     let role = Role::Admin;
     User::create(&pool, email, role).await.unwrap();
@@ -215,7 +215,7 @@ async fn test_user_duplicate(pool: MySqlPool) {
 }
 
 #[sqlx::test]
-async fn test_user_extractor(pool: MySqlPool) {
+async fn test_user_extractor(pool: SqlitePool) {
     use crate::{mail_manager::TestMailManager, routes::InnerState};
     use axum::http::StatusCode;
     use axum::{
@@ -273,7 +273,7 @@ async fn test_user_extractor(pool: MySqlPool) {
 }
 
 #[sqlx::test]
-async fn test_admin_extractor(pool: MySqlPool) {
+async fn test_admin_extractor(pool: SqlitePool) {
     use crate::{mail_manager::TestMailManager, routes::InnerState};
     use axum::http::StatusCode;
     use axum::{
