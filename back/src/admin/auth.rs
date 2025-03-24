@@ -1,6 +1,6 @@
 use crate::errors::{ServerError, SessionError};
 
-use sqlx::{types::time::OffsetDateTime, MySqlPool};
+use sqlx::{types::time::OffsetDateTime, SqlitePool};
 use std::time::Duration;
 
 use uuid::Uuid;
@@ -16,7 +16,7 @@ pub struct Session {
     pub uuid: String,
 }
 impl Session {
-    async fn delete_old_sessions(pool: &MySqlPool) -> Result<(), ServerError> {
+    async fn delete_old_sessions(pool: &SqlitePool) -> Result<(), ServerError> {
         sqlx::query!("DELETE FROM Sessions WHERE CURRENT_TIMESTAMP > expires")
             .execute(pool)
             .await
@@ -24,14 +24,14 @@ impl Session {
         Ok(())
     }
 
-    pub async fn delete_if_exists(pool: &MySqlPool, uuid: &str) -> Result<(), ServerError> {
+    pub async fn delete_if_exists(pool: &SqlitePool, uuid: &str) -> Result<(), ServerError> {
         sqlx::query!("DELETE FROM Sessions WHERE uuid = ?", uuid)
             .execute(pool)
             .await?;
         Ok(())
     }
 
-    pub async fn new(pool: &MySqlPool, email: String) -> Result<Session, SessionError> {
+    pub async fn new(pool: &SqlitePool, email: String) -> Result<Session, SessionError> {
         Session::delete_old_sessions(pool).await?;
         // Session::delete_if_exists(pool, &email).await?;
         let session = Session {
@@ -57,7 +57,7 @@ impl Session {
         Ok(session)
     }
 
-    pub async fn get_all(pool: &MySqlPool) -> Result<Vec<Session>, ServerError> {
+    pub async fn get_all(pool: &SqlitePool) -> Result<Vec<Session>, ServerError> {
         let sessions = sqlx::query_as!(Session, "SELECT email, expires, uuid FROM Sessions INNER JOIN Users ON Users.id = Sessions.user_id")
             .fetch_all(pool)
             .await?;
@@ -66,7 +66,7 @@ impl Session {
     }
 
     pub async fn get_all_sessions_for_email(
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         email: &str,
     ) -> Result<Vec<Session>, ServerError> {
         Session::delete_old_sessions(pool).await?;
@@ -83,7 +83,7 @@ impl Session {
 }
 
 #[sqlx::test]
-async fn test_new_session(pool: MySqlPool) {
+async fn test_new_session(pool: SqlitePool) {
     let email = "elicolh@gmail.com";
     let res = Session::new(&pool, email.into()).await.unwrap();
     assert_eq!(res.email, email);
@@ -97,16 +97,16 @@ async fn test_new_session(pool: MySqlPool) {
         .await
         .unwrap();
 
-    assert_eq!(session_in_db.user_id, user.id);
+    assert_eq!(session_in_db.user_id as u32, user.id);
     assert_eq!(session_in_db.uuid, res.uuid);
     assert_eq!(
-        session_in_db.expires,
+        session_in_db.expires.replace_millisecond(0).unwrap(),
         res.expires.replace_millisecond(0).unwrap() //sub second is kind of random ?
     );
 }
 
 #[sqlx::test]
-async fn test_new_session_for_non_existant_user(pool: MySqlPool) {
+async fn test_new_session_for_non_existant_user(pool: SqlitePool) {
     let res = Session::new(&pool, "test@example.com".into()).await;
     assert!(res.is_err());
     if let Err(SessionError::UserNotFound(email)) = res {
@@ -117,7 +117,7 @@ async fn test_new_session_for_non_existant_user(pool: MySqlPool) {
 }
 
 #[sqlx::test]
-async fn test_get_all(pool: MySqlPool) {
+async fn test_get_all(pool: SqlitePool) {
     let email = "elicolh@gmail.com";
     let session1 = Session::new(&pool, email.to_owned()).await.unwrap();
     let session2 = Session::new(&pool, email.to_owned()).await.unwrap();
@@ -129,13 +129,13 @@ async fn test_get_all(pool: MySqlPool) {
 }
 
 #[sqlx::test]
-async fn test_get_all_no_sessions(pool: MySqlPool) {
+async fn test_get_all_no_sessions(pool: SqlitePool) {
     let all_sessions = Session::get_all(&pool).await.unwrap();
     assert!(all_sessions.is_empty());
 }
 
 #[sqlx::test]
-async fn test_get_all_for_email(pool: MySqlPool) {
+async fn test_get_all_for_email(pool: SqlitePool) {
     let email1 = "elicolh@gmail.com";
     let email2 = "eli.sauvage@utt.fr";
     let session1 = Session::new(&pool, email1.to_owned()).await.unwrap();
@@ -149,7 +149,7 @@ async fn test_get_all_for_email(pool: MySqlPool) {
 }
 
 #[sqlx::test]
-async fn test_get_all_for_email_no_session(pool: MySqlPool) {
+async fn test_get_all_for_email_no_session(pool: SqlitePool) {
     let email1 = "elicolh@gmail.com";
     let email2 = "eli.sauvage@utt.fr";
     Session::new(&pool, email2.to_owned()).await.unwrap();
@@ -162,13 +162,13 @@ async fn test_get_all_for_email_no_session(pool: MySqlPool) {
 }
 
 #[sqlx::test]
-async fn delete_old_sessions_test(pool: MySqlPool) {
+async fn delete_old_sessions_test(pool: SqlitePool) {
     let email = "elicolh@gmail.com";
     let session1 = Session::new(&pool, email.to_owned()).await.unwrap();
     let session2 = Session::new(&pool, email.to_owned()).await.unwrap();
 
     sqlx::query!(
-        "UPDATE Sessions SET expires = CURRENT_TIMESTAMP - INTERVAL 1 MINUTE WHERE uuid = ?",
+        "UPDATE Sessions SET expires = datetime(CURRENT_TIMESTAMP, '-1 minute') WHERE uuid = ?",
         session1.uuid
     )
     .execute(&pool)
@@ -182,7 +182,7 @@ async fn delete_old_sessions_test(pool: MySqlPool) {
 }
 
 #[sqlx::test]
-async fn test_delete_if_exists(pool: MySqlPool) {
+async fn test_delete_if_exists(pool: SqlitePool) {
     let email = "elicolh@gmail.com";
     let session1 = Session::new(&pool, email.to_owned()).await.unwrap();
     let session2 = Session::new(&pool, email.to_owned()).await.unwrap();

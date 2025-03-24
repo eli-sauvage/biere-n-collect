@@ -1,6 +1,6 @@
 use lettre::{message::Mailbox, Message};
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use sqlx::{types::time::OffsetDateTime, MySqlPool};
+use sqlx::{types::time::OffsetDateTime, SqlitePool};
 use std::{collections::HashMap, env, time::Duration};
 use tokio::sync::RwLock;
 
@@ -39,7 +39,7 @@ impl ChallengeManager {
     }
     pub async fn create_challenge(
         &self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         email: &str,
     ) -> Result<Message, SessionError> {
         let mut challenges = self.challenges.write().await;

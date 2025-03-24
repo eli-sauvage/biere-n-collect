@@ -10,7 +10,7 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::{types::time::OffsetDateTime, MySqlPool};
+use sqlx::{types::time::OffsetDateTime, SqlitePool};
 
 use crate::{
     admin::user::User,
@@ -42,7 +42,7 @@ pub struct OrderResponse {
     total_price_ttc: i32,
 }
 impl OrderResponse {
-    pub async fn from_order(pool: &MySqlPool, order: Order) -> Result<Self, ServerError> {
+    pub async fn from_order(pool: &SqlitePool, order: Order) -> Result<Self, ServerError> {
         let details = order.get_details(pool).await?;
         let total_price_ht = order.get_full_price_ht(pool).await?;
         let total_price_ttc = order.get_full_price_ttc(pool).await?;
@@ -88,7 +88,6 @@ async fn search_orders(
         .map(|ts| OffsetDateTime::from_unix_timestamp(ts / 1000))
         .transpose()
         .map_err(|_| OrderManagementError::InvalidDate)?;
-    println!("begin = {date_begin:?}");
     let orders = orders::search_orders(
         &state.pool,
         params.email.as_deref(),

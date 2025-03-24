@@ -1,5 +1,5 @@
 use serde::Serialize;
-use sqlx::{types::time::OffsetDateTime, MySqlPool};
+use sqlx::{types::time::OffsetDateTime, SqlitePool};
 
 use crate::{errors::ServerError, utils::serialize_time};
 
@@ -11,7 +11,7 @@ pub struct Bar {
     pub closing_message: String,
 }
 impl Bar {
-    pub async fn get(pool: &MySqlPool) -> Result<Bar, ServerError> {
+    pub async fn get(pool: &SqlitePool) -> Result<Bar, ServerError> {
         let res = sqlx::query_as!(
             Bar,
             "SELECT is_open as \"is_open: bool\", open_since, closing_message FROM Bar"
@@ -21,7 +21,7 @@ impl Bar {
         Ok(res)
     }
 
-    pub async fn open(&mut self, pool: &MySqlPool) -> Result<(), ServerError> {
+    pub async fn open(&mut self, pool: &SqlitePool) -> Result<(), ServerError> {
         sqlx::query!("UPDATE Bar SET is_open = TRUE")
             .execute(pool)
             .await?;
@@ -34,7 +34,7 @@ impl Bar {
         Ok(())
     }
 
-    pub async fn close(&mut self, pool: &MySqlPool) -> Result<(), ServerError> {
+    pub async fn close(&mut self, pool: &SqlitePool) -> Result<(), ServerError> {
         sqlx::query!("UPDATE Bar SET is_open = FALSE")
             .execute(pool)
             .await?;
@@ -50,7 +50,7 @@ impl Bar {
 
     pub async fn set_closing_message(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         msg: String,
     ) -> Result<(), ServerError> {
         sqlx::query!("UPDATE Bar SET closing_message = ?", msg)
@@ -68,7 +68,7 @@ pub struct BarOpening {
     #[serde(serialize_with = "serialize_time")]
     end: OffsetDateTime,
 }
-pub async fn get_bar_openings(pool: &MySqlPool) -> Result<Vec<BarOpening>, ServerError> {
+pub async fn get_bar_openings(pool: &SqlitePool) -> Result<Vec<BarOpening>, ServerError> {
     let res = sqlx::query!("SELECT begin, end FROM BarOpenings")
         .fetch_all(pool)
         .await?;
@@ -82,7 +82,7 @@ pub async fn get_bar_openings(pool: &MySqlPool) -> Result<Vec<BarOpening>, Serve
 }
 
 #[sqlx::test]
-async fn test_bar_open_close(pool: MySqlPool) {
+async fn test_bar_open_close(pool: SqlitePool) {
     let mut bar = Bar::get(&pool).await.unwrap();
     bar.open(&pool).await.unwrap();
     assert!(bar.is_open);
@@ -105,7 +105,7 @@ async fn test_bar_open_close(pool: MySqlPool) {
 }
 
 #[sqlx::test]
-async fn test_closing_message(pool: MySqlPool) {
+async fn test_closing_message(pool: SqlitePool) {
     let mut bar = Bar::get(&pool).await.unwrap();
     let messages = vec![
         "bar fermé",
@@ -129,7 +129,7 @@ async fn test_closing_message(pool: MySqlPool) {
 }
 
 #[sqlx::test]
-async fn test_get_openings(pool: MySqlPool) {
+async fn test_get_openings(pool: SqlitePool) {
     use std::time::Duration;
 
     let mut bar = Bar::get(&pool).await.unwrap();

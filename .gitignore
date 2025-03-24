@@ -9,4 +9,6 @@ compose.override.yml
 front/node_modules
 front/dist
 
+*.db
+
 .direnv/

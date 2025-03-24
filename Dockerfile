@@ -17,20 +17,22 @@ RUN npm run build
 
 FROM rust:1-bookworm AS builder-back
 
-ENV SQLX_OFFLINE true
 
 WORKDIR /app/biere-n-collect/
+
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+ARG DATABASE_FILE
 
 COPY back/Cargo.toml Cargo.toml
 COPY back/src/ src/
 
-#/!\ please make sure to run `cargo sqlx prepare -- --tests` before
-COPY back/.sqlx .sqlx
+COPY back/$DATABASE_FILE $DATABASE_FILE
 COPY back/migrations migrations
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/biere-n-collect/target \
-    cargo install --path .
+     cargo build --release && cp target/release/biere-n-collect biere-n-collect
 
 
 
@@ -43,8 +45,8 @@ RUN apt-get -y update &&  \
     -y ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder-back /usr/local/cargo/bin/biere-n-collect /usr/local/bin/biere-n-collect
+COPY --from=builder-back /app/biere-n-collect/biere-n-collect /app
 COPY --from=builder-front /app/dist/ dist/
 
-CMD ["biere-n-collect"]
+CMD ["/app/biere-n-collect"]
 

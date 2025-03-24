@@ -4,6 +4,8 @@ name: build docker image
 
 on:
   push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -19,7 +21,18 @@ jobs:
       - name: load dotenv file
         uses: xom9ikk/dotenv@v2.3.0
 
-      - name: build
+      - name: install sqlx-cli
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest,sqlx-cli
+
+      - name: migrate db
+        run: |
+          cd back
+          touch $DATABASE_FILE
+          cargo sqlx migrate run
+
+      - name: build and test
         run: |
           bash test.sh
 
@@ -34,6 +47,17 @@ jobs:
 
       - name: load dotenv file
         uses: xom9ikk/dotenv@v2.3.0
+
+      - name: install sqlx-cli
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest,sqlx-cli
+
+      - name: migrate db
+        run: |
+          cd back
+          touch back $DATABASE_FILE
+          cargo sqlx migrate run
 
       - name: build
         run: |

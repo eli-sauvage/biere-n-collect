@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use serde::{Deserialize, Serialize};
-use sqlx::{types::time::OffsetDateTime, MySql, MySqlPool, Transaction};
+use sqlx::{types::time::OffsetDateTime, Sqlite, SqlitePool, Transaction};
 use uuid::Uuid;
 
 use crate::{
@@ -19,7 +19,7 @@ use crate::{
     mail_manager::MailManager,
 };
 
-const ORDER_DURATION_MINUTES: u64 = 10 * 60;
+const ORDER_DURATION: Duration = Duration::from_secs(10 * 60 * 60);
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct CartElement {
@@ -32,7 +32,7 @@ pub struct Cart {
     pub elements: Vec<CartElement>,
 }
 
-pub type OrderId = u64;
+pub type OrderId = u32;
 #[derive(Serialize)]
 pub struct OrderDetailElement {
     pub item_name: String,
@@ -54,11 +54,11 @@ pub struct Order {
 }
 
 impl Order {
-    pub async fn get(pool: &MySqlPool, id: OrderId) -> Result<Option<Order>, ServerError> {
+    pub async fn get(pool: &SqlitePool, id: OrderId) -> Result<Option<Order>, ServerError> {
         cancel_expired_orders(pool);
         let order_opt = sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE id = ? AND (expires > CURRENT_TIMESTAMP OR expires IS NULL)",
+            "SELECT id as \"id: u32\", timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE id = ? AND (expires > CURRENT_TIMESTAMP OR expires IS NULL)",
             id
         )
         .fetch_optional(pool)
@@ -68,12 +68,12 @@ impl Order {
     }
 
     pub async fn get_from_client_secret(
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         client_secret: &str,
     ) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
            Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE client_secret = ? AND (expires > CURRENT_TIMESTAMP OR expires IS NULL)",
+            "SELECT id as \"id: u32\", timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE client_secret = ? AND (expires > CURRENT_TIMESTAMP OR expires IS NULL)",
             client_secret
         )
         .fetch_optional(pool)
@@ -82,12 +82,12 @@ impl Order {
     }
 
     pub async fn get_by_receipt(
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         receipt: &str,
     ) -> Result<Option<Order>, ServerError> {
         let order_opt = sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE receipt = ? AND (expires > CURRENT_TIMESTAMP OR expires IS NULL)",
+            "SELECT id as \"id: u32\", timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\" from Orders WHERE receipt = ? AND (expires > CURRENT_TIMESTAMP OR expires IS NULL)",
             receipt
         )
         .fetch_optional(pool)
@@ -95,7 +95,7 @@ impl Order {
         Ok(order_opt)
     }
 
-    pub async fn set_email(&mut self, pool: &MySqlPool, email: &str) -> Result<(), ServerError> {
+    pub async fn set_email(&mut self, pool: &SqlitePool, email: &str) -> Result<(), ServerError> {
         sqlx::query!(
             "UPDATE Orders SET user_email = ? WHERE id = ?",
             email,
@@ -108,7 +108,7 @@ impl Order {
         Ok(())
     }
 
-    pub async fn set_served(&mut self, pool: &MySqlPool, served: bool) -> Result<(), ServerError> {
+    pub async fn set_served(&mut self, pool: &SqlitePool, served: bool) -> Result<(), ServerError> {
         println!("set_served {} {}", self.id, served);
         sqlx::query!("UPDATE Orders SET served = ? WHERE id = ?", served, self.id)
             .execute(pool)
@@ -125,7 +125,7 @@ impl Order {
 
     pub async fn notify_client(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         mail_manager: Arc<Box<dyn MailManager>>,
     ) -> Result<(), OrderManagementError> {
         if self.client_notified {
@@ -153,29 +153,37 @@ impl Order {
 
     pub async fn get_details(
         &self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
     ) -> Result<Vec<OrderDetailElement>, ServerError> {
-        let detail = sqlx::query_as!(
-            OrderDetailElement,
+        let detail = sqlx::query!(
             "SELECT
                 item_name,
-                quantity,
-                tva,
-                unit_price_ht * quantity as \"subtotal_ht:i32\",
-                CAST(unit_price_ht * quantity * (1 + tva) as INT) as \"subtotal_ttc: i32\"
+                quantity as \"quantity: u32\",
+                tva as \"tva: f32\",
+                unit_price_ht as \"unit_price_ht: i32\"
             FROM OrderDetails
             WHERE order_id = ?
                 AND quantity != 0",
             self.id
         )
         .fetch_all(pool)
-        .await?;
+        .await?
+        .into_iter()
+        .map(|e| OrderDetailElement {
+            item_name: e.item_name,
+            quantity: e.quantity,
+            tva: e.tva,
+            subtotal_ht: e.unit_price_ht * e.quantity as i32,
+            subtotal_ttc: e.unit_price_ht * e.quantity as i32 * (1.0 + e.tva).round() as i32,
+        })
+        .collect();
+
         Ok(detail)
     }
 
     async fn mark_as_paid(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         mail_manager: Arc<Box<dyn MailManager>>,
     ) -> Result<(), ServerError> {
         let receipt = Uuid::new_v4().to_string();
@@ -199,7 +207,7 @@ impl Order {
         type ProductId = u32;
         type Volume = f32;
         let detail: Vec<(ProductId, Volume)> = sqlx::query!(
-            "SELECT product_id, quantity * variation_volume as \"volume: f32\"
+            "SELECT product_id as \"product_id: u32\", quantity, variation_volume as \"variation_volume: f32\"
             FROM OrderDetails
             WHERE order_id = ?",
             self.id
@@ -207,9 +215,9 @@ impl Order {
         .fetch_all(pool)
         .await?
         .into_iter()
-        .map(|r| (r.product_id, r.volume))
+        .map(|r| (r.product_id, r.quantity as f32 * r.variation_volume))
         .collect();
-        let mut pool_transaction: Transaction<'static, MySql> =
+        let mut pool_transaction: Transaction<'static, Sqlite> =
             pool.begin().await.map_err(ServerError::Sqlx)?;
 
         for (product_id, volume) in detail {
@@ -228,7 +236,7 @@ impl Order {
     }
 
     pub async fn generate_from_cart(
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         cart: Cart,
     ) -> Result<OrderId, OrderProcessError> {
         let products = products::get_all(pool).await?;
@@ -250,7 +258,6 @@ impl Order {
                 total_price += (variation.price_ht as f32 * (1f32 + variation.tva)) as i32
                     * cart_element.quantity as i32;
             } else {
-                println!("not enougn {} during {}", product.name, variation.name);
                 return Err(OrderProcessError::NotEnoughStock(
                     product.name.clone(),
                     product.id,
@@ -259,7 +266,7 @@ impl Order {
         }
 
         let payment_intent = stripe::api::create_payment_intent(total_price as i64).await?;
-        let expires = OffsetDateTime::now_utc() + Duration::from_secs(60 * ORDER_DURATION_MINUTES);
+        let expires = OffsetDateTime::now_utc() + ORDER_DURATION;
         let order_id = sqlx::query!(
             "INSERT INTO Orders (expires, payment_intent_id, client_secret) VALUES (?, ?, ?)",
             expires,
@@ -269,7 +276,7 @@ impl Order {
         .execute(pool)
         .await
         .map_err(ServerError::Sqlx)?
-        .last_insert_id();
+        .last_insert_rowid() as u32;
         stripe::api::push_metadata(&payment_intent.id, "order_id", &order_id.to_string()).await?;
         for cart_element in cart.elements.iter().filter(|e| e.quantity > 0) {
             let variation = variations
@@ -334,7 +341,7 @@ impl Order {
     }
     pub async fn get_payment_intent(
         &mut self,
-        pool: &MySqlPool,
+        pool: &SqlitePool,
         mail_manager: Arc<Box<dyn MailManager>>,
     ) -> Result<PaymentIntent, ServerError> {
         let intent = stripe::api::fetch_payment_intent(&self.payment_intent_id).await?;
@@ -349,7 +356,7 @@ impl Order {
         }
         Ok(intent)
     }
-    pub async fn get_full_price_ht(&self, pool: &MySqlPool) -> Result<i32, ServerError> {
+    pub async fn get_full_price_ht(&self, pool: &SqlitePool) -> Result<i32, ServerError> {
         let total = sqlx::query!(
             "SELECT cast(SUM(unit_price_ht * quantity) as int) as result
             FROM OrderDetails WHERE order_id = ?;",
@@ -364,7 +371,7 @@ impl Order {
             .ok_or(ServerError::Sqlx(sqlx::Error::RowNotFound))?;
         Ok(res as i32)
     }
-    pub async fn get_full_price_ttc(&self, pool: &MySqlPool) -> Result<i32, ServerError> {
+    pub async fn get_full_price_ttc(&self, pool: &SqlitePool) -> Result<i32, ServerError> {
         let total = sqlx::query!(
             "SELECT cast(SUM(unit_price_ht * (1 + tva) * quantity) as int) as result
             FROM OrderDetails WHERE order_id = ?;",
@@ -382,36 +389,39 @@ impl Order {
 }
 
 pub async fn search_orders(
-    pool: &MySqlPool,
+    pool: &SqlitePool,
     email: Option<&str>,
     date_begin: Option<OffsetDateTime>,
     date_end: Option<OffsetDateTime>,
     receipt: Option<&str>,
 ) -> Result<Vec<Order>, ServerError> {
+    let email = email.unwrap_or("");
+    let receipt = receipt.unwrap_or("");
+    let date_begin = date_begin.unwrap_or(OffsetDateTime::UNIX_EPOCH);
     let orders = if let Some(date_end) = date_end {
         sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\"  from Orders
+            "SELECT id as \"id: u32\", timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\"  from Orders
             WHERE receipt IS NOT NULL AND user_email LIKE CONCAT('%', ?, '%') AND receipt LIKE CONCAT('%', ?, '%') AND timestamp > ? AND timestamp < ? ORDER BY timestamp DESC",
-            email.unwrap_or(""),
-            receipt.unwrap_or(""),
-            date_begin.unwrap_or(OffsetDateTime::UNIX_EPOCH),
+            email,
+            receipt,
+            date_begin,
             date_end
         ).fetch_all(pool).await?
     } else {
         sqlx::query_as!(
             Order,
-            "SELECT id, timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\"  from Orders
+            "SELECT id as \"id: u32\", timestamp, user_email, receipt as \"receipt: Receipt\", payment_intent_id, served as \"served!: bool\", client_notified as \"client_notified!: bool\"  from Orders
             WHERE user_email LIKE CONCAT('%', ?, '%') AND receipt LIKE CONCAT('%', ?, '%') AND timestamp > ? ORDER BY timestamp DESC",
-            email.unwrap_or(""),
-            receipt.unwrap_or(""),
-            date_begin.unwrap_or(OffsetDateTime::UNIX_EPOCH),
+            email,
+            receipt,
+            date_begin,
         ).fetch_all(pool).await?
     };
     Ok(orders)
 }
 
-pub fn cancel_expired_orders(pool: &MySqlPool) {
+pub fn cancel_expired_orders(pool: &SqlitePool) {
     let pool = pool.to_owned();
     tokio::spawn(async move {
         let expired_payment_intents =
