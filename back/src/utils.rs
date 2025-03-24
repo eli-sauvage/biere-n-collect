@@ -6,12 +6,22 @@ use std::{env, str::FromStr};
 pub static MIGRATOR: migrate::Migrator = sqlx::migrate!("./migrations");
 
 pub async fn setup_db_and_migrate() -> MySqlPool {
+    for env_name in [
+        "MARIADB_PASSWORD",
+        "MARIADB_HOST",
+        "SMTP_USERNAME",
+        "SMTP_PASSWORD",
+        "VITE_BAR_NAME",
+    ] {
+        if env::var(env_name)
+            .expect("env var {env_name} not found")
+            .is_empty()
+        {
+            panic!("env var {env_name} is empty");
+        }
+    }
     let db_password = env::var("MARIADB_PASSWORD").expect("db password is not set in environment");
     let db_host = env::var("MARIADB_HOST").expect("mariadb host is not set in environment");
-
-    env::var("SMTP_USERNAME").expect("env var SMTP_USERNAME not found");
-    env::var("SMTP_PASSWORD").expect("env var SMTP_PASSWORD not found");
-    env::var("VITE_BAR_NAME").expect("env var VITE_BAR_NAME not found");
 
     let pool = match MySqlPoolOptions::new()
         .max_connections(20)
