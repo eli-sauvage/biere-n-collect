@@ -56,6 +56,13 @@ impl ChallengeManager {
             .chunks(2)
             .map(|chunk| chunk.concat())
             .collect::<Vec<String>>();
+
+        if cfg!(debug_assertions) {
+            println!(
+                "challenge created for user {email}, code is: {:?}",
+                code.join(" - ")
+            );
+        }
         let from: Mailbox = env::var("SMTP_USERNAME")
             .expect("could not find app email in env")
             .parse()?;

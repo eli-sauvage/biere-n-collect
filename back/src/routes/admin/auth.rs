@@ -78,7 +78,14 @@ async fn create_challenge(
         .challenge_manager
         .create_challenge(&state.pool, &params.email)
         .await?;
-    state.mail_manager.send_mail(message).await?;
+
+    match state.mail_manager.send_mail(message).await {
+        Ok(()) => {}
+        Err(e) if cfg!(not(debug_assertions)) => return Err(e.into()),
+        Err(_) => {
+            println!("could not send auth email, discarding error because we are in debug mode");
+        }
+    }
     Ok(OkEmptyResponse::new())
 }
 
