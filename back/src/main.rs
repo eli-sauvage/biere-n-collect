@@ -13,6 +13,7 @@ use mail_manager::{GmailManager, MailManager};
 use routes::generate_app_state;
 use std::sync::Arc;
 use tokio::signal;
+use tokio::sync::broadcast;
 use tower_http::services::{ServeDir, ServeFile};
 
 #[tokio::main]
@@ -21,7 +22,8 @@ async fn main() -> Result<(), ServerError> {
     let pool = utils::setup_db_and_migrate().await;
     let challenge_manager = ChallengeManager::new();
     let mail_manager: Arc<Box<dyn MailManager>> = Arc::new(Box::new(GmailManager {}));
-    let state = generate_app_state(challenge_manager, pool, mail_manager);
+    let (new_orders_channel, _) = broadcast::channel::<crate::app::orders::Order>(100);
+    let state = generate_app_state(challenge_manager, pool, mail_manager, new_orders_channel);
 
     let app = Router::new()
         .nest("/api", routes::customer::get_router())

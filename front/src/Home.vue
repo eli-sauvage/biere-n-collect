@@ -3,12 +3,8 @@ import { ref, type Ref, watch } from 'vue'
 
 import ProductVue from './components/ProductView.vue'
 import { Cart } from './scripts/cart'
-import {
-    get_bar_status,
-    get_available_products,
-    type BarStatus,
-    type Product,
-} from './scripts/api/products'
+import { type BarStatus, get_bar_status } from './scripts/api/bar-status'
+import { get_available_products, type Product } from './scripts/api/products'
 import CartView from './components/CartView.vue'
 
 let cart: Ref<Cart> = ref(new Cart([]))

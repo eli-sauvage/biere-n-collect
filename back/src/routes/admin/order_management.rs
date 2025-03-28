@@ -1,3 +1,5 @@
+use std::{convert::Infallible, time::Duration};
+
 use crate::{
     app::orders::{Order, OrderId},
     errors::ServerError,
@@ -6,6 +8,10 @@ use crate::{
 };
 use axum::{
     extract::State,
+    response::{
+        sse::{Event, KeepAlive},
+        Sse,
+    },
     routing::{get, patch},
     Json, Router,
 };
@@ -18,6 +24,11 @@ use crate::{
     errors::OrderManagementError,
     routes::AppState,
 };
+use futures_util::{
+    stream::{self, Stream},
+    FutureExt, TryStreamExt,
+};
+use tokio_stream::{wrappers::BroadcastStream, StreamExt as _};
 
 pub fn get_router() -> Router<AppState> {
     Router::new()
@@ -26,6 +37,7 @@ pub fn get_router() -> Router<AppState> {
         .route("/search", get(search_orders))
         .route("/set_served", patch(set_served))
         .route("/notify_client", patch(notify_client))
+        .route("/get_order_stream", get(sse_handler))
 }
 
 #[derive(Serialize)]
@@ -101,6 +113,44 @@ async fn search_orders(
         res.push(OrderResponse::from_order(&state.pool, order).await?);
     }
     Ok(Json(res))
+}
+
+async fn sse_handler(
+    State(state): State<AppState>,
+) -> Sse<impl Stream<Item = Result<Event, ServerError>>> {
+    let rx = state.new_orders_channel.subscribe();
+    let stream = BroadcastStream::new(rx);
+    let async_state = state.clone();
+    let stream = stream
+        .hen(async move |or| {
+            let state = async_state.clone();
+            OrderResponse::from_order(&state.pool, or.unwrap()).await
+        })
+        .map(|e| Ok(Event::default().data("a")));
+    /* let stream = stream.then(
+        async |item| {
+            let a = item.ok().map(|order| {
+                OrderResponse::from_order(&state.pool, order)
+                    .then(|or| Event::default().data(serde_json::to_string(&or.unwrap()).unwrap()))
+            });
+            a
+        }, /* .map(|order|OrderResponse::from_order(&state.pool, order).map(|order_res| Event::default().data(serde_json::to_string(&order_res.unwrap()).unwrap())
+               ,
+           ), */
+    ); */
+    /* let stream = stream::unfold((), move |_| async {
+        match rx.recv().await {
+            Ok(msg) => Some(
+                OrderResponse::from_order(&state.pool, msg)
+                    .await
+                    .and_then(|or| serde_json::to_string(&or).map_err(ServerError::SerdeJson))
+                    .map(|data| Event::default().data(data)),
+            ),
+            Err(_) => None,
+        }
+    }); */
+
+    Sse::new(stream).keep_alive(KeepAlive::default())
 }
 
 #[derive(Deserialize)]

@@ -20,7 +20,7 @@ export type Order = {
     detail: OrderDetailElement[]
 }
 
-export async function get_orders(
+export async function search_orders(
     email: string | null,
     date: [Date, Date] | null,
     receipt: string | null
@@ -36,6 +36,29 @@ export async function get_orders(
             return []
         } else {
             return res as Order[]
+        }
+    } catch (e: any) {
+        new Error(error_title, e.toString())
+        return []
+    }
+}
+
+export async function search_order_ids(
+    email: string | null,
+    date: [Date, Date] | null,
+    receipt: string | null
+): Promise<number[]> {
+    let url = `${base}/admin/orders/search_ids?email=${encodeURIComponent(email || '')}&date_begin=${date ? encodeURIComponent(date[0].getTime()) : ''}&date_end=${date ? encodeURIComponent(date[1].getTime()) : ''}&receipt=${encodeURIComponent(receipt || '')}`
+    let error_title = 'Erreur lors de la récupération des commandes'
+    try {
+        let res = await fetch(url, {
+            credentials: 'include',
+        }).then((e) => e.json())
+        if (res.error) {
+            new Error(error_title, res.error)
+            return []
+        } else {
+            return res as number[]
         }
     } catch (e: any) {
         new Error(error_title, e.toString())
