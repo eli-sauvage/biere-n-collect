@@ -35,6 +35,8 @@ impl IntoResponse for UserManagementError {
 
 #[derive(Error, Debug)]
 pub enum SessionError {
+    #[error("user {0} does not have an account")]
+    AccountNotFound(String),
     #[error("user {0} does not have a challenge")]
     ChallengeNotFound(String),
     #[error("session not found for current user")]
@@ -59,6 +61,7 @@ impl IntoResponse for SessionError {
         } else {
             let status = match &self {
                 Self::ChallengeNotFound(_)
+                | Self::AccountNotFound(_)
                 | Self::ChallengeExpired(_)
                 | Self::ChallengeFailed(_)
                 | Self::SessionNotFound

@@ -45,7 +45,7 @@ impl ChallengeManager {
         let mut challenges = self.challenges.write().await;
         User::get_from_email(pool, email)
             .await?
-            .ok_or_else(|| SessionError::ChallengeNotFound(email.to_owned()))?;
+            .ok_or_else(|| SessionError::AccountNotFound(email.to_owned()))?;
         let challenge = Challenge::new();
 
         let code = challenge
