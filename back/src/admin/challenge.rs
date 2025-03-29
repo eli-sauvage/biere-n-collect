@@ -71,20 +71,24 @@ impl ChallengeManager {
             .map(|e| format!("{e}/login?email={to}&code={}", code.join("")))
             .unwrap_or("".to_string());
         let email = Message::builder()
-        .from(from)
-        .to(to.clone())
-        .subject(format!("connexion à biere n collect pour le bar {}", env::var("VITE_BAR_NAME").unwrap_or("".into())))
-        .header(lettre::message::header::ContentType::TEXT_PLAIN)
-        .body(format!(
-            "Une tentative de connexion pour le compte
-            {to}
-            a été détéctée.
-            \n\nAfin de vous connecter, veuillez saisir le code \n{}\n dans l'invite.
-            Vous pouvez également cliquer sur le lien ci dessous :
-            {login_link}
-            \n\n\n--------\n\n<i>Ignorez ce message si vous n'êtes pas à l'origine de la connexion.</i>",
-            code.join(" - ")
-        )).map_err(ServerError::EmailBuild)?;
+            .from(from)
+            .to(to.clone())
+            .subject(format!(
+                "connexion à biere n collect pour le bar {}",
+                env::var("VITE_BAR_NAME").unwrap_or("".into())
+            ))
+            .header(lettre::message::header::ContentType::TEXT_PLAIN)
+            .body(format!(
+                "Une tentative de connexion pour le compte
+                {to}
+                a été détéctée.
+                \n\nAfin de vous connecter, veuillez saisir le code \n{}\n dans l'invite.
+                Vous pouvez également cliquer sur le lien ci dessous :
+                {login_link}
+                \n\n\n--------\n\n<i>Ignorez ce message si vous n'êtes pas à l'origine de la connexion.</i>",
+                code.join(" - ")
+            ))
+            .map_err(ServerError::EmailBuild)?;
 
         //doesn't matter if the user already has a challenge, we want it to be overwritten (new attempt)
         challenges.insert(to.to_string(), challenge);

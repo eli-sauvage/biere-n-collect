@@ -81,7 +81,8 @@ async fn create_challenge(
     match state.mail_manager.send_mail(message).await {
         Ok(()) => {}
         Err(e) if cfg!(not(debug_assertions)) => return Err(e.into()),
-        Err(_) => {
+        Err(e) => {
+            eprintln!("{e:?}");
             println!("could not send auth email, discarding error because we are in debug mode");
         }
     }
