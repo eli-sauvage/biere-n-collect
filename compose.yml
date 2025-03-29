@@ -6,6 +6,13 @@ services:
         - DATABASE_FILE=biere-n-collect.db
         - DATABASE_URL=sqlite:biere-n-collect.db
       context: .
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      timeout: 30s
+      interval: 1m
+      start_interval: 1s
+      start_period: 30s
+      retries: 3
     volumes:
       - ./.env:/app/.env
       - ./back/biere-n-collect.db:/app/biere-n-collect.db

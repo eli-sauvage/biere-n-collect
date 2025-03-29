@@ -42,7 +42,7 @@ WORKDIR /app
 
 RUN apt-get -y update &&  \ 
     apt-get install --no-install-recommends  \
-    -y ca-certificates && \
+    -y ca-certificates curl && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder-back /app/biere-n-collect/biere-n-collect /app
