@@ -27,3 +27,7 @@ image = { version = "0.25.2", default-features = false, features = ["png", "rayo
 
 [dev-dependencies]
 tower = { version = "0.5.1", features = ["util"] }
+
+[features]
+default = []
+local-smtp-testing = []

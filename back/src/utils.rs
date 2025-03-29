@@ -10,10 +10,11 @@ pub async fn setup_db_and_migrate() -> SqlitePool {
         "DATABASE_URL",
         "SMTP_USERNAME",
         "SMTP_PASSWORD",
+        "SMTP_SERVER",
         "VITE_BAR_NAME",
     ] {
         if env::var(env_name)
-            .expect("env var {env_name} not found")
+            .expect(&format!("env var {env_name} not found"))
             .is_empty()
         {
             panic!("env var {env_name} is empty");

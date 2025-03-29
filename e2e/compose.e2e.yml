@@ -1,0 +1,49 @@
+services:
+  test-back:
+    build:
+      context: ..
+      dockerfile: e2e/Dockerfile.e2e
+      args:
+        - DATABASE_FILE=biere-n-collect.db
+        - DATABASE_URL=sqlite:biere-n-collect.db
+    volumes:
+      - ../.env:/app/.env
+      - ../back/biere-n-collect.db:/app/biere-n-collect.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      timeout: 30s
+      interval: 1m
+      start_interval: 1s
+      start_period: 30s
+      retries: 3
+    ports:
+      - 8000:8000
+    environment:
+      - DATABASE_URL=sqlite:biere-n-collect.db
+    networks:
+      - e2e
+  mailer:
+    image: rnwood/smtp4dev
+    ports:
+      - 5000:80  # web interface
+    environment:
+      - ServerOptions__TlsMode=StartTls
+      - Serveroptions__HostName=localhost
+    networks:
+      - e2e
+  e2e:
+    build:
+      context: ..
+      dockerfile: e2e/Dockerfile.cypress
+    volumes:
+      - ./screenshots:/app/cypress/screenshots
+    environment:
+      - CYPRESS_SERVER_URL=http://test-back:8000
+    depends_on:
+      test-back:
+        condition: service_healthy
+    networks:
+      - e2e
+
+networks:
+  e2e:

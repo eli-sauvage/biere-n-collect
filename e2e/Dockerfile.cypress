@@ -1,0 +1,19 @@
+FROM node:20-bookworm AS builder-front
+
+ARG VITE_BAR_NAME
+ENV VITE_BAR_NAME=$VITE_BAR_NAME
+
+WORKDIR /app
+
+COPY front/package*.json .
+
+RUN npm i 
+
+
+RUN apt -y update &&  \ 
+    apt install -y libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth xvfb
+
+COPY front/ .
+
+CMD ["npx", "cypress", "run"]
+
