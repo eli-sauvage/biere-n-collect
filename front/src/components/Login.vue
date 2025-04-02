@@ -57,7 +57,7 @@ async function validate() {
 </script>
 
 <template>
-    <form class="container">
+    <form class="container" @submit.prevent>
         <div v-if="!challenge_created" class="email-container">
             <p>Entrez votre adresse mail :</p>
             <InputText

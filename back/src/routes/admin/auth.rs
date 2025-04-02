@@ -109,7 +109,7 @@ async fn verify_challenge(
         let cookie = Cookie::build(("session", session.uuid))
             .expires(session.expires)
             .path("/")
-            .secure(true);
+            .secure(!cfg!(feature = "local-smtp-testing"));
 
         let cookies = cookies.add(cookie);
         Ok(OkEmptyResponse::new_with_cookies(cookies))

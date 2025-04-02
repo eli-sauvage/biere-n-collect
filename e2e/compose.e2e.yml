@@ -20,15 +20,22 @@ services:
       - 8000:8000
     environment:
       - DATABASE_URL=sqlite:biere-n-collect.db
+      - SMTP_USERNAME=infos@bnc
+      - SMTP_PASSWORD=azerty # server panics if not present
+      - SMTP_HOST=mailer
+      - SMTP_PORT=25
+      - STRIPE_PUBLISHABLE_KEY=$STRIPE_PUBLISHABLE_KEY
+      - STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY
     networks:
       - e2e
   mailer:
     image: rnwood/smtp4dev
     ports:
       - 5000:80  # web interface
+      - 25:25  # web interface
     environment:
       - ServerOptions__TlsMode=StartTls
-      - Serveroptions__HostName=localhost
+      - Serveroptions__HostName=mailer
     networks:
       - e2e
   e2e:
@@ -37,13 +44,17 @@ services:
       dockerfile: e2e/Dockerfile.cypress
     volumes:
       - ./screenshots:/app/cypress/screenshots
+      - ./videos:/app/cypress/videos
     environment:
       - CYPRESS_SERVER_URL=http://test-back:8000
+      - CYPRESS_MAIL_API_URL=http://mailer:80
+      # - DEBUG=cypress:*
     depends_on:
+      mailer:
+        condition: service_started
       test-back:
         condition: service_healthy
     networks:
       - e2e
-
 networks:
   e2e:

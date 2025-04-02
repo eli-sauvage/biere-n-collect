@@ -24,15 +24,19 @@ ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 ARG DATABASE_FILE
 
-COPY back/Cargo.toml Cargo.toml
+RUN cargo init
+
+COPY back/Cargo.* .
+
+RUN cargo build --release
+
 COPY back/src/ src/
+
 
 COPY back/$DATABASE_FILE $DATABASE_FILE
 COPY back/migrations migrations
 
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/biere-n-collect/target \
-     cargo build --release --features local-smtp-testing && cp target/release/biere-n-collect biere-n-collect
+RUN cargo build --release --features local-smtp-testing && cp target/release/biere-n-collect biere-n-collect
 
 
 FROM debian:bookworm-slim

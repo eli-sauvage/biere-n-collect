@@ -31,20 +31,17 @@ impl MailManager for GmailManager {
         }
         #[cfg(feature = "local-smtp-testing")]
         {
+            let smtp_host = env::var("SMTP_HOST").unwrap();
             use lettre::transport::smtp::client::{Tls, TlsParameters};
-            let tls = TlsParameters::builder("localhost".to_string());
+            let tls = TlsParameters::builder(smtp_host.clone());
             // WARNING: making the TLS client accept any certificate is very unsafe and shouldn't be used in production.
             // #473 will allow configuring a custom root certificate.
             let tls = tls.dangerous_accept_invalid_certs(true);
             let tls = tls.build().unwrap();
 
-            mailer = AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous("localhost")
-                .port(25)
+            mailer = AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(smtp_host)
+                .port(env::var("SMTP_PORT").unwrap().parse().unwrap())
                 .tls(Tls::Required(tls))
-                .credentials(Credentials::new(
-                    "username".to_owned(),
-                    "password".to_owned(),
-                ))
                 .build();
         }
 

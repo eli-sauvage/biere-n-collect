@@ -15,6 +15,7 @@ beforeEach(() => {
 })
 describe('template spec', () => {
     it('passes', () => {
+        cy.open_bar_if_closed()
         cy.visit(Cypress.env('SERVER_URL'))
 
         cy.get('.add-and-price > :not(button[disabled])').as('product_count')
@@ -64,7 +65,7 @@ describe('template spec', () => {
 
         cy.get('.cart > .button > button').click()
 
-        cy.get('.form-container > h2', { timeout: 15000 }).then((total) => {
+        cy.get('.form-container > h2', { timeout: 60000 }).then((total) => {
             expect(
                 parseFloat(
                     total.text().replace('Total à payer :', '').replace('€', '')
@@ -78,11 +79,15 @@ describe('template spec', () => {
             ).to.eq(total_parsed)
         })
 
+        cy.wait(1000)
         cy.get('#link-authentication-element div iframe')
             .its('0.contentDocument.body')
             .should('not.be.empty')
             .then(cy.wrap)
             .find('input[name=email]', { timeout: 30000 })
+            .should('have.value', 'elicolh@gmail.com')
+            .wait(100)
+            .clear()
             .type('example@example.com')
         cy.get('#payment-element div iframe')
             .its('0.contentDocument.body')
@@ -98,6 +103,10 @@ describe('template spec', () => {
             .its('0.contentDocument.body')
             .find('input[name=cvc]')
             .type('123')
+        cy.get('#payment-element div iframe')
+            .its('0.contentDocument.body')
+            .find('select[name=country]')
+            .select('France')
 
         cy.get('button#submit').click()
 

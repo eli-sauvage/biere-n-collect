@@ -12,6 +12,8 @@ pub async fn setup_db_and_migrate() -> SqlitePool {
         "SMTP_PASSWORD",
         "SMTP_SERVER",
         "VITE_BAR_NAME",
+        "STRIPE_PUBLISHABLE_KEY",
+        "STRIPE_SECRET_KEY",
     ] {
         if env::var(env_name)
             .expect(&format!("env var {env_name} not found"))
