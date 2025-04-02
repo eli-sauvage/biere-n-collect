@@ -10,23 +10,23 @@ tokio = { version = "1.39", features = ["rt-multi-thread", "sync", "signal"] }
 dotenvy = "0.15.7"
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0.63"
-lettre = { version = "0.11.15", features = [
+lettre = { version = "0.11", features = [
     "tokio1-rustls-tls",
     "builder",
     "smtp-transport",
 ], default-features = false }
 rand = "0.8.5"
-uuid = { version = "1.10.0", features = ["v4"] }
+uuid = { version = "1.10", features = ["v4"] }
 reqwest = { version = "0.12", features = ["json"] }
-axum = { version = "0.7.5", features = ["query"] }
-tower-http = { version = "0.5.2", features = ["cors", "fs"] }
+axum = { version = "0.7", features = ["query"] }
+tower-http = { version = "0.5", features = ["cors", "fs"] }
 serde_json = "1.0"
-axum-extra = { version = "0.9.3", features = ["cookie"] }
-qrcode = { version = "0.14.1", features = ["svg", "image"], default-features = false }
-image = { version = "0.25.2", default-features = false, features = ["png", "rayon"] }
+axum-extra = { version = "0.9", features = ["cookie"] }
+qrcode = { version = "0.14", features = ["svg", "image"], default-features = false }
+image = { version = "0.25", default-features = false, features = ["png", "rayon"] }
 
 [dev-dependencies]
-tower = { version = "0.5.1", features = ["util"] }
+tower = { version = "0.5", features = ["util"] }
 
 [features]
 default = []
