@@ -1,3 +1,5 @@
+import { BrowserMultiFormatReader } from '@zxing/library'
+
 beforeEach(() => {
     // TODO: Remove once https://github.com/cypress-io/cypress/issues/23772 is complete
     cy.intercept('https://r.stripe.com/0', (req) => {
@@ -130,6 +132,61 @@ describe('template spec', () => {
             expect(parseFloat(total.text().replace('€', ''))).to.eq(
                 total_parsed
             )
+        })
+
+        cy.get('.qr-code').then(async (el) => {
+            let image = el.get()[0] as HTMLImageElement
+            const reader = new BrowserMultiFormatReader()
+            console.log(image)
+            let result = (await reader.decodeFromImageUrl(image.src)).getText()
+            let expected = image.alt
+                .match(
+                    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/
+                )
+                .toString()
+            expect(result).to.eq(expected)
+            cy.login()
+
+            cy.visit(Cypress.env('SERVER_URL') + '/serveur')
+
+            cy.get('button[aria-label="Stopper le Scan"]').click()
+
+            cy.get('input#receipt-search-order').type(result)
+
+            cy.get('span.pi-search').parent().click()
+
+            cy.get('.orders')
+                .children()
+                .first()
+                .should('have.class', 'data')
+                .as('command')
+
+            cy.get('@command')
+                .get('.infos')
+                .children()
+                .first()
+                .should('have.text', 'example@example.com')
+
+            cy.get('@command').get('.receipt').should('have.text', result)
+
+            cy.get('@command')
+                .get('.served')
+                .get('i')
+                .should('have.class', 'pi-times')
+
+            cy.get('@command')
+                .get('.p-tag-label')
+                .should('contain.text', total_parsed + ' €TTC')
+
+            cy.get('@command').click()
+
+            cy.get('@product_count').then((p_count) => {
+                cy.get('tbody').children().should('have.length', p_count)
+            })
+            cy.get('tfoot tr')
+                .children()
+                .last()
+                .should('contain.text', total_parsed + ' €')
         })
     })
 })

@@ -28,6 +28,8 @@
         "vue-router": "^4.4"
     },
     "devDependencies": {
+        "@zxing/browser": "^0.1.5",
+        "@zxing/library": "^0.21.3",
         "@rushstack/eslint-patch": "^1.8.0",
         "@stripe/stripe-js": "^4.2.0",
         "@tsconfig/node20": "^20.1.4",
