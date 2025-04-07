@@ -16,7 +16,7 @@ pub async fn setup_db_and_migrate() -> SqlitePool {
         "STRIPE_SECRET_KEY",
     ] {
         if env::var(env_name)
-            .expect(&format!("env var {env_name} not found"))
+            .unwrap_or_else(|_| panic!("env var {env_name} not found"))
             .is_empty()
         {
             panic!("env var {env_name} is empty");
