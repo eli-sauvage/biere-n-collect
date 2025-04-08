@@ -28,15 +28,6 @@ const fmtDate = (order: Order): string => {
             <span>{{ selected_order.user_email }}</span>
             <span>{{ fmtDate(selected_order) }}</span>
             <span class="receipt">{{ selected_order.receipt }}</span>
-            <div class="notify" @click="$emit('served_clicked')">
-                <span>Client notifié:</span>
-                <i
-                    v-if="selected_order.client_notified"
-                    class="pi pi-check"
-                    style="color: green"
-                ></i>
-                <i v-else class="pi pi-times" style="color: red"></i>
-            </div>
             <div class="served" @click="$emit('served_clicked')">
                 <span>Commande servie:</span>
                 <i

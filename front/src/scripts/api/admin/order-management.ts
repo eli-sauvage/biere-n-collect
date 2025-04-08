@@ -14,7 +14,6 @@ export type Order = {
     receipt?: string
     payment_intent_id: string
     served: boolean
-    client_notified: boolean
     total_price_ht: number
     total_price_ttc: number
     detail: OrderDetailElement[]
@@ -102,32 +101,6 @@ export async function set_served(
                 toast.add({
                     severity: 'success',
                     detail: `la commande de ${order.user_email} a été marquée comme ${new_served ? '' : 'non '}servie`,
-                    life: 1500,
-                })
-            return true
-        }
-    } catch (e: any) {
-        new Error(error_title, e.toString())
-        return false
-    }
-}
-
-export async function notify_client(order: Order): Promise<boolean> {
-    let url = `${base}/admin/orders/notify_client?order_id=${encodeURIComponent(order.id)}`
-    let error_title = "Erreur lors de l'envoi de la notification"
-    try {
-        let res = await fetch(url, {
-            method: 'PATCH',
-            credentials: 'include',
-        }).then((e) => e.json())
-        if (res.error) {
-            new Error(error_title, res.error)
-            return false
-        } else {
-            if (toast != null)
-                toast.add({
-                    severity: 'success',
-                    detail: `Une notification a bien été envoyée a ${order.user_email}`,
                     life: 1500,
                 })
             return true

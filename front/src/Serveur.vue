@@ -14,7 +14,6 @@ import {
     get_order_by_receipt,
     set_served,
     type Order,
-    notify_client,
 } from './scripts/api/admin/order-management'
 import { f_price } from './scripts/utils'
 
@@ -50,12 +49,6 @@ const select_order = (order: Order) => {
 }
 const setServed = async (order: Order, served: boolean) => {
     let res = await set_served(order, served)
-    if (!res) return
-    await refresh_order()
-}
-
-const notifyClient = async (order: Order) => {
-    let res = await notify_client(order)
     if (!res) return
     await refresh_order()
 }
@@ -250,18 +243,9 @@ const startSearch = async (e: Event) => {
                 @click="setServed(selected_order, true)"
                 severity="secondary"
             ></Button>
-        </div>
-        <div class="selected-order-footer">
             <Button
                 label="Fermer"
                 @click="selected_order = null"
-                severity="secondary"
-            ></Button>
-            <Button
-                icon="pi pi-bell"
-                label="Notifier client"
-                :disabled="selected_order.client_notified"
-                @click="notifyClient(selected_order)"
                 severity="secondary"
             ></Button>
         </div>
@@ -302,7 +286,7 @@ const startSearch = async (e: Event) => {
 .close-selected-order-btn {
     margin-top: 20px;
     display: flex;
-    justify-content: end;
+    justify-content: space-between;
 }
 
 .selected-order-footer {

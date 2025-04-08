@@ -56,9 +56,7 @@ CREATE TABLE IF NOT EXISTS Orders
     payment_status VARCHAR(20) CHECK( payment_status IN ("canceled", "processing", "succeeded")),
     user_email VARCHAR(255),
     receipt VARCHAR(255) UNIQUE,
-    served BOOLEAN NOT NULL DEFAULT FALSE,
-    client_notified BOOLEAN NOT NULL DEFAULT FALSE
-
+    served BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 
