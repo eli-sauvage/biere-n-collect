@@ -16,11 +16,11 @@ beforeEach(() => {
     })
 })
 describe('template spec', () => {
-    it('passes', () => {
+    it('creates a cart w/ valid infos', () => {
         cy.open_bar_if_closed()
         cy.visit(Cypress.env('SERVER_URL'))
 
-        cy.get('.add-and-price > :not(button[disabled])').as('product_count')
+        cy.get('.add-and-price > :not(button[disabled])').as('products')
 
         cy.get('.add-and-price > :not(button[disabled])')
             .find('span.p-badge')
@@ -42,116 +42,150 @@ describe('template spec', () => {
                 .then(() => {
                     expect(total_parsed).to.eq(expected)
                 })
-            cy.wrap(total_parsed)
+            Cypress.env('total_price', total_parsed)
         })
 
         cy.get('.see-cart-back > button').click()
-        cy.get('@product_count').then((products) => {
+        cy.get('@products').then((products) => {
             cy.get('table > tbody')
                 .children()
                 .should('have.length', products.length)
-            cy.wrap(products.length).as('product_count')
+            Cypress.env('product_count', products.length)
         })
 
         cy.get('table > tfoot > tr > :nth-child(2) > span').then((total) => {
             expect(parseFloat(total.text().replace('€', ''))).to.eq(
-                total_parsed
+                Cypress.env('total_price')
             )
         })
 
         cy.get('.cart > .button > button > span.p-badge').then((total) => {
             expect(parseFloat(total.text().replace('€', ''))).to.eq(
-                total_parsed
+                Cypress.env('total_price')
             )
         })
 
         cy.get('.cart > .button > button').click()
 
-        cy.get('.form-container > h2', { timeout: 60000 }).then((total) => {
-            expect(
-                parseFloat(
-                    total.text().replace('Total à payer :', '').replace('€', '')
-                )
-            ).to.eq(total_parsed)
-        })
+        cy.url()
+            .should('include', 'checkout?order_id=')
+            .then((url) => {
+                Cypress.env('order_id', url.match(/order_id=(\d+)/)[1])
+            })
+    }),
+        it('correcly validates the cart', () => {
+            cy.visit(
+                `${Cypress.env('SERVER_URL')}/checkout?order_id=${Cypress.env('order_id')}`
+            )
 
-        cy.get('button#submit > span').then((total) => {
-            expect(
-                parseFloat(total.text().replace('Payer', '').replace('€', ''))
-            ).to.eq(total_parsed)
-        })
-
-        cy.wait(1000)
-        cy.get('#link-authentication-element div iframe')
-            .its('0.contentDocument.body')
-            .should('not.be.empty')
-            .then(cy.wrap)
-            .find('input[name=email]', { timeout: 30000 })
-            .should('have.value', 'elicolh@gmail.com')
-            .wait(100)
-            .clear()
-            .type('example@example.com')
-        cy.get('#payment-element div iframe')
-            .its('0.contentDocument.body')
-            .should('not.be.empty')
-            .then(cy.wrap)
-            .find('input[name=number]')
-            .type('4242424242424242')
-        cy.get('#payment-element div iframe')
-            .its('0.contentDocument.body')
-            .find('input[name=expiry]')
-            .type('1234')
-        cy.get('#payment-element div iframe')
-            .its('0.contentDocument.body')
-            .find('input[name=cvc]')
-            .type('123')
-        cy.get('#payment-element div iframe')
-            .its('0.contentDocument.body')
-            .find('select[name=country]')
-            .select('France')
-
-        cy.get('button#submit').click()
-
-        cy.get('.container > span:nth-child(3)', { timeout: 15000 }).contains(
-            'example@example.com'
-        )
-
-        cy.get('img.qr-code')
-            .should('be.visible')
-            .and((img) => {
-                // "naturalWidth" and "naturalHeight" are set when the image loads
+            cy.get('.form-container > h2', { timeout: 60000 }).then((total) => {
                 expect(
-                    (img[0] as HTMLImageElement).naturalWidth
-                ).to.be.greaterThan(0)
+                    parseFloat(
+                        total
+                            .text()
+                            .replace('Total à payer :', '')
+                            .replace('€', '')
+                    )
+                ).to.eq(Cypress.env('total_price'))
             })
 
-        cy.get('@product_count').then((prod_count) => {
-            cy.get('table > tbody').children().should('have.length', prod_count)
-        })
-        cy.get('table > tfoot > tr > :nth-child(2) > span').then((total) => {
-            expect(parseFloat(total.text().replace('€', ''))).to.eq(
-                total_parsed
+            cy.get('button#submit > span').then((total) => {
+                expect(
+                    parseFloat(
+                        total.text().replace('Payer', '').replace('€', '')
+                    )
+                ).to.eq(Cypress.env('total_price'))
+            })
+        }),
+        it('can handle a payment', () => {
+            cy.visit(
+                `${Cypress.env('SERVER_URL')}/checkout?order_id=${Cypress.env('order_id')}`
             )
-        })
+            cy.wait(1000)
+            cy.get('#link-authentication-element div iframe')
+                .its('0.contentDocument.body')
+                .should('not.be.empty')
+                .then(cy.wrap)
+                .find('input[name=email]', { timeout: 30000 })
+                .type('example@example.com')
+            cy.get('#payment-element div iframe')
+                .its('0.contentDocument.body')
+                .should('not.be.empty')
+                .then(cy.wrap)
+                .find('input[name=number]')
+                .type('4242424242424242')
+            cy.get('#payment-element div iframe')
+                .its('0.contentDocument.body')
+                .find('input[name=expiry]')
+                .type('1234')
+            cy.get('#payment-element div iframe')
+                .its('0.contentDocument.body')
+                .find('input[name=cvc]')
+                .type('123')
+            cy.get('#payment-element div iframe')
+                .its('0.contentDocument.body')
+                .find('select[name=country]')
+                .select('France')
 
-        cy.get('.qr-code').then(async (el) => {
-            let image = el.get()[0] as HTMLImageElement
-            const reader = new BrowserMultiFormatReader()
-            console.log(image)
-            let result = (await reader.decodeFromImageUrl(image.src)).getText()
-            let expected = image.alt
-                .match(
-                    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/
-                )
-                .toString()
-            expect(result).to.eq(expected)
+            cy.get('button#submit').click()
+            cy.url()
+                .should('include', '/return?payment_intent=', {
+                    timeout: 15000,
+                })
+                .and('include', '&payment_intent_client_secret=')
+            cy.url().then((url) => Cypress.env('return_url', url))
+        }),
+        it('correcly shows the order summary & qr code', () => {
+            cy.visit(Cypress.env('return_url'))
+
+            cy.get('.container > span:nth-child(3)', {
+                timeout: 15000,
+            }).contains('example@example.com')
+
+            cy.get('img.qr-code')
+                .should('be.visible')
+                .and((img) => {
+                    // "naturalWidth" and "naturalHeight" are set when the image loads
+                    expect(
+                        (img[0] as HTMLImageElement).naturalWidth
+                    ).to.be.greaterThan(0)
+                })
+
+            cy.get('table > tbody')
+                .children()
+                .should('have.length', Cypress.env('product_count'))
+            cy.get('table > tfoot > tr > :nth-child(2) > span').then(
+                (total) => {
+                    expect(parseFloat(total.text().replace('€', ''))).to.eq(
+                        Cypress.env('total_price')
+                    )
+                }
+            )
+
+            cy.get('.qr-code').then(async (el) => {
+                let image = el.get()[0] as HTMLImageElement
+                const reader = new BrowserMultiFormatReader()
+                console.log(image)
+                let result = (
+                    await reader.decodeFromImageUrl(image.src)
+                ).getText()
+                let expected = image.alt
+                    .match(
+                        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/
+                    )
+                    .toString()
+                expect(result).to.eq(expected)
+                Cypress.env('receipt', result)
+            })
+        }),
+        it('can find the order as serveur', () => {
             cy.login()
 
             cy.visit(Cypress.env('SERVER_URL') + '/serveur')
 
             cy.get('button[aria-label="Stopper le Scan"]').click()
 
-            cy.get('input#receipt-search-order').type(result)
+            cy.get('input#receipt-search-order').type(Cypress.env('receipt'))
 
             cy.get('span.pi-search').parent().click()
 
@@ -167,7 +201,9 @@ describe('template spec', () => {
                 .first()
                 .should('have.text', 'example@example.com')
 
-            cy.get('@command').get('.receipt').should('have.text', result)
+            cy.get('@command')
+                .get('.receipt')
+                .should('have.text', Cypress.env('receipt'))
 
             cy.get('@command')
                 .get('.served')
@@ -176,17 +212,16 @@ describe('template spec', () => {
 
             cy.get('@command')
                 .get('.p-tag-label')
-                .should('contain.text', total_parsed + ' €TTC')
+                .should('contain.text', Cypress.env('total_price') + ' €TTC')
 
             cy.get('@command').click()
 
-            cy.get('@product_count').then((p_count) => {
-                cy.get('tbody').children().should('have.length', p_count)
-            })
+            cy.get('tbody')
+                .children()
+                .should('have.length', Cypress.env('product_count'))
             cy.get('tfoot tr')
                 .children()
                 .last()
-                .should('contain.text', total_parsed + ' €')
+                .should('contain.text', Cypress.env('total_price') + ' €')
         })
-    })
 })
