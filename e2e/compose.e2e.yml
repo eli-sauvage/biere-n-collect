@@ -35,7 +35,7 @@ services:
       - 25:25  # web interface
     environment:
       - ServerOptions__TlsMode=StartTls
-      - Serveroptions__HostName=mailer
+      - ServerOptions__HostName=mailer
     networks:
       - e2e
   e2e:
